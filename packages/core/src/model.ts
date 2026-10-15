@@ -20,6 +20,7 @@ export type DataIssueCode =
   | 'missing_value'
   | 'unparseable'
   | 'ambiguous_decimal'
+  | 'ambiguous_date'
   | 'unknown_unit'
   | 'negative_value'
   | 'percent_out_of_range'

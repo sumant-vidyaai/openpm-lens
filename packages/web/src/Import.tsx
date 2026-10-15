@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
-  assessQuality, detectTableAdapter, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  aggregateSchedule, assessQuality, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
@@ -37,6 +37,9 @@ export function ImportScreen() {
   const [hoursPerDay, setHoursPerDay] = useState(8);
   const [rule, setRule] = useState<PercentRule>('tool_reported');
   const [inProgressPercent, setInProgressPercent] = useState(50);
+  const [dateOrder, setDateOrder] = useState<DateOrder>('auto');
+  const [dayCount, setDayCount] = useState<DayCount>('weekdays');
+  const [statusDate, setStatusDate] = useState('');
   const [missingPlanned, setMissingPlanned] = useState<MissingPlannedPolicy>('exclude');
 
   const csv = useMemo(() => {
@@ -67,16 +70,20 @@ export function ImportScreen() {
 
   const calc = useMemo(() => {
     if (!csv || !mapping || mapping.name === null || defaultUnit === '') return null;
-    const items = buildWorkItems(csv.headers, csv.rows, mapping, { defaultUnit, percentScale, statusMap });
+    const items = buildWorkItems(csv.headers, csv.rows, mapping, { defaultUnit, percentScale, statusMap, dateOrder });
     const calendar = { hoursPerDay, daysPerWeek: 5 };
     const config = rule === 'status_based' ? { inProgressPercent } : undefined;
     const tasks = toHoursTasks(items, calendar, rule, config);
     const agg = aggregateHoursEvm(tasks, missingPlanned);
-    return { agg, quality: assessQuality(items, tasks, agg) };
-  }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned]);
+    const schedule = statusDate
+      ? aggregateSchedule(toScheduleTasks(items, calendar, rule, config), statusDate, dayCount)
+      : null;
+    return { agg, schedule, quality: assessQuality(items, tasks, agg) };
+  }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayCount, statusDate]);
 
   const result = calc?.agg ?? null;
   const quality = calc?.quality ?? null;
+  const schedule = calc?.schedule ?? null;
 
   function reset(name: string, next: Raw) {
     setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
@@ -212,6 +219,28 @@ export function ImportScreen() {
               </label>
             )}
             <label>
+              Dates in my file are written as
+              <select value={dateOrder} onChange={(e) => setDateOrder(e.target.value as DateOrder)}>
+                <option value="auto">Unclear ones are refused (recommended)</option>
+                <option value="dmy">Day / Month / Year</option>
+                <option value="mdy">Month / Day / Year</option>
+              </select>
+            </label>
+            <label>
+              Spread planned work over
+              <select value={dayCount} onChange={(e) => setDayCount(e.target.value as DayCount)}>
+                <option value="weekdays">Weekdays, Monday to Friday</option>
+                <option value="calendar">Every calendar day</option>
+              </select>
+            </label>
+            <label>
+              Status date (the day these numbers are as of)
+              <span className="row">
+                <input type="date" value={statusDate} onChange={(e) => setStatusDate(e.target.value)} />
+                <button type="button" onClick={() => setStatusDate(new Date().toLocaleDateString('en-CA'))}>Use today</button>
+              </span>
+            </label>
+            <label>
               Tasks with no planned effort
               <select value={missingPlanned} onChange={(e) => setMissingPlanned(e.target.value as MissingPlannedPolicy)}>
                 <option value="exclude">Leave out and tell me (recommended)</option>
@@ -250,8 +279,34 @@ export function ImportScreen() {
                   <div className="card"><h4>Actual cost (AC)</h4><p className="big">{fmt(result.ac)}</p><p className="note">Hours actually spent.</p></div>
                   <div className="card"><h4>Cost performance (CPI)</h4><p className="big">{fmt(cpi)}</p><p className="note">EV / AC. Below 1 means more hours spent than the work earned.</p></div>
                   <div className="card"><h4>Cost variance (CV)</h4><p className="big">{fmt(cv)}</p><p className="note">EV - AC. Negative means over budget.</p></div>
-                  <div className="card"><h4>Schedule performance (SPI)</h4><p className="big">Not available</p><p className="note">Needs planned dates (planned value). Not in this file.</p></div>
                 </div>
+              )}
+              <h3>Schedule (as of the status date)</h3>
+              {!statusDate ? (
+                <p className="warn">Choose a status date in step 2 to see schedule performance. It is not assumed.</p>
+              ) : schedule && schedule.status !== 'not_available' ? (
+                <>
+                  <div className="grid">
+                    <div className="card"><h4>Planned value (PV)</h4><p className="big">{fmt(schedule.pv)}</p><p className="note">Hours that should be done by {statusDate}.</p></div>
+                    <div className="card"><h4>Earned value (EV)</h4><p className="big">{fmt(schedule.ev)}</p><p className="note">Same tasks, planned hours x % complete.</p></div>
+                    <div className="card">
+                      <h4>Schedule performance (SPI)</h4>
+                      <p className="big">{schedule.spi === null ? 'Not available' : fmt(schedule.spi)}</p>
+                      <p className="note">{schedule.spi === null ? 'Planned value is 0: nothing was due by this date.' : 'EV / PV. Below 1 means behind the plan.'}</p>
+                    </div>
+                    <div className="card"><h4>Schedule variance (SV)</h4><p className="big">{fmt(schedule.sv)}</p><p className="note">EV - PV. Negative means behind schedule.</p></div>
+                  </div>
+                  <p><strong>{schedule.counts.used} of {schedule.counts.total}</strong> tasks used for schedule measures.</p>
+                  {schedule.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
+                  {schedule.excluded.length > 0 && (
+                    <details>
+                      <summary>Which tasks were left out of schedule measures, and why</summary>
+                      <ul>{schedule.excluded.map((e) => <li key={e.id}>{e.id}: {e.reason}</li>)}</ul>
+                    </details>
+                  )}
+                </>
+              ) : (
+                <p className="warn">Not available. Missing: {schedule?.missing.join(', ')}. Choose the start and finish date columns in step 1.</p>
               )}
               {quality && (
                 <section className="card" aria-labelledby="dq-h">

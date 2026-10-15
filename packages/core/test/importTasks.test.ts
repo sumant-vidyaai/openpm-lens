@@ -77,13 +77,13 @@ describe('import to EVM (hand-checked)', () => {
 
   it('reads 0-1 percentages only when the user says so', () => {
     const o: ImportOptions = { ...options, percentScale: '0-1' };
-    const it2 = buildWorkItems(['T', 'P'], [['x', '0.4'], ['y', '40%']], { id: null, name: 'T', status: null, planned: null, actual: null, percent: 'P' }, o);
+    const it2 = buildWorkItems(['T', 'P'], [['x', '0.4'], ['y', '40%']], { id: null, name: 'T', status: null, planned: null, actual: null, percent: 'P', start: null, finish: null }, o);
     expect(it2[0]?.percentCompleteReported).toBeCloseTo(40);
     expect(it2[1]?.percentCompleteReported).toBe(40);
   });
 
   it('refuses a percentage outside 0-100 and flags it', () => {
-    const it3 = buildWorkItems(['T', 'P'], [['x', '140']], { id: null, name: 'T', status: null, planned: null, actual: null, percent: 'P' }, options);
+    const it3 = buildWorkItems(['T', 'P'], [['x', '140']], { id: null, name: 'T', status: null, planned: null, actual: null, percent: 'P', start: null, finish: null }, options);
     expect(it3[0]?.percentCompleteReported).toBeNull();
     expect(it3[0]?.issues[0]?.code).toBe('percent_out_of_range');
   });

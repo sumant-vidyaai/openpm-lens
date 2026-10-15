@@ -95,6 +95,11 @@ function makeAdapter(spec: AdapterSpec): TableAdapter {
         (Object.keys(spec.columns) as ImportField[]).map((f) => [f, findHeader(headers, spec.columns[f])]),
       ) as ColumnMapping;
       const notes = [...spec.notes, ...(spec.extraNotes ? spec.extraNotes(mapping) : [])];
+      if (spec.columns.start.length === 0 || spec.columns.finish.length === 0) {
+        notes.push('This tool\'s export has no planned start date, so schedule performance (SPI) cannot be worked out from it. Choose date columns in step 1 if your file has them.');
+      } else {
+        notes.push('Date column names are this tool\'s usual field names but are not confirmed from its documentation. Please check the start and finish choices in step 1.');
+      }
       if (spec.columns.planned.length > 0 && mapping.planned === null) {
         notes.push('No planned-effort column was found, so tasks will be left out until you choose one in step 1.');
       }
@@ -121,6 +126,8 @@ export const jiraAdapter = makeAdapter({
     planned: ['original estimate', 'time original estimate'],
     actual: ['time spent', 'timespent'],
     percent: [],
+    start: ['start date'],
+    finish: ['due date'],
   },
   defaultUnit: 'seconds',
   suggestedRule: 'zero_hundred',
@@ -145,6 +152,8 @@ export const azureDevOpsAdapter = makeAdapter({
     planned: ['original estimate'],
     actual: ['completed work'],
     percent: [],
+    start: ['start date'],
+    finish: ['finish date', 'target date', 'due date'],
   },
   defaultUnit: 'hours',
   suggestedRule: 'zero_hundred',
@@ -170,6 +179,8 @@ export const linearAdapter = makeAdapter({
     planned: ['estimate'],
     actual: [],
     percent: [],
+    start: [],
+    finish: ['due date'],
   },
   defaultUnit: 'points',
   suggestedRule: 'zero_hundred',
@@ -193,6 +204,8 @@ export const clickUpAdapter = makeAdapter({
     planned: ['time estimated'],
     actual: ['time spent'],
     percent: [],
+    start: ['start date'],
+    finish: ['due date'],
   },
   defaultUnit: null,
   suggestedRule: 'zero_hundred',
@@ -216,6 +229,8 @@ export const workfrontAdapter = makeAdapter({
     planned: ['planned hours'],
     actual: ['actual hours'],
     percent: ['percent complete', '% complete'],
+    start: ['planned start date'],
+    finish: ['planned completion date'],
   },
   defaultUnit: 'hours',
   suggestedRule: 'tool_reported',
@@ -239,6 +254,8 @@ export const msProjectAdapter = makeAdapter({
     planned: ['baseline work', 'work'],
     actual: ['actual work'],
     percent: ['% complete', 'percent complete'],
+    start: ['baseline start', 'start'],
+    finish: ['baseline finish', 'finish'],
   },
   defaultUnit: 'hours',
   suggestedRule: 'tool_reported',
@@ -311,9 +328,18 @@ export function coverageMatrix(adapters: TableAdapter[] = TABLE_ADAPTERS): Cover
       note: 'Needs planned effort, actual effort and some measure of progress.',
     },
     {
-      label: 'Schedule performance (SPI)',
-      cells: adapters.map(() => 'no'),
-      note: 'Needs planned dates to work out planned value. Reading dates is not built yet, for any tool.',
+      label: 'Planned start and finish dates',
+      cells: adapters.map((a) => (a.capabilities.supplies.start && a.capabilities.supplies.finish ? 'check' : 'no')),
+      note: 'Check = the export is expected to have date columns, but the tool\'s documentation does not confirm their names.',
+    },
+    {
+      label: 'Schedule performance (SPI) and schedule variance',
+      cells: adapters.map((a) => {
+        const c = a.capabilities;
+        const ok = c.supplies.planned && c.supplies.start && c.supplies.finish && (c.reportsPercent || c.supplies.status) && c.effortUnit !== 'points';
+        return ok ? 'check' : 'no';
+      }),
+      note: 'Needs planned effort, planned start and finish dates, and some measure of progress. Does not need actual effort.',
     },
   ];
 }

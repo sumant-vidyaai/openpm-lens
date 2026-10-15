@@ -64,6 +64,8 @@ describe('coverage matrix', () => {
     expect(row('Reports its own').cells[col('ms-project-table')]).toBe('yes');
     expect(row('Reports its own').cells[col('jira-csv')]).toBe('no');
     expect(row('Actual effort').cells[col('linear-csv')]).toBe('no');
-    expect(row('Schedule performance').cells.every((c) => c === 'no')).toBe(true);
+    expect(row('Schedule performance').cells[col('linear-csv')]).toBe('no');
+    expect(row('Schedule performance').cells[col('ms-project-table')]).toBe('check');
+    expect(row('Schedule performance').cells[col('jira-csv')]).toBe('check');
   });
 });

@@ -39,6 +39,7 @@ const ISSUE_LABEL: Record<DataIssueCode, string> = {
   missing_value: 'empty cell',
   unparseable: 'unreadable value',
   ambiguous_decimal: 'ambiguous number (comma or point)',
+  ambiguous_date: 'ambiguous date (day/month or month/day)',
   unknown_unit: 'unrecognised unit',
   negative_value: 'negative value',
   percent_out_of_range: '% outside 0-100',

@@ -42,3 +42,4 @@ caption { text-align: left; font-weight: 600; padding: .25rem 0; }
 .scroll { overflow-x: auto; }
 meter { width: 10rem; height: 1rem; vertical-align: middle; }
 section.card { margin: 1rem 0; }
+.form .row { margin: 0; }

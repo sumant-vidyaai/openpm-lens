@@ -16,7 +16,7 @@ describe('seconds', () => {
   it('parses a unit-less number as seconds when told, and converts to hours', () => {
     const q = parseQuantity('28800', { defaultUnit: 'seconds' });
     expect(q.unit).toBe('seconds');
-    const items = buildWorkItems(['n', 'e'], [['x', '7200']], { id: null, name: 'n', status: null, planned: 'e', actual: null, percent: null },
+    const items = buildWorkItems(['n', 'e'], [['x', '7200']], { id: null, name: 'n', status: null, planned: 'e', actual: null, percent: null, start: null, finish: null },
       { defaultUnit: 'seconds', percentScale: '0-100', statusMap: {} });
     expect(toHoursTasks(items, { hoursPerDay: 8, daysPerWeek: 5 }, 'zero_hundred')[0]?.plannedHours).toBeCloseTo(2);
   });

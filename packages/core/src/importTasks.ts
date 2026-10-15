@@ -1,10 +1,12 @@
 import type { DataIssue, StatusCategory, Unit, WorkItem } from './model';
 import { parseQuantity, convertToHours, type WorkCalendar } from './units';
+import { parseDateText, type DateOrder } from './dates';
+import type { ScheduleTask } from './schedule';
 import { percentComplete, type PercentRule, type StatusBasedConfig } from './percentComplete';
 import type { HoursTask } from './aggregate';
 
 /** Fields a file column can be mapped to. */
-export type ImportField = 'id' | 'name' | 'status' | 'planned' | 'actual' | 'percent';
+export type ImportField = 'id' | 'name' | 'status' | 'planned' | 'actual' | 'percent' | 'start' | 'finish';
 
 export const IMPORT_FIELDS: { field: ImportField; label: string; required: boolean }[] = [
   { field: 'name', label: 'Task name', required: true },
@@ -12,6 +14,8 @@ export const IMPORT_FIELDS: { field: ImportField; label: string; required: boole
   { field: 'actual', label: 'Actual effort (time spent)', required: false },
   { field: 'percent', label: '% complete', required: false },
   { field: 'status', label: 'Status', required: false },
+  { field: 'start', label: 'Planned start date', required: false },
+  { field: 'finish', label: 'Planned finish date', required: false },
   { field: 'id', label: 'Task ID', required: false },
 ];
 
@@ -25,13 +29,15 @@ const HINTS: Record<ImportField, RegExp[]> = {
   planned: [/planned|estimate|original|baseline work|budget(ed)? (hours|work)/i],
   actual: [/actual|time ?spent|logged|worked/i],
   percent: [/(%|percent|pct).*(complete|done)|complete.*(%|percent)|progress/i],
+  start: [/^(planned |baseline |scheduled )?start( date)?$/i],
+  finish: [/^(planned |baseline |scheduled )?(finish|end|due|completion|target)( date)?$/i, /due date|completion date|finish date/i],
 };
 
 /** Suggests a column for each field from header wording. The user can always change it. */
 export function suggestMapping(headers: string[]): ColumnMapping {
-  const mapping: ColumnMapping = { id: null, name: null, status: null, planned: null, actual: null, percent: null };
+  const mapping: ColumnMapping = { id: null, name: null, status: null, planned: null, actual: null, percent: null, start: null, finish: null };
   const taken = new Set<string>();
-  for (const field of ['name', 'planned', 'actual', 'percent', 'status', 'id'] as ImportField[]) {
+  for (const field of ['name', 'planned', 'actual', 'percent', 'status', 'start', 'finish', 'id'] as ImportField[]) {
     for (const re of HINTS[field]) {
       const hit = headers.find((h) => !taken.has(h) && re.test(h));
       if (hit) {
@@ -69,6 +75,8 @@ export interface ImportOptions {
   /** Whether a percent column holds 0-100 (default) or 0-1. */
   percentScale: '0-100' | '0-1';
   statusMap: StatusMap;
+  /** How day/month/year is written in date columns. Defaults to 'auto' (unclear dates are refused). */
+  dateOrder?: DateOrder;
 }
 
 function emptyItem(id: string, name: string): WorkItem {
@@ -110,7 +118,7 @@ export function buildWorkItems(
 ): WorkItem[] {
   const idx = (f: ImportField) => (mapping[f] === null ? -1 : headers.indexOf(mapping[f] as string));
   const cell = (r: string[], i: number) => (i < 0 ? '' : (r[i] ?? '').trim());
-  const [iId, iName, iStatus, iPlan, iAct, iPct] = (['id', 'name', 'status', 'planned', 'actual', 'percent'] as ImportField[]).map(idx) as [number, number, number, number, number, number];
+  const [iId, iName, iStatus, iPlan, iAct, iPct, iStart, iFin] = (['id', 'name', 'status', 'planned', 'actual', 'percent', 'start', 'finish'] as ImportField[]).map(idx) as [number, number, number, number, number, number, number, number];
 
   return rows.map((r, n) => {
     const name = cell(r, iName) || `(row ${n + 2} has no name)`;
@@ -121,6 +129,13 @@ export function buildWorkItems(
       const p = parsePercent(cell(r, iPct), options.percentScale, 'percentComplete');
       item.percentCompleteReported = p.value;
       item.issues.push(...p.issues);
+    }
+    for (const [i, key, field] of [[iStart, 'baselineStart', 'plannedStart'], [iFin, 'baselineFinish', 'plannedFinish']] as const) {
+      const text = cell(r, i);
+      if (text === '') continue;
+      const d = parseDateText(text, options.dateOrder ?? 'auto', field);
+      item[key] = d.iso;
+      if (d.issue) item.issues.push(d.issue);
     }
     const rawStatus = cell(r, iStatus);
     if (rawStatus !== '') {
@@ -147,6 +162,25 @@ export function toHoursTasks(
       plannedHours: convertToHours(it.estimate, calendar),
       actualHours: convertToHours(it.actual, calendar),
       percentComplete: pct.value,
+    };
+  });
+}
+
+/** Applies the percent-complete rule and the work calendar to produce schedule-measure inputs. */
+export function toScheduleTasks(
+  items: WorkItem[],
+  calendar: WorkCalendar,
+  rule: PercentRule,
+  config?: StatusBasedConfig,
+): ScheduleTask[] {
+  return items.map((it) => {
+    const pct = percentComplete(rule, { reportedPercent: it.percentCompleteReported, statusCategory: it.statusCategory }, config);
+    return {
+      id: it.id,
+      plannedHours: convertToHours(it.estimate, calendar),
+      percentComplete: pct.value,
+      plannedStart: it.baselineStart,
+      plannedFinish: it.baselineFinish,
     };
   });
 }
