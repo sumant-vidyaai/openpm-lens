@@ -15,3 +15,6 @@ export * from './dates';
 export * from './schedule';
 export * from './explain';
 export * from './report';
+export * from './health';
+export * from './analyse';
+export * from './portfolio';

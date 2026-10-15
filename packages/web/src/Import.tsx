@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
-  distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
+  distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
   aggregateSchedule, assessQuality, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
@@ -57,7 +57,7 @@ export function ImportScreen() {
     if (suggestion?.suggestedRule) setRule(suggestion.suggestedRule);
   }, [suggestion]);
   const mapping: ColumnMapping | null = useMemo(
-    () => (csv ? { ...(suggestion?.mapping ?? suggestMapping(csv.headers)), ...mappingEdits } : null),
+    () => (csv ? { ...mergeMapping(csv.headers, suggestion?.mapping ?? null), ...mappingEdits } : null),
     [csv, suggestion, mappingEdits],
   );
   const statuses = useMemo(

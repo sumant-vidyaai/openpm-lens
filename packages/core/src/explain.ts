@@ -65,7 +65,7 @@ export function explainScheduleRows(tasks: ScheduleTask[], statusDate: string, m
     };
     if (!fin(t.plannedHours)) return { ...base, note: 'Left out: no planned hours' };
     if (!fin(t.percentComplete)) return { ...base, note: 'Left out: no % complete' };
-    if (t.plannedStart === null || t.plannedFinish === null) return { ...base, note: 'Left out: no planned dates' };
+    if (t.plannedStart === null || t.plannedFinish === null) return { ...base, note: 'Left out: no usable planned dates (missing or unclear; choose a date order to include unclear ones)' };
     if (t.plannedFinish < t.plannedStart) return { ...base, note: 'Left out: finish before start' };
     const share = plannedFraction(t.plannedStart, t.plannedFinish, statusDate, mode);
     return {

@@ -3,6 +3,7 @@ import { metricFunctions, roundHalfUp } from '@openpm-lens/core';
 import { cards } from './cards';
 import { ImportScreen } from './Import';
 import { CoverageScreen } from './Coverage';
+import { PortfolioScreen } from './Portfolio';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -60,7 +61,7 @@ function MetricCardView({ id }: { id: string }) {
 }
 
 export function App() {
-  const [tab, setTab] = useState<'import' | 'coverage' | 'library'>('import');
+  const [tab, setTab] = useState<'import' | 'portfolio' | 'coverage' | 'library'>('import');
   const [theme, setTheme] = useState<Theme>(() => {
     const t = document.documentElement.dataset.theme;
     return t === 'light' || t === 'dark' ? t : 'system';
@@ -91,11 +92,14 @@ export function App() {
       <main id="main">
         <nav className="tabs noprint" aria-label="Sections">
           <button type="button" aria-pressed={tab === 'import'} onClick={() => setTab('import')}>Import</button>
+          <button type="button" aria-pressed={tab === 'portfolio'} onClick={() => setTab('portfolio')}>Portfolio</button>
           <button type="button" aria-pressed={tab === 'coverage'} onClick={() => setTab('coverage')}>Tool coverage</button>
           <button type="button" aria-pressed={tab === 'library'} onClick={() => setTab('library')}>Metric library</button>
         </nav>
         {tab === 'import' ? (
           <ImportScreen />
+        ) : tab === 'portfolio' ? (
+          <PortfolioScreen />
         ) : tab === 'coverage' ? (
           <CoverageScreen />
         ) : (

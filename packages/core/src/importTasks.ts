@@ -184,3 +184,19 @@ export function toScheduleTasks(
     };
   });
 }
+
+/**
+ * Column choices for a file: the recognised tool's choices first, and any field that tool
+ * did not find filled in from the generic header wording. The user can always change them.
+ */
+export function mergeMapping(headers: string[], fromTool: ColumnMapping | null): ColumnMapping {
+  const generic = suggestMapping(headers);
+  if (fromTool === null) return generic;
+  const used = new Set(Object.values(fromTool).filter((v): v is string => v !== null));
+  const out = { ...fromTool };
+  for (const f of Object.keys(out) as ImportField[]) {
+    const g = generic[f];
+    if (out[f] === null && g !== null && !used.has(g)) { out[f] = g; used.add(g); }
+  }
+  return out;
+}

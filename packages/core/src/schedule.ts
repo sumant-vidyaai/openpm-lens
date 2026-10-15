@@ -22,7 +22,7 @@ export interface ScheduleTask {
 
 export interface ScheduleExcluded {
   id: string;
-  reason: 'no planned hours' | 'no % complete' | 'no planned dates' | 'finish before start';
+  reason: 'no planned hours' | 'no % complete' | 'no usable planned dates (missing or unclear)' | 'finish before start';
 }
 
 export interface ScheduleAggregate {
@@ -52,7 +52,7 @@ export function aggregateSchedule(tasks: ScheduleTask[], statusDate: string, mod
   for (const t of tasks) {
     if (t.plannedHours === null || !Number.isFinite(t.plannedHours)) { excluded.push({ id: t.id, reason: 'no planned hours' }); continue; }
     if (t.percentComplete === null || !Number.isFinite(t.percentComplete)) { excluded.push({ id: t.id, reason: 'no % complete' }); continue; }
-    if (t.plannedStart === null || t.plannedFinish === null) { excluded.push({ id: t.id, reason: 'no planned dates' }); continue; }
+    if (t.plannedStart === null || t.plannedFinish === null) { excluded.push({ id: t.id, reason: 'no usable planned dates (missing or unclear)' }); continue; }
     if (t.plannedFinish < t.plannedStart) { excluded.push({ id: t.id, reason: 'finish before start' }); continue; }
     pv += t.plannedHours * plannedFraction(t.plannedStart, t.plannedFinish, statusDate, mode);
     ev += t.plannedHours * (t.percentComplete / 100);

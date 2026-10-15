@@ -41,7 +41,7 @@ describe('explanation rows add up to the headline numbers', () => {
     const notes = explainEvmRows(hours).map((r) => r.note);
     expect(notes[3]).toContain('no actual hours');
     expect(notes[4]).toContain('no planned hours');
-    expect(explainScheduleRows(sched, '2026-01-21', 'weekdays')[3]?.note).toContain('no planned dates');
+    expect(explainScheduleRows(sched, '2026-01-21', 'weekdays')[3]?.note).toContain('no usable planned dates');
   });
 });
 

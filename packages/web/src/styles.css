@@ -53,3 +53,16 @@ section.card { margin: 1rem 0; }
   .card, table, details { break-inside: avoid; }
   body { font-size: 11pt; }
 }
+.rag { display: inline-block; padding: .1rem .5rem; border-radius: .3rem; border: 1px solid var(--border); font-weight: 600; white-space: nowrap; }
+:root { --g-bg: #d6f0dc; --g-fg: #14502a; --a-bg: #fdecc8; --a-fg: #6b4300; --r-bg: #f9d4d4; --r-fg: #7a1414; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --g-bg: #17381f; --g-fg: #bfe8c8; --a-bg: #40300c; --a-fg: #f5d9a0; --r-bg: #4a1a1a; --r-fg: #f5bcbc; }
+}
+:root[data-theme='dark'] { --g-bg: #17381f; --g-fg: #bfe8c8; --a-bg: #40300c; --a-fg: #f5d9a0; --r-bg: #4a1a1a; --r-fg: #f5bcbc; }
+.rag-green { background: var(--g-bg); color: var(--g-fg); }
+.rag-amber { background: var(--a-bg); color: var(--a-fg); }
+.rag-red { background: var(--r-bg); color: var(--r-fg); }
+.rag-insufficient { background: var(--card); color: var(--muted); border-style: dashed; }
+td input[type='text'], td input:not([type]) { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: .3rem; padding: .3rem; width: 100%; min-width: 8rem; }
+input[type='date'] { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: .3rem; padding: .35rem; }
+.sr { position: absolute; left: -999px; }
