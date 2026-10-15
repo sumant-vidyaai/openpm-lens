@@ -9,3 +9,4 @@ export * from './aggregate';
 export * from './metrics';
 export * from './csv';
 export * from './importTasks';
+export * from './tableAdapters';

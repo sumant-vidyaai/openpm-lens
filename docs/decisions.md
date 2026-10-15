@@ -34,7 +34,7 @@ Decisions agreed with the project owner on 15 October 2026.
 - [ ] Synthetic sample exports (Jira, Azure DevOps, MS Project style).
 - [x] Web app shell (Vite + React) with light/dark mode, strict security policy, offline service worker and a metric library page (`packages/web`).
 - [x] CSV importer with mapping screen, unit/percent/status choices and EV/AC/CPI/CV results (v0.3). Excel (.xlsx) reading added in v0.4 with `read-excel-file` (MIT; its dependencies saxen, fflate, worker-f and unzipper-esm are also MIT; `npm audit` found no known vulnerabilities). Rejected: `xlsx` from npm (stale 0.18.5) and `exceljs` (large, many dependencies). Old `.xls` files are not supported.
-- [ ] First two adapters.
+- [x] Jira CSV adapter (v0.5): recognises the export by column names, reads seconds, skips the Σ parent-total columns, has no % complete so uses a status-based rule (0/100 by default). Built from Atlassian documentation (Original Estimate is exported in seconds); column names still to be confirmed against a real export header line. [ ] MS Project adapter next.
 - [ ] Dashboard with capability matrix, data-quality score and step-by-step explanations.
 - [ ] More metrics: earned schedule, schedule (critical path, PERT), cost, risk, quality,
       resource, agile/flow, Monte Carlo.

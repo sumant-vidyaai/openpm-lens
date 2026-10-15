@@ -14,7 +14,7 @@
  * follow the same rules.
  */
 
-export type Unit = 'minutes' | 'hours' | 'days' | 'weeks' | 'points';
+export type Unit = 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'points';
 
 export type DataIssueCode =
   | 'missing_value'

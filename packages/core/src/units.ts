@@ -11,6 +11,11 @@ import type { DataIssue, Quantity, Unit } from './model';
  */
 
 const UNIT_ALIASES: Record<string, Unit> = {
+  s: 'seconds',
+  sec: 'seconds',
+  secs: 'seconds',
+  second: 'seconds',
+  seconds: 'seconds',
   min: 'minutes',
   mins: 'minutes',
   minute: 'minutes',
@@ -195,6 +200,8 @@ export function convertToHours(quantity: Quantity, calendar: WorkCalendar): numb
   }
   if (quantity.value === null || quantity.unit === null) return null;
   switch (quantity.unit) {
+    case 'seconds':
+      return quantity.value / 3600;
     case 'minutes':
       return quantity.value / 60;
     case 'hours':

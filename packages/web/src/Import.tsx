@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
-  tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  detectTableAdapter, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
@@ -44,9 +44,16 @@ export function ImportScreen() {
     if (raw.kind === 'csv') return parseCsv(raw.text);
     return tableFromGrid(raw.sheets[sheetIdx]?.data ?? []);
   }, [raw, sheetIdx]);
+  const adapter = useMemo(() => (csv ? detectTableAdapter(csv.headers) : null), [csv]);
+  const suggestion = useMemo(() => (csv && adapter ? adapter.suggest(csv.headers) : null), [csv, adapter]);
+  // When a known tool's file is recognised, start from its settings. The user can change everything.
+  useEffect(() => {
+    if (suggestion?.defaultUnit) setDefaultUnit(suggestion.defaultUnit);
+    if (suggestion?.suggestedRule) setRule(suggestion.suggestedRule);
+  }, [suggestion]);
   const mapping: ColumnMapping | null = useMemo(
-    () => (csv ? { ...suggestMapping(csv.headers), ...mappingEdits } : null),
-    [csv, mappingEdits],
+    () => (csv ? { ...(suggestion?.mapping ?? suggestMapping(csv.headers)), ...mappingEdits } : null),
+    [csv, suggestion, mappingEdits],
   );
   const statuses = useMemo(
     () => (csv && mapping ? distinctStatuses(csv.headers, csv.rows, mapping) : []),
@@ -66,7 +73,7 @@ export function ImportScreen() {
   }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned]);
 
   function reset(name: string, next: Raw) {
-    setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({});
+    setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
   }
   async function onFile(f: File) {
     try {
@@ -121,6 +128,12 @@ export function ImportScreen() {
               </select>
             </label>
           )}
+          {adapter && suggestion && (
+            <div className="card" role="note">
+              <h3>This looks like a {adapter.name}</h3>
+              <ul>{suggestion.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+            </div>
+          )}
           {raw?.kind === 'xlsx' && (
             <p className="note">Excel stores a cell shown as 40% as 0.4. If your % complete column looks like that, choose "0 to 1" below.</p>
           )}
@@ -152,6 +165,7 @@ export function ImportScreen() {
             <label>
               Effort numbers without a unit are in
               <select value={defaultUnit} onChange={(e) => setDefaultUnit(e.target.value as Unit)}>
+                <option value="seconds">seconds</option>
                 <option value="hours">hours</option>
                 <option value="days">days</option>
                 <option value="minutes">minutes</option>
