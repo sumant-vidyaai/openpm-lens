@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
-  aggregateSchedule, assessQuality, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  aggregateSchedule, assessQuality, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
 import { SAMPLE_CSV } from './sample';
+import { ExplainPanel } from './Explain';
 
 type Grid = (string | number | boolean | Date | null)[][];
 type Raw =
@@ -75,15 +76,36 @@ export function ImportScreen() {
     const config = rule === 'status_based' ? { inProgressPercent } : undefined;
     const tasks = toHoursTasks(items, calendar, rule, config);
     const agg = aggregateHoursEvm(tasks, missingPlanned);
-    const schedule = statusDate
-      ? aggregateSchedule(toScheduleTasks(items, calendar, rule, config), statusDate, dayCount)
-      : null;
-    return { agg, schedule, quality: assessQuality(items, tasks, agg) };
+    const schedTasks = toScheduleTasks(items, calendar, rule, config);
+    const schedule = statusDate ? aggregateSchedule(schedTasks, statusDate, dayCount) : null;
+    const f = (n: number | null) => (n === null ? '-' : String(roundHalfUp(n, 2)));
+    const evmRows = explainEvmRows(tasks, missingPlanned).map((r) => ({
+      key: r.id, used: r.used,
+      cells: [r.id, f(r.plannedHours), f(r.percentComplete), f(r.actualHours), f(r.ev), f(r.ac), r.note],
+    }));
+    const schedRows = statusDate
+      ? explainScheduleRows(schedTasks, statusDate, dayCount).map((r) => ({
+          key: r.id, used: r.used,
+          cells: [r.id, f(r.plannedHours), `${r.plannedStart ?? '-'} to ${r.plannedFinish ?? '-'}`,
+            r.plannedShare === null ? '-' : `${roundHalfUp(r.plannedShare * 100, 0)}%`, f(r.pv), f(r.percentComplete), f(r.ev), r.note],
+        }))
+      : [];
+    return {
+      agg, schedule, quality: assessQuality(items, tasks, agg), evmRows, schedRows,
+      evmGroups: evmSteps(agg),
+      schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayCount) : [],
+    };
   }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayCount, statusDate]);
 
   const result = calc?.agg ?? null;
   const quality = calc?.quality ?? null;
   const schedule = calc?.schedule ?? null;
+  const assumptions = [
+    `Progress rule: ${RULES.find((r) => r.value === rule)?.label}${rule === 'status_based' ? ` (${inProgressPercent}% while in progress)` : ''}.`,
+    `Effort numbers without a unit are read as ${defaultUnit}; one working day = ${hoursPerDay} hours.`,
+    `Tasks with no planned effort: ${missingPlanned === 'exclude' ? 'left out and listed' : 'planned counted as 0 (worst case)'}.`,
+    `File: ${fileName ?? ''}${raw?.kind === 'xlsx' ? `, sheet "${raw.sheets[sheetIdx]?.name ?? ''}"` : ''}.`,
+  ];
 
   function reset(name: string, next: Raw) {
     setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
@@ -281,6 +303,15 @@ export function ImportScreen() {
                   <div className="card"><h4>Cost variance (CV)</h4><p className="big">{fmt(cv)}</p><p className="note">EV - AC. Negative means over budget.</p></div>
                 </div>
               )}
+              {calc && calc.evmGroups.length > 0 && (
+                <ExplainPanel
+                  title="Show the working for the cost numbers"
+                  assumptions={assumptions}
+                  groups={calc.evmGroups}
+                  columns={['Task', 'Planned h', '% complete', 'Actual h', 'Adds to EV', 'Adds to AC', 'Status']}
+                  rows={calc.evmRows}
+                />
+              )}
               <h3>Schedule (as of the status date)</h3>
               {!statusDate ? (
                 <p className="warn">Choose a status date in step 2 to see schedule performance. It is not assumed.</p>
@@ -298,11 +329,18 @@ export function ImportScreen() {
                   </div>
                   <p><strong>{schedule.counts.used} of {schedule.counts.total}</strong> tasks used for schedule measures.</p>
                   {schedule.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
-                  {schedule.excluded.length > 0 && (
-                    <details>
-                      <summary>Which tasks were left out of schedule measures, and why</summary>
-                      <ul>{schedule.excluded.map((e) => <li key={e.id}>{e.id}: {e.reason}</li>)}</ul>
-                    </details>
+                  {calc && calc.schedGroups.length > 0 && (
+                    <ExplainPanel
+                      title="Show the working for the schedule numbers"
+                      assumptions={[
+                        ...assumptions,
+                        `Status date: ${statusDate}. Planned hours are spread evenly over ${dayCount === 'weekdays' ? 'weekdays (holidays not known)' : 'every calendar day'}.`,
+                        `Date order: ${dateOrder === 'auto' ? 'unclear dates are refused' : dateOrder === 'dmy' ? 'day / month / year' : 'month / day / year'}.`,
+                      ]}
+                      groups={calc.schedGroups}
+                      columns={['Task', 'Planned h', 'Planned dates', 'Planned by now', 'Adds to PV', '% complete', 'Adds to EV', 'Status']}
+                      rows={calc.schedRows}
+                    />
                   )}
                 </>
               ) : (
