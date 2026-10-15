@@ -33,7 +33,7 @@ Decisions agreed with the project owner on 15 October 2026.
       parsing, missing-data aggregation, six metric recipe cards, 80 automated tests.
 - [ ] Synthetic sample exports (Jira, Azure DevOps, MS Project style).
 - [x] Web app shell (Vite + React) with light/dark mode, strict security policy, offline service worker and a metric library page (`packages/web`).
-- [ ] Generic CSV/XLSX importer with mapping screen.
+- [x] CSV importer with mapping screen, unit/percent/status choices and EV/AC/CPI/CV results (v0.3). [ ] Excel (.xlsx) reading still to do, after a library licence check.
 - [ ] First two adapters.
 - [ ] Dashboard with capability matrix, data-quality score and step-by-step explanations.
 - [ ] More metrics: earned schedule, schedule (critical path, PERT), cost, risk, quality,

@@ -24,3 +24,14 @@ select, summary { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .skip { position: absolute; left: -999px; }
 .skip:focus { left: 1rem; top: 1rem; background: var(--bg); padding: .5rem; z-index: 1; }
+.tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+button, .btn { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: .4rem; padding: .5rem .9rem; cursor: pointer; }
+button[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+.row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+.btn input { max-width: 14rem; }
+.form { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.form label { display: grid; gap: .25rem; }
+select, input[type='number'] { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: .3rem; padding: .35rem; }
+.warn { border-left: 4px solid var(--accent); padding-left: .6rem; }
+.big { font-size: 1.8rem; font-weight: 700; margin: .25rem 0; }
+h4 { margin: 0; }

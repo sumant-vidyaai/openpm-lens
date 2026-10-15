@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { metricFunctions, roundHalfUp } from '@openpm-lens/core';
 import { cards } from './cards';
+import { ImportScreen } from './Import';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -58,6 +59,7 @@ function MetricCardView({ id }: { id: string }) {
 }
 
 export function App() {
+  const [tab, setTab] = useState<'import' | 'library'>('import');
   const [theme, setTheme] = useState<Theme>(() => {
     const t = document.documentElement.dataset.theme;
     return t === 'light' || t === 'dark' ? t : 'system';
@@ -86,17 +88,26 @@ export function App() {
         </label>
       </header>
       <main id="main">
-        <p className="lead">
-          Your data stays on this device. Nothing is uploaded and nothing is tracked. Import and
-          dashboards are coming next; for now, here are the metrics the app can calculate, each with
-          a worked example you can follow step by step.
-        </p>
-        <h2>Metric library ({cards.length})</h2>
-        <div className="grid">
-          {cards.map((c) => (
-            <MetricCardView key={c.id} id={c.id} />
-          ))}
-        </div>
+        <nav className="tabs" aria-label="Sections">
+          <button type="button" aria-pressed={tab === 'import'} onClick={() => setTab('import')}>Import</button>
+          <button type="button" aria-pressed={tab === 'library'} onClick={() => setTab('library')}>Metric library</button>
+        </nav>
+        {tab === 'import' ? (
+          <ImportScreen />
+        ) : (
+          <>
+            <p className="lead">
+              Your data stays on this device. Nothing is uploaded and nothing is tracked. Here are the metrics
+              the app can calculate, each with a worked example you can follow step by step.
+            </p>
+            <h2>Metric library ({cards.length})</h2>
+            <div className="grid">
+              {cards.map((c) => (
+                <MetricCardView key={c.id} id={c.id} />
+              ))}
+            </div>
+          </>
+        )}
       </main>
       <footer>
         <p>Open source, Apache-2.0. Thresholds shown are starting values, not a standard.</p>
