@@ -21,3 +21,6 @@ export * from './portfolio';
 export * from './forecast';
 export * from './earnedSchedule';
 export * from './flow';
+export * from './finishVariance';
+export * from './money';
+export * from './resource';

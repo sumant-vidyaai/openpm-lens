@@ -8,6 +8,7 @@ import {
 import readXlsxFile from 'read-excel-file/browser';
 import { SAMPLE_CSV } from './sample';
 import { ExplainPanel, StepsPanel } from './Explain';
+import type { SharedData } from './shared';
 
 type Grid = (string | number | boolean | Date | null)[][];
 type Raw =
@@ -26,7 +27,7 @@ const RULES: { value: PercentRule; label: string }[] = [
   { value: 'status_based', label: 'Status-based: I choose the % for in progress' },
 ];
 
-export function ImportScreen() {
+export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => void }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [raw, setRaw] = useState<Raw | null>(null);
   const [sheetIdx, setSheetIdx] = useState(0);
@@ -95,12 +96,19 @@ export function ImportScreen() {
         }))
       : [];
     return {
-      agg, schedule, earned, quality: assessQuality(items, tasks, agg), evmRows, schedRows, evmRaw, schedRaw,
+      items, tasks, schedTasks, agg, schedule, earned, quality: assessQuality(items, tasks, agg), evmRows, schedRows, evmRaw, schedRaw,
       evmGroups: evmSteps(agg),
       schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayCount) : [],
     };
   }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayCount, statusDate]);
 
+  useEffect(() => {
+    onShare(
+      calc && csv
+        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, hoursPerDay }
+        : null,
+    );
+  }, [calc, csv, fileName, statusDate, dateOrder, dayCount, hoursPerDay, onShare]);
   const result = calc?.agg ?? null;
   const quality = calc?.quality ?? null;
   const schedule = calc?.schedule ?? null;

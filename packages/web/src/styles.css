@@ -24,7 +24,9 @@ select, summary { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .skip { position: absolute; left: -999px; }
 .skip:focus { left: 1rem; top: 1rem; background: var(--bg); padding: .5rem; z-index: 1; }
-.tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+[hidden] { display: none !important; }
+td.rag-red { background: var(--r-bg); color: var(--r-fg); font-weight: 600; }
 button, .btn { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: .4rem; padding: .5rem .9rem; cursor: pointer; }
 button[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
 .row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }

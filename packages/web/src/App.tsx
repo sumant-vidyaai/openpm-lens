@@ -5,6 +5,10 @@ import { ImportScreen } from './Import';
 import { CoverageScreen } from './Coverage';
 import { PortfolioScreen } from './Portfolio';
 import { FlowScreen } from './Flow';
+import { ScheduleScreen } from './ScheduleScreen';
+import { CostScreen } from './CostScreen';
+import { ResourceScreen } from './ResourceScreen';
+import type { SharedData } from './shared';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -61,12 +65,23 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
+type TabId = 'import' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'coverage' | 'library';
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'import', label: 'Import' }, { id: 'portfolio', label: 'Portfolio' }, { id: 'flow', label: 'Flow metrics' },
+  { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' },
+  { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' },
+];
+
 export function App() {
-  const [tab, setTab] = useState<'import' | 'portfolio' | 'flow' | 'coverage' | 'library'>('import');
+  const [tab, setTab] = useState<TabId>('import');
+  const [shared, setShared] = useState<SharedData | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     const t = document.documentElement.dataset.theme;
     return t === 'light' || t === 'dark' ? t : 'system';
   });
+  const goImport = () => setTab('import');
+  // Every tab stays mounted (just hidden) so what you loaded and typed is kept when you switch.
+  const panel = (id: TabId, node: React.ReactNode) => <div hidden={tab !== id}>{node}</div>;
   return (
     <>
       <a className="skip" href="#main">
@@ -92,21 +107,18 @@ export function App() {
       </header>
       <main id="main">
         <nav className="tabs noprint" aria-label="Sections">
-          <button type="button" aria-pressed={tab === 'import'} onClick={() => setTab('import')}>Import</button>
-          <button type="button" aria-pressed={tab === 'portfolio'} onClick={() => setTab('portfolio')}>Portfolio</button>
-          <button type="button" aria-pressed={tab === 'flow'} onClick={() => setTab('flow')}>Flow metrics</button>
-          <button type="button" aria-pressed={tab === 'coverage'} onClick={() => setTab('coverage')}>Tool coverage</button>
-          <button type="button" aria-pressed={tab === 'library'} onClick={() => setTab('library')}>Metric library</button>
+          {TABS.map((t) => (
+            <button key={t.id} type="button" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
+          ))}
         </nav>
-        {tab === 'import' ? (
-          <ImportScreen />
-        ) : tab === 'portfolio' ? (
-          <PortfolioScreen />
-        ) : tab === 'flow' ? (
-          <FlowScreen />
-        ) : tab === 'coverage' ? (
-          <CoverageScreen />
-        ) : (
+        {panel('import', <ImportScreen onShare={setShared} />)}
+        {panel('portfolio', <PortfolioScreen />)}
+        {panel('flow', <FlowScreen />)}
+        {panel('schedule', <ScheduleScreen shared={shared} onGoImport={goImport} />)}
+        {panel('cost', <CostScreen shared={shared} onGoImport={goImport} />)}
+        {panel('resources', <ResourceScreen shared={shared} onGoImport={goImport} />)}
+        {panel('coverage', <CoverageScreen />)}
+        {panel('library', (
           <>
             <p className="lead">
               Your data stays on this device. Nothing is uploaded and nothing is tracked. Here are the metrics
@@ -119,7 +131,7 @@ export function App() {
               ))}
             </div>
           </>
-        )}
+        ))}
       </main>
       <footer>
         <p>Open source, Apache-2.0. Thresholds shown are starting values, not a standard.</p>
