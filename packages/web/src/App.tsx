@@ -72,7 +72,7 @@ export function App() {
       </a>
       <header>
         <h1>openpm-lens</h1>
-        <label>
+        <label className="noprint">
           Theme{' '}
           <select
             value={theme}
@@ -89,7 +89,7 @@ export function App() {
         </label>
       </header>
       <main id="main">
-        <nav className="tabs" aria-label="Sections">
+        <nav className="tabs noprint" aria-label="Sections">
           <button type="button" aria-pressed={tab === 'import'} onClick={() => setTab('import')}>Import</button>
           <button type="button" aria-pressed={tab === 'coverage'} onClick={() => setTab('coverage')}>Tool coverage</button>
           <button type="button" aria-pressed={tab === 'library'} onClick={() => setTab('library')}>Metric library</button>

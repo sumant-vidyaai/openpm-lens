@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
-  aggregateSchedule, assessQuality, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  aggregateSchedule, assessQuality, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
@@ -79,19 +79,21 @@ export function ImportScreen() {
     const schedTasks = toScheduleTasks(items, calendar, rule, config);
     const schedule = statusDate ? aggregateSchedule(schedTasks, statusDate, dayCount) : null;
     const f = (n: number | null) => (n === null ? '-' : String(roundHalfUp(n, 2)));
-    const evmRows = explainEvmRows(tasks, missingPlanned).map((r) => ({
+    const evmRaw = explainEvmRows(tasks, missingPlanned);
+    const schedRaw = statusDate ? explainScheduleRows(schedTasks, statusDate, dayCount) : [];
+    const evmRows = evmRaw.map((r) => ({
       key: r.id, used: r.used,
       cells: [r.id, f(r.plannedHours), f(r.percentComplete), f(r.actualHours), f(r.ev), f(r.ac), r.note],
     }));
     const schedRows = statusDate
-      ? explainScheduleRows(schedTasks, statusDate, dayCount).map((r) => ({
+      ? schedRaw.map((r) => ({
           key: r.id, used: r.used,
           cells: [r.id, f(r.plannedHours), `${r.plannedStart ?? '-'} to ${r.plannedFinish ?? '-'}`,
             r.plannedShare === null ? '-' : `${roundHalfUp(r.plannedShare * 100, 0)}%`, f(r.pv), f(r.percentComplete), f(r.ev), r.note],
         }))
       : [];
     return {
-      agg, schedule, quality: assessQuality(items, tasks, agg), evmRows, schedRows,
+      agg, schedule, quality: assessQuality(items, tasks, agg), evmRows, schedRows, evmRaw, schedRaw,
       evmGroups: evmSteps(agg),
       schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayCount) : [],
     };
@@ -106,6 +108,41 @@ export function ImportScreen() {
     `Tasks with no planned effort: ${missingPlanned === 'exclude' ? 'left out and listed' : 'planned counted as 0 (worst case)'}.`,
     `File: ${fileName ?? ''}${raw?.kind === 'xlsx' ? `, sheet "${raw.sheets[sheetIdx]?.name ?? ''}"` : ''}.`,
   ];
+  const assumptionsFull = [
+    ...assumptions,
+    ...(statusDate
+      ? [
+          `Status date: ${statusDate}. Planned hours spread evenly over ${dayCount === 'weekdays' ? 'weekdays (holidays not known)' : 'every calendar day'}.`,
+          `Date order: ${dateOrder === 'auto' ? 'unclear dates are refused' : dateOrder === 'dmy' ? 'day / month / year' : 'month / day / year'}.`,
+        ]
+      : []),
+  ];
+
+  function saveFile(name: string, text: string, type: string) {
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + text], { type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function reportInput() {
+    return {
+      fileName: fileName ?? '', toolName: adapter?.name ?? null, generatedOn: new Date().toLocaleDateString('en-CA'),
+      statusDate: statusDate || null, assumptions: assumptionsFull, evm: result, schedule, quality,
+    };
+  }
+  const stamp = () => statusDate || new Date().toLocaleDateString('en-CA');
+  function printSummary() {
+    const all = Array.from(document.querySelectorAll('details'));
+    const was = all.map((d) => d.open);
+    all.forEach((d) => { d.open = true; });
+    const restore = () => { all.forEach((d, i) => { d.open = was[i] ?? false; }); window.removeEventListener('afterprint', restore); };
+    window.addEventListener('afterprint', restore);
+    window.print();
+  }
 
   function reset(name: string, next: Raw) {
     setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
@@ -132,11 +169,15 @@ export function ImportScreen() {
 
   return (
     <section aria-labelledby="import-h">
-      <h2 id="import-h">Import your tasks</h2>
-      <p className="lead">
+      <h2 id="import-h" className="noprint">Import your tasks</h2>
+      <p className="printonly">
+        openpm-lens results for {fileName}. Made on {new Date().toLocaleDateString('en-CA')}
+        {statusDate ? `; status date ${statusDate}` : ''}. Calculated in the browser from the file; nothing was uploaded.
+      </p>
+      <p className="lead noprint">
         Choose a CSV or Excel (.xlsx) export from your tool. The file is read in this browser tab only. It is never uploaded.
       </p>
-      <div className="row">
+      <div className="row noprint">
         <label className="btn">
           Choose file{' '}
           <input
@@ -156,7 +197,7 @@ export function ImportScreen() {
       {csv && mapping && (
         <>
           {raw?.kind === 'xlsx' && raw.sheets.length > 1 && (
-            <label className="form">
+            <label className="form noprint">
               Which sheet?
               <select value={sheetIdx} onChange={(e) => { setSheetIdx(Number(e.target.value)); setMappingEdits({}); setStatusEdits({}); }}>
                 {raw.sheets.map((s, i) => <option key={s.name} value={i}>{s.name}</option>)}
@@ -164,22 +205,22 @@ export function ImportScreen() {
             </label>
           )}
           {adapter && suggestion && (
-            <div className="card" role="note">
+            <div className="card noprint" role="note">
               <h3>This looks like a {adapter.name}</h3>
               <ul>{suggestion.notes.map((n) => <li key={n}>{n}</li>)}</ul>
             </div>
           )}
           {raw?.kind === 'xlsx' && (
-            <p className="note">Excel stores a cell shown as 40% as 0.4. If your % complete column looks like that, choose "0 to 1" below.</p>
+            <p className="note noprint">Excel stores a cell shown as 40% as 0.4. If your % complete column looks like that, choose "0 to 1" below.</p>
           )}
           <p>
             <strong>{fileName}</strong>: {csv.rows.length} rows, {csv.headers.length} columns.
           </p>
           {csv.warnings.map((w) => <p key={w} className="warn">{w}</p>)}
 
-          <h3>1. Which column is which?</h3>
-          <p className="note">We guessed from the column names. Please check each one.</p>
-          <div className="form">
+          <h3 className="noprint">1. Which column is which?</h3>
+          <p className="note noprint">We guessed from the column names. Please check each one.</p>
+          <div className="form noprint">
             {IMPORT_FIELDS.map(({ field, label, required }) => (
               <label key={field}>
                 {label}{required ? ' (required)' : ''}
@@ -195,14 +236,14 @@ export function ImportScreen() {
           </div>
           {mapping.name === null && <p className="warn">Pick the Task name column to continue.</p>}
 
-          <h3>2. Units and assumptions</h3>
+          <h3 className="noprint">2. Units and assumptions</h3>
           {suggestion && suggestion.defaultUnit === null && (
             <p className="warn" role="alert">
               This tool's documentation does not say what unit its effort numbers use. We have not guessed. Check a few
               values in your file and choose the unit below.
             </p>
           )}
-          <div className="form">
+          <div className="form noprint">
             <label>
               Effort numbers without a unit are in
               <select value={defaultUnit} onChange={(e) => setDefaultUnit(e.target.value as Unit)}>
@@ -273,8 +314,8 @@ export function ImportScreen() {
 
           {statuses.length > 0 && rule !== 'tool_reported' && (
             <>
-              <h3>3. What does each status mean?</h3>
-              <div className="form">
+              <h3 className="noprint">3. What does each status mean?</h3>
+              <div className="form noprint">
                 {statuses.map((s) => (
                   <label key={s}>
                     {s}
@@ -346,6 +387,19 @@ export function ImportScreen() {
               ) : (
                 <p className="warn">Not available. Missing: {schedule?.missing.join(', ')}. Choose the start and finish date columns in step 1.</p>
               )}
+              <section className="card noprint" aria-labelledby="dl-h">
+                <h3 id="dl-h">Share these results</h3>
+                <p className="note">Files are made in this browser tab and saved to your device. Nothing is uploaded.</p>
+                <div className="row">
+                  <button type="button" onClick={() => saveFile(`openpm-lens-summary-${stamp()}.csv`, toCsv(summaryRows(reportInput())), 'text/csv;charset=utf-8')}>
+                    Download summary (CSV)
+                  </button>
+                  <button type="button" onClick={() => saveFile(`openpm-lens-tasks-${stamp()}.csv`, toCsv(taskRows(calc?.evmRaw ?? [], calc?.schedRaw ?? [])), 'text/csv;charset=utf-8')}>
+                    Download task detail (CSV)
+                  </button>
+                  <button type="button" onClick={printSummary}>Print or save as PDF</button>
+                </div>
+              </section>
               {quality && (
                 <section className="card" aria-labelledby="dq-h">
                   <h3 id="dq-h">Data quality</h3>

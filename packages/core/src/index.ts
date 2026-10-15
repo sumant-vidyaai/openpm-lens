@@ -14,3 +14,4 @@ export * from './quality';
 export * from './dates';
 export * from './schedule';
 export * from './explain';
+export * from './report';

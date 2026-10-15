@@ -46,3 +46,9 @@ Decisions agreed with the project owner on 15 October 2026.
 - Choose and licence-check the spreadsheet-reading and charting libraries.
 - Project name chosen: openpm-lens. Check for name clashes before wider promotion; consider trademark registration later.
 - Confirm copyright holder wording in `NOTICE`.
+
+## v0.10 – Share it (Batch 1)
+- Download summary (CSV) and task detail (CSV); print/save as PDF with the working. Text cells starting with = + - @ are prefixed with an apostrophe (spreadsheet formula-injection defence). Values rounded to 4 d.p. in files, noted in the file.
+- `packages/web/public/_headers`: CSP (adds frame-ancestors 'none'), nosniff, no-referrer, Permissions-Policy, COOP, no-cache for /sw.js and index.html. Cannot be verified locally; check in the browser dev tools on the live site.
+- `.github/workflows/ci.yml`: Node 22, install, test, typecheck, build, audit (high). Must be created via GitHub web UI (dotfolders are skipped by drag-and-drop upload).
+- Open: link GitHub to Claude (Settings -> Connectors) to allow direct pushes.

@@ -45,3 +45,11 @@ section.card { margin: 1rem 0; }
 .form .row { margin: 0; }
 .explain { margin: 1rem 0; }
 .explain summary { font-weight: 600; }
+.printonly { display: none; }
+@media print {
+  :root, :root[data-theme='dark'] { --bg: #fff; --fg: #000; --muted: #333; --card: #fff; --border: #888; --accent: #000; color-scheme: light; }
+  .noprint, footer, .skip { display: none !important; }
+  .printonly { display: block; }
+  .card, table, details { break-inside: avoid; }
+  body { font-size: 11pt; }
+}
