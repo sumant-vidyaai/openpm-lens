@@ -1,0 +1,23 @@
+id: evm.cv
+name: Cost Variance (CV)
+domain: Finance
+area: Cost
+formula: CV = EV - AC
+meaning: >
+  The difference between the value of the work done and what it actually cost. Negative
+  means you have spent more than the work is worth, that is, over budget.
+required: [EV, AC]
+optional: []
+interpretation:
+  note: Starting values for illustration only. They are not a standard; set your own policy.
+  bands:
+    - { label: Green, rule: "CV >= 0" }
+    - { label: Review, rule: "CV < 0" }
+worked_example:
+  inputs: { EV: 400, AC: 450 }
+  steps:
+    - "CV = EV - AC"
+    - "CV = 400 - 450"
+    - "CV = -50"
+  expected: -50
+  decimals: 2

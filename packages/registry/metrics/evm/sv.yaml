@@ -1,0 +1,23 @@
+id: evm.sv
+name: Schedule Variance (SV)
+domain: Schedule
+area: Schedule
+formula: SV = EV - PV
+meaning: >
+  How far ahead or behind the plan you are, expressed in the same unit as your budget
+  (money or hours). Negative means behind schedule.
+required: [EV, PV]
+optional: []
+interpretation:
+  note: Starting values for illustration only. They are not a standard; set your own policy.
+  bands:
+    - { label: Green, rule: "SV >= 0" }
+    - { label: Review, rule: "SV < 0" }
+worked_example:
+  inputs: { EV: 400, PV: 500 }
+  steps:
+    - "SV = EV - PV"
+    - "SV = 400 - 500"
+    - "SV = -100"
+  expected: -100
+  decimals: 2
