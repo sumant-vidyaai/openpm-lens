@@ -2,10 +2,16 @@ import { useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
-  type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
+import readXlsxFile from 'read-excel-file/browser';
 import { SAMPLE_CSV } from './sample';
+
+type Grid = (string | number | boolean | Date | null)[][];
+type Raw =
+  | { kind: 'csv'; text: string }
+  | { kind: 'xlsx'; sheets: { name: string; data: Grid }[] };
 
 const CATEGORY_LABEL: Record<StatusCategory | 'unmapped', string> = {
   not_started: 'Not started', in_progress: 'In progress', done: 'Done', cancelled: 'Cancelled',
@@ -21,7 +27,9 @@ const RULES: { value: PercentRule; label: string }[] = [
 
 export function ImportScreen() {
   const [fileName, setFileName] = useState<string | null>(null);
-  const [text, setText] = useState<string | null>(null);
+  const [raw, setRaw] = useState<Raw | null>(null);
+  const [sheetIdx, setSheetIdx] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [mappingEdits, setMappingEdits] = useState<Partial<ColumnMapping>>({});
   const [statusEdits, setStatusEdits] = useState<StatusMap>({});
   const [defaultUnit, setDefaultUnit] = useState<Unit>('hours');
@@ -31,7 +39,11 @@ export function ImportScreen() {
   const [inProgressPercent, setInProgressPercent] = useState(50);
   const [missingPlanned, setMissingPlanned] = useState<MissingPlannedPolicy>('exclude');
 
-  const csv = useMemo(() => (text === null ? null : parseCsv(text)), [text]);
+  const csv = useMemo(() => {
+    if (raw === null) return null;
+    if (raw.kind === 'csv') return parseCsv(raw.text);
+    return tableFromGrid(raw.sheets[sheetIdx]?.data ?? []);
+  }, [raw, sheetIdx]);
   const mapping: ColumnMapping | null = useMemo(
     () => (csv ? { ...suggestMapping(csv.headers), ...mappingEdits } : null),
     [csv, mappingEdits],
@@ -53,8 +65,23 @@ export function ImportScreen() {
     return aggregateHoursEvm(toHoursTasks(items, calendar, rule, config), missingPlanned);
   }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned]);
 
-  function load(name: string, content: string) {
-    setFileName(name); setText(content); setMappingEdits({}); setStatusEdits({});
+  function reset(name: string, next: Raw) {
+    setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({});
+  }
+  async function onFile(f: File) {
+    try {
+      if (/\.xlsx$/i.test(f.name)) {
+        const sheets = await readXlsxFile(f);
+        if (sheets.length === 0) throw new Error('The workbook has no sheets.');
+        reset(f.name, { kind: 'xlsx', sheets: sheets.map((s) => ({ name: s.sheet, data: s.data as Grid })) });
+      } else if (/\.xls$/i.test(f.name)) {
+        throw new Error('Old .xls files are not supported. In Excel choose Save As, then .xlsx or CSV.');
+      } else {
+        reset(f.name, { kind: 'csv', text: await f.text() });
+      }
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'This file could not be read.');
+    }
   }
 
   const fmt = (n: number | null, d = 2) => (n === null ? 'Not available' : String(roundHalfUp(n, d)));
@@ -65,26 +92,38 @@ export function ImportScreen() {
     <section aria-labelledby="import-h">
       <h2 id="import-h">Import your tasks</h2>
       <p className="lead">
-        Choose a CSV export from your tool. The file is read in this browser tab only. It is never uploaded.
+        Choose a CSV or Excel (.xlsx) export from your tool. The file is read in this browser tab only. It is never uploaded.
       </p>
       <div className="row">
         <label className="btn">
-          Choose CSV file{' '}
+          Choose file{' '}
           <input
-            type="file" accept=".csv,text/csv,.txt"
+            type="file" accept=".csv,text/csv,.txt,.xlsx"
             onChange={async (e) => {
               const f = e.target.files?.[0];
-              if (f) load(f.name, await f.text());
+              if (f) await onFile(f);
             }}
           />
         </label>
-        <button type="button" onClick={() => load('sample.csv (made-up example)', SAMPLE_CSV)}>
+        <button type="button" onClick={() => reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV })}>
           Try the made-up example
         </button>
       </div>
 
+      {loadError && <p className="warn" role="alert">{loadError}</p>}
       {csv && mapping && (
         <>
+          {raw?.kind === 'xlsx' && raw.sheets.length > 1 && (
+            <label className="form">
+              Which sheet?
+              <select value={sheetIdx} onChange={(e) => { setSheetIdx(Number(e.target.value)); setMappingEdits({}); setStatusEdits({}); }}>
+                {raw.sheets.map((s, i) => <option key={s.name} value={i}>{s.name}</option>)}
+              </select>
+            </label>
+          )}
+          {raw?.kind === 'xlsx' && (
+            <p className="note">Excel stores a cell shown as 40% as 0.4. If your % complete column looks like that, choose "0 to 1" below.</p>
+          )}
           <p>
             <strong>{fileName}</strong>: {csv.rows.length} rows, {csv.headers.length} columns.
           </p>

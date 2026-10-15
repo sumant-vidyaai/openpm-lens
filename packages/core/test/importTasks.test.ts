@@ -88,3 +88,17 @@ describe('import to EVM (hand-checked)', () => {
     expect(it3[0]?.issues[0]?.code).toBe('percent_out_of_range');
   });
 });
+
+import { tableFromGrid } from '../src';
+describe('tableFromGrid (spreadsheet sheets)', () => {
+  it('converts cells to text, keeping blanks blank and dropping empty rows', () => {
+    const t = tableFromGrid([
+      ['Task', 'Estimate', 'Done?', 'Due'],
+      ['A', 8.5, true, new Date('2026-03-01T00:00:00Z')],
+      [null, null, null, null],
+      ['B', null, false, null],
+    ]);
+    expect(t.headers).toEqual(['Task', 'Estimate', 'Done?', 'Due']);
+    expect(t.rows).toEqual([['A', '8.5', 'TRUE', '2026-03-01'], ['B', '', 'FALSE', '']]);
+  });
+});

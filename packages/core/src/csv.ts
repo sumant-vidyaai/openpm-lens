@@ -88,3 +88,31 @@ export function parseCsv(input: string, delimiter?: Delimiter): CsvResult {
 
   return { delimiter: delim, headers, rows, warnings };
 }
+
+/** One cell as read from a spreadsheet file. */
+export type GridCell = string | number | boolean | Date | null | undefined;
+
+function cellToText(c: GridCell): string {
+  if (c === null || c === undefined) return '';
+  if (c instanceof Date) return Number.isNaN(c.getTime()) ? '' : c.toISOString().slice(0, 10);
+  if (typeof c === 'boolean') return c ? 'TRUE' : 'FALSE';
+  return String(c);
+}
+
+/**
+ * Turns a spreadsheet sheet (rows of cells) into the same shape a CSV gives, so the mapping
+ * screen works the same for both. Note: a cell shown as "40%" in Excel is stored as 0.4.
+ */
+export function tableFromGrid(grid: GridCell[][]): CsvResult {
+  const text = grid.map((r) => r.map(cellToText));
+  const nonBlank = text.filter((r) => r.some((c) => c.trim() !== ''));
+  const headerRow = nonBlank[0] ?? [];
+  const headers = headerRow.map((h, i) => (h.trim() === '' ? `Column ${i + 1}` : h.trim()));
+  const warnings: string[] = [];
+  const rows = nonBlank.slice(1).map((r) => {
+    const fixed = r.slice(0, headers.length);
+    while (fixed.length < headers.length) fixed.push('');
+    return fixed;
+  });
+  return { delimiter: ',', headers, rows, warnings };
+}
