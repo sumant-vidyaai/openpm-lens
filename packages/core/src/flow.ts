@@ -93,6 +93,7 @@ export interface FlowSettings {
 export interface FlowExcluded { id: string; name: string; reason: string }
 export interface AgingRow { id: string; name: string; start: string; age: number; olderThanP85: boolean | null }
 export interface ThroughputBlock { from: string; to: string; count: number }
+export interface CyclePoint { id: string; name: string; done: string; days: number }
 export interface CycleStats {
   n: number;
   min: number;
@@ -110,6 +111,8 @@ export interface FlowResult {
   throughputTotal: number;
   throughputPerWeek: number | null;
   cycle: CycleStats | null;
+  /** One point per finished item with a start date in the window (for charts). */
+  points: CyclePoint[];
   wip: number;
   aging: AgingRow[];
   excluded: FlowExcluded[];
@@ -146,6 +149,7 @@ export function analyseFlow(items: FlowItem[], s: FlowSettings): FlowResult {
     throughput.push({ from: addDays(to, -6), to, count: 0 });
   }
   const cycleValues: number[] = [];
+  const points: CyclePoint[] = [];
   const wipItems: { it: FlowItem; start: string }[] = [];
   let finishedBeforeWindow = 0;
   let finishedNoStart = 0;
@@ -163,7 +167,7 @@ export function analyseFlow(items: FlowItem[], s: FlowSettings): FlowResult {
       const block = throughput.find((b) => done >= b.from && done <= b.to);
       if (block) block.count += 1;
       if (it.start === null) finishedNoStart += 1;
-      else cycleValues.push(inclusiveDays(it.start, done));
+      else { const d = inclusiveDays(it.start, done); cycleValues.push(d); points.push({ id: it.id, name: it.name, done, days: d }); }
     } else {
       if (it.start === null) { out(it, 'no start date and not finished by the status date'); continue; }
       if (it.start > s.statusDate) { out(it, 'starts after the status date'); continue; }
@@ -207,7 +211,7 @@ export function analyseFlow(items: FlowItem[], s: FlowSettings): FlowResult {
     { label: 'Work in progress and age', steps: [`WIP = items started on or before ${s.statusDate} and not finished by then = ${wipItems.length}`, 'Age = days from start date to the status date, counting both days', ...(aging.slice(0, 5).map((a) => `${a.id}: ${a.start} to ${s.statusDate} = ${a.age} days`))] },
   ];
   return {
-    windowStart, windowEnd, throughput, throughputTotal: total, throughputPerWeek: total / weeks, cycle, wip: wipItems.length, aging, excluded,
+    windowStart, windowEnd, throughput, throughputTotal: total, throughputPerWeek: total / weeks, cycle, points, wip: wipItems.length, aging, excluded,
     finishedBeforeWindow, finishedNoStart, total: items.length, caveats, steps,
   };
 }

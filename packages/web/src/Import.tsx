@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
+  IMPORT_FIELDS, parseMspdi, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
-  aggregateSchedule, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
+import { MAX_XML_BYTES } from './readFile';
+import { EarnedValueChart } from './charts';
 import { SAMPLE_CSV } from './sample';
 import { ExplainPanel, StepsPanel } from './Explain';
 import type { SharedData } from './shared';
@@ -13,7 +15,8 @@ import type { SharedData } from './shared';
 type Grid = (string | number | boolean | Date | null)[][];
 type Raw =
   | { kind: 'csv'; text: string }
-  | { kind: 'xlsx'; sheets: { name: string; data: Grid }[] };
+  | { kind: 'xlsx'; sheets: { name: string; data: Grid }[] }
+  | { kind: 'table'; table: CsvResult; notes: string[] };
 
 const CATEGORY_LABEL: Record<StatusCategory | 'unmapped', string> = {
   not_started: 'Not started', in_progress: 'In progress', done: 'Done', cancelled: 'Cancelled',
@@ -48,6 +51,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   const csv = useMemo(() => {
     if (raw === null) return null;
     if (raw.kind === 'csv') return parseCsv(raw.text);
+    if (raw.kind === 'table') return raw.table;
     return tableFromGrid(raw.sheets[sheetIdx]?.data ?? []);
   }, [raw, sheetIdx]);
   const adapter = useMemo(() => (csv ? detectTableAdapter(csv.headers) : null), [csv]);
@@ -168,6 +172,11 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
         const sheets = await readXlsxFile(f);
         if (sheets.length === 0) throw new Error('The workbook has no sheets.');
         reset(f.name, { kind: 'xlsx', sheets: sheets.map((s) => ({ name: s.sheet, data: s.data as Grid })) });
+      } else if (/\.xml$/i.test(f.name)) {
+        if (f.size > MAX_XML_BYTES) throw new Error('The XML file is larger than 25 MB, which is more than a project plan should be. It was not read.');
+        const r = parseMspdi(await f.text());
+        reset(f.name, { kind: 'table', table: r.table, notes: r.notes });
+        setMappingEdits(r.mapping);
       } else if (/\.xls$/i.test(f.name)) {
         throw new Error('Old .xls files are not supported. In Excel choose Save As, then .xlsx or CSV.');
       } else {
@@ -190,13 +199,13 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
         {statusDate ? `; status date ${statusDate}` : ''}. Calculated in the browser from the file; nothing was uploaded.
       </p>
       <p className="lead noprint">
-        Choose a CSV or Excel (.xlsx) export from your tool. The file is read in this browser tab only. It is never uploaded.
+        Choose a CSV, Excel (.xlsx) or Microsoft Project XML (.xml) export from your tool. The file is read in this browser tab only. It is never uploaded.
       </p>
       <div className="row noprint">
         <label className="btn">
           Choose file{' '}
           <input
-            type="file" accept=".csv,text/csv,.txt,.xlsx"
+            type="file" accept=".csv,text/csv,.txt,.xlsx,.xml"
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (f) await onFile(f);
@@ -223,6 +232,12 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
             <div className="card noprint" role="note">
               <h3>This looks like a {adapter.name}</h3>
               <ul>{suggestion.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+            </div>
+          )}
+          {raw?.kind === 'table' && (
+            <div className="card noprint" role="note">
+              <h3>Read from a Microsoft Project XML file</h3>
+              <ul>{raw.notes.map((n) => <li key={n}>{n}</li>)}</ul>
             </div>
           )}
           {raw?.kind === 'xlsx' && (
@@ -409,6 +424,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
                     </div>
                     <div className="card"><h4>Schedule variance (SV)</h4><p className="big">{fmt(schedule.sv)}</p><p className="note">EV - PV. Negative means behind schedule.</p></div>
                   </div>
+                  {calc && (() => { const c = plannedValueCurve(calc.schedTasks, dayCount); return <EarnedValueChart dates={c.dates} pv={c.pv} statusDate={statusDate} ev={schedule.ev} />; })()}
                   <p><strong>{schedule.counts.used} of {schedule.counts.total}</strong> tasks used for schedule measures.</p>
                   {schedule.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
                   {calc && calc.schedGroups.length > 0 && (

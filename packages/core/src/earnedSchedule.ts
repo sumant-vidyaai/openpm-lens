@@ -34,6 +34,18 @@ function usable(tasks: ScheduleTask[]): Usable[] {
   return out;
 }
 
+/** Positions (in the given list) of the tasks that count in schedule measures and the planned value curve. */
+export function usableTaskIndexes(tasks: ScheduleTask[]): number[] {
+  const out: number[] = [];
+  tasks.forEach((t, i) => {
+    if (t.plannedHours === null || !Number.isFinite(t.plannedHours)) return;
+    if (t.percentComplete === null || !Number.isFinite(t.percentComplete)) return;
+    if (t.plannedStart === null || t.plannedFinish === null || t.plannedFinish < t.plannedStart) return;
+    out.push(i);
+  });
+  return out;
+}
+
 export interface PvCurve {
   /** Counted days (weekdays or calendar days) from the first planned start to the last planned finish. */
   dates: string[];

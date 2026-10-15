@@ -8,6 +8,7 @@ import { FlowScreen } from './Flow';
 import { ScheduleScreen } from './ScheduleScreen';
 import { CostScreen } from './CostScreen';
 import { ResourceScreen } from './ResourceScreen';
+import { QualityScreen } from './QualityScreen';
 import type { SharedData } from './shared';
 
 type Theme = 'system' | 'light' | 'dark';
@@ -65,10 +66,10 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
-type TabId = 'import' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'coverage' | 'library';
+type TabId = 'import' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'coverage' | 'library';
 const TABS: { id: TabId; label: string }[] = [
   { id: 'import', label: 'Import' }, { id: 'portfolio', label: 'Portfolio' }, { id: 'flow', label: 'Flow metrics' },
-  { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' },
+  { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' },
   { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' },
 ];
 
@@ -117,6 +118,7 @@ export function App() {
         {panel('schedule', <ScheduleScreen shared={shared} onGoImport={goImport} />)}
         {panel('cost', <CostScreen shared={shared} onGoImport={goImport} />)}
         {panel('resources', <ResourceScreen shared={shared} onGoImport={goImport} />)}
+        {panel('quality', <QualityScreen shared={shared} onGoImport={goImport} />)}
         {panel('coverage', <CoverageScreen />)}
         {panel('library', (
           <>

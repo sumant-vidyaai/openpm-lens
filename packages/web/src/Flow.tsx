@@ -1,3 +1,4 @@
+import { ThroughputChart, CycleScatter } from './charts';
 import { useMemo, useState } from 'react';
 import {
   analyseFlow, buildFlowItems, MIN_FLOW_SAMPLE, parseCsv, roundHalfUp, suggestFlowColumns, toCsv,
@@ -137,6 +138,8 @@ export function FlowScreen() {
                 {flow.cycle && <div className="card"><h4>Cycle time, average</h4><p className="big">{f(flow.cycle.mean, 1)} days</p><p className="note">Shortest {flow.cycle.min}, longest {flow.cycle.max}. An average can hide a long tail.</p></div>}
               </div>
               {flow.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
+              <ThroughputChart blocks={flow.throughput} />
+              <CycleScatter points={flow.points} p50={flow.cycle?.p50 ?? null} p85={flow.cycle?.p85 ?? null} />
               <div className="scroll">
                 <table>
                   <caption>Items finished in each block of 7 days</caption>
