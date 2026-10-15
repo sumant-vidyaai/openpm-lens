@@ -35,3 +35,10 @@ select, input[type='number'] { font: inherit; color: var(--fg); background: var(
 .warn { border-left: 4px solid var(--accent); padding-left: .6rem; }
 .big { font-size: 1.8rem; font-weight: 700; margin: .25rem 0; }
 h4 { margin: 0; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { border: 1px solid var(--border); padding: .4rem .6rem; text-align: left; vertical-align: top; }
+thead th { background: var(--card); }
+caption { text-align: left; font-weight: 600; padding: .25rem 0; }
+.scroll { overflow-x: auto; }
+meter { width: 10rem; height: 1rem; vertical-align: middle; }
+section.card { margin: 1rem 0; }

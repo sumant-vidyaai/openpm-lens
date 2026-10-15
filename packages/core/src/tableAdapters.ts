@@ -24,12 +24,22 @@ export interface TableSuggestion {
   cannotSupply: string[];
 }
 
+/** What a tool's export can supply, for the coverage matrix. */
+export interface AdapterCapabilities {
+  supplies: Record<ImportField, boolean>;
+  /** Unit of effort numbers: a unit, or 'unknown' when the vendor does not document it. */
+  effortUnit: Unit | 'unknown';
+  /** True when it has a % complete the tool itself reports. */
+  reportsPercent: boolean;
+}
+
 export interface TableAdapter {
   id: string;
   /** Neutral name used only to identify the file format. */
   name: string;
   detect(headers: string[]): { matches: boolean; confidence: number; reason: string };
   suggest(headers: string[]): TableSuggestion;
+  capabilities: AdapterCapabilities;
 }
 
 const norm = (h: string) => h.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -72,6 +82,13 @@ function makeAdapter(spec: AdapterSpec): TableAdapter {
       const bonus = (spec.bonus ?? []).filter((g) => has(headers, g)).length;
       const confidence = Math.min(0.95, 0.6 + 0.15 * bonus);
       return { matches: true, confidence, reason: `Found the columns typical of a ${spec.name}.` };
+    },
+    capabilities: {
+      supplies: Object.fromEntries(
+        (Object.keys(spec.columns) as ImportField[]).map((f) => [f, spec.columns[f].length > 0]),
+      ) as Record<ImportField, boolean>,
+      effortUnit: spec.defaultUnit ?? 'unknown',
+      reportsPercent: spec.columns.percent.length > 0,
     },
     suggest(headers) {
       const mapping = Object.fromEntries(
@@ -251,4 +268,52 @@ export function detectTableAdapter(headers: string[]): TableAdapter | null {
     if (d.matches && (best === null || d.confidence > best.confidence)) best = { adapter, confidence: d.confidence };
   }
   return best?.adapter ?? null;
+}
+
+export type CoverageCell = 'yes' | 'no' | 'check';
+
+export interface CoverageRow {
+  label: string;
+  /** One cell per adapter, in TABLE_ADAPTERS order. */
+  cells: CoverageCell[];
+  note?: string;
+}
+
+/**
+ * The tool-coverage matrix: which tools can supply which inputs, and which metrics that allows.
+ * "check" means the export has the column but the vendor does not document its unit.
+ */
+export function coverageMatrix(adapters: TableAdapter[] = TABLE_ADAPTERS): CoverageRow[] {
+  const field = (f: ImportField, label: string): CoverageRow => ({
+    label,
+    cells: adapters.map((a) => (a.capabilities.supplies[f] ? 'yes' : 'no')),
+  });
+  const effort = (f: 'planned' | 'actual', label: string): CoverageRow => ({
+    label,
+    cells: adapters.map((a) =>
+      !a.capabilities.supplies[f] ? 'no' : a.capabilities.effortUnit === 'unknown' ? 'check' : 'yes',
+    ),
+    note: 'Check = the column exists but the tool\'s documentation does not state its unit.',
+  });
+  const canCost = (a: TableAdapter) => {
+    const c = a.capabilities;
+    return c.supplies.planned && c.supplies.actual && (c.reportsPercent || c.supplies.status) && c.effortUnit !== 'points';
+  };
+  return [
+    field('name', 'Task name'),
+    field('status', 'Status'),
+    effort('planned', 'Planned effort in a time unit'),
+    effort('actual', 'Actual effort in a time unit'),
+    field('percent', 'Reports its own % complete'),
+    {
+      label: 'Earned value, CPI and cost variance',
+      cells: adapters.map((a) => (!canCost(a) ? 'no' : a.capabilities.effortUnit === 'unknown' ? 'check' : 'yes')),
+      note: 'Needs planned effort, actual effort and some measure of progress.',
+    },
+    {
+      label: 'Schedule performance (SPI)',
+      cells: adapters.map(() => 'no'),
+      note: 'Needs planned dates to work out planned value. Reading dates is not built yet, for any tool.',
+    },
+  ];
 }

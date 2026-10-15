@@ -10,3 +10,4 @@ export * from './metrics';
 export * from './csv';
 export * from './importTasks';
 export * from './tableAdapters';
+export * from './quality';

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, suggestMapping, suggestStatusCategory, toHoursTasks,
-  detectTableAdapter, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  assessQuality, detectTableAdapter, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
@@ -65,13 +65,18 @@ export function ImportScreen() {
     [statuses, statusEdits],
   );
 
-  const result = useMemo(() => {
+  const calc = useMemo(() => {
     if (!csv || !mapping || mapping.name === null || defaultUnit === '') return null;
     const items = buildWorkItems(csv.headers, csv.rows, mapping, { defaultUnit, percentScale, statusMap });
     const calendar = { hoursPerDay, daysPerWeek: 5 };
     const config = rule === 'status_based' ? { inProgressPercent } : undefined;
-    return aggregateHoursEvm(toHoursTasks(items, calendar, rule, config), missingPlanned);
+    const tasks = toHoursTasks(items, calendar, rule, config);
+    const agg = aggregateHoursEvm(tasks, missingPlanned);
+    return { agg, quality: assessQuality(items, tasks, agg) };
   }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned]);
+
+  const result = calc?.agg ?? null;
+  const quality = calc?.quality ?? null;
 
   function reset(name: string, next: Raw) {
     setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
@@ -247,6 +252,40 @@ export function ImportScreen() {
                   <div className="card"><h4>Cost variance (CV)</h4><p className="big">{fmt(cv)}</p><p className="note">EV - AC. Negative means over budget.</p></div>
                   <div className="card"><h4>Schedule performance (SPI)</h4><p className="big">Not available</p><p className="note">Needs planned dates (planned value). Not in this file.</p></div>
                 </div>
+              )}
+              {quality && (
+                <section className="card" aria-labelledby="dq-h">
+                  <h3 id="dq-h">Data quality</h3>
+                  {quality.score === null ? (
+                    <p className="big">{quality.status === 'no_tasks' ? 'No tasks' : 'Insufficient data'}</p>
+                  ) : (
+                    <p className="big">
+                      {quality.score} / 100{' '}
+                      <meter min={0} max={100} value={quality.score} aria-label="Data quality score">{quality.score}</meter>
+                    </p>
+                  )}
+                  <p>{quality.reading}</p>
+                  <table>
+                    <caption>How complete is each input?</caption>
+                    <thead><tr><th scope="col">Input</th><th scope="col">Tasks with it</th><th scope="col">Share</th></tr></thead>
+                    <tbody>
+                      {quality.fields.map((f) => (
+                        <tr key={f.field}>
+                          <th scope="row">{f.label}</th>
+                          <td>{f.present} of {f.total}</td>
+                          <td>{f.percent === null ? 'n/a' : `${f.percent}%`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {quality.issueCounts.length > 0 && (
+                    <p className="note">
+                      Problems found while reading values:{' '}
+                      {quality.issueCounts.map((i) => `${i.count} x ${issueLabel(i.code)}`).join('; ')}.
+                    </p>
+                  )}
+                  <p className="note">{quality.how}</p>
+                </section>
               )}
               <p>
                 <strong>{result.counts.used} of {result.counts.total}</strong> tasks used.
