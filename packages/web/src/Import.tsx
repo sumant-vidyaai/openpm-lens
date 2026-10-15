@@ -32,7 +32,7 @@ export function ImportScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mappingEdits, setMappingEdits] = useState<Partial<ColumnMapping>>({});
   const [statusEdits, setStatusEdits] = useState<StatusMap>({});
-  const [defaultUnit, setDefaultUnit] = useState<Unit>('hours');
+  const [defaultUnit, setDefaultUnit] = useState<Unit | ''>('hours');
   const [percentScale, setPercentScale] = useState<'0-100' | '0-1'>('0-100');
   const [hoursPerDay, setHoursPerDay] = useState(8);
   const [rule, setRule] = useState<PercentRule>('tool_reported');
@@ -49,6 +49,7 @@ export function ImportScreen() {
   // When a known tool's file is recognised, start from its settings. The user can change everything.
   useEffect(() => {
     if (suggestion?.defaultUnit) setDefaultUnit(suggestion.defaultUnit);
+    else if (suggestion) setDefaultUnit(''); // unit unknown for this tool: the user must choose
     if (suggestion?.suggestedRule) setRule(suggestion.suggestedRule);
   }, [suggestion]);
   const mapping: ColumnMapping | null = useMemo(
@@ -65,7 +66,7 @@ export function ImportScreen() {
   );
 
   const result = useMemo(() => {
-    if (!csv || !mapping || mapping.name === null) return null;
+    if (!csv || !mapping || mapping.name === null || defaultUnit === '') return null;
     const items = buildWorkItems(csv.headers, csv.rows, mapping, { defaultUnit, percentScale, statusMap });
     const calendar = { hoursPerDay, daysPerWeek: 5 };
     const config = rule === 'status_based' ? { inProgressPercent } : undefined;
@@ -161,10 +162,18 @@ export function ImportScreen() {
           {mapping.name === null && <p className="warn">Pick the Task name column to continue.</p>}
 
           <h3>2. Units and assumptions</h3>
+          {suggestion && suggestion.defaultUnit === null && (
+            <p className="warn" role="alert">
+              This tool's documentation does not say what unit its effort numbers use. We have not guessed. Check a few
+              values in your file and choose the unit below.
+            </p>
+          )}
           <div className="form">
             <label>
               Effort numbers without a unit are in
               <select value={defaultUnit} onChange={(e) => setDefaultUnit(e.target.value as Unit)}>
+                {defaultUnit === '' && <option value="" disabled>Choose a unit…</option>}
+                <option value="points">points (not time)</option>
                 <option value="seconds">seconds</option>
                 <option value="hours">hours</option>
                 <option value="days">days</option>
@@ -224,6 +233,7 @@ export function ImportScreen() {
             </>
           )}
 
+          {defaultUnit === '' && <p className="warn">Results appear once you choose the unit above.</p>}
           {result && (
             <div aria-live="polite">
               <h3>Results (in hours)</h3>

@@ -58,3 +58,48 @@ describe('Jira table adapter', () => {
     expect(agg.counts).toMatchObject({ total: 3, used: 2, excluded: 1 });
   });
 });
+
+import { TABLE_ADAPTERS } from '../src';
+// Synthetic headers only, imitating each tool's documented export layout. No real data.
+const CASES: [string, string[]][] = [
+  ['azure-devops-csv', ['ID', 'Work Item Type', 'Title', 'Assigned To', 'State', 'Original Estimate', 'Completed Work']],
+  ['linear-csv', ['ID', 'Team', 'Title', 'Description', 'Status', 'Estimate', 'Priority', 'Created', 'Started', 'Completed']],
+  ['clickup-csv', ['Task ID', 'Task Name', 'Status', 'Time Estimated', 'Time Estimated Text', 'Time Spent', 'Time Spent Text']],
+  ['workfront-export', ['Name', 'Status', 'Planned Hours', 'Actual Hours', 'Percent Complete']],
+  ['ms-project-table', ['ID', 'Name', 'Duration', 'Start', 'Finish', 'Work', 'Baseline Work', 'Actual Work', '% Complete']],
+  ['jira-csv', ['Summary', 'Issue key', 'Issue Type', 'Status']],
+];
+describe('all table adapters', () => {
+  it.each(CASES)('%s is recognised by its own headers and by no other adapter', (id, headers) => {
+    const matches = TABLE_ADAPTERS.filter((a) => a.detect(headers).matches).map((a) => a.id);
+    expect(matches).toEqual([id]);
+    expect(detectTableAdapter(headers)?.id).toBe(id);
+  });
+  it('maps the right columns for each tool', () => {
+    const by = Object.fromEntries(CASES);
+    const s = (id: string) => (TABLE_ADAPTERS.find((a) => a.id === id) as NonNullable<unknown> as (typeof TABLE_ADAPTERS)[number]).suggest(by[id] as string[]).mapping;
+    expect(s('azure-devops-csv')).toMatchObject({ name: 'Title', status: 'State', planned: 'Original Estimate', actual: 'Completed Work' });
+    expect(s('linear-csv')).toMatchObject({ name: 'Title', planned: 'Estimate', actual: null });
+    expect(s('clickup-csv')).toMatchObject({ planned: 'Time Estimated', actual: 'Time Spent' });
+    expect(s('workfront-export')).toMatchObject({ planned: 'Planned Hours', actual: 'Actual Hours', percent: 'Percent Complete' });
+    expect(s('ms-project-table')).toMatchObject({ planned: 'Baseline Work', actual: 'Actual Work', percent: '% Complete' });
+  });
+  it('does not claim a generic file', () => {
+    expect(detectTableAdapter(['Task', 'Status', 'Estimate (h)', 'Actual (h)', '% Complete'])).toBeNull();
+  });
+  it('reads Project-style cells with units in them', () => {
+    const q = parseQuantity('120 hrs', { field: 'x' });
+    expect([q.value, q.unit]).toEqual([120, 'hours']);
+    // A thousands comma is refused on purpose: "1,200" could also be read as 1.2 in some regions.
+    const big = parseQuantity('1,200 hrs', { field: 'x' });
+    expect(big.value).toBeNull();
+    expect(big.issues[0]?.code).toBe('ambiguous_decimal');
+    expect(parseQuantity('5 days').unit).toBe('days');
+    expect(parseQuantity('30 mins').unit).toBe('minutes');
+  });
+  it('treats Removed as cancelled', () => {
+    expect(suggestStatusCategory('Removed')).toBe('cancelled');
+    expect(suggestStatusCategory('Active')).toBe('in_progress');
+    expect(suggestStatusCategory('Resolved')).toBe('done');
+  });
+});

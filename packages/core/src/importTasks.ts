@@ -50,7 +50,7 @@ export type StatusMap = Record<string, StatusCategory | 'unmapped'>;
 export function suggestStatusCategory(raw: string): StatusCategory | 'unmapped' {
   const s = raw.trim().toLowerCase();
   if (s === '') return 'unmapped';
-  if (/cancel|abandon|won'?t|reject|obsolete/.test(s)) return 'cancelled';
+  if (/cancel|abandon|won'?t|reject|obsolete|removed/.test(s)) return 'cancelled';
   if (/^(done|closed|complete|completed|resolved|finished|released|delivered)$/.test(s)) return 'done';
   if (/not started|to ?do|open|new|backlog|planned|proposed|ready|unstarted/.test(s)) return 'not_started';
   if (/progress|doing|active|review|testing|started|blocked|development/.test(s)) return 'in_progress';
