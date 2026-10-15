@@ -42,3 +42,21 @@ export function ExplainPanel(props: {
     </details>
   );
 }
+
+/** Formula walk-through without a per-task table (used for forecasts and earned schedule). */
+export function StepsPanel(props: { title: string; assumptions: string[]; groups: StepGroup[] }) {
+  return (
+    <details className="explain">
+      <summary>{props.title}</summary>
+      <h4>Assumptions in force</h4>
+      <ul>{props.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
+      <h4>The formulas, with your numbers</h4>
+      {props.groups.map((g) => (
+        <div key={g.label}>
+          <p><strong>{g.label}</strong></p>
+          <ol>{g.steps.map((s) => <li key={s}><code>{s}</code></li>)}</ol>
+        </div>
+      ))}
+    </details>
+  );
+}

@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   IMPORT_FIELDS, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
-  aggregateSchedule, assessQuality, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
+  aggregateSchedule, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
 } from '@openpm-lens/core';
 import readXlsxFile from 'read-excel-file/browser';
 import { SAMPLE_CSV } from './sample';
-import { ExplainPanel } from './Explain';
+import { ExplainPanel, StepsPanel } from './Explain';
 
 type Grid = (string | number | boolean | Date | null)[][];
 type Raw =
@@ -42,6 +42,7 @@ export function ImportScreen() {
   const [dayCount, setDayCount] = useState<DayCount>('weekdays');
   const [statusDate, setStatusDate] = useState('');
   const [missingPlanned, setMissingPlanned] = useState<MissingPlannedPolicy>('exclude');
+  const [eacMethod, setEacMethod] = useState<EacMethod>('typical');
 
   const csv = useMemo(() => {
     if (raw === null) return null;
@@ -78,6 +79,7 @@ export function ImportScreen() {
     const agg = aggregateHoursEvm(tasks, missingPlanned);
     const schedTasks = toScheduleTasks(items, calendar, rule, config);
     const schedule = statusDate ? aggregateSchedule(schedTasks, statusDate, dayCount) : null;
+    const earned = statusDate ? earnedSchedule(schedTasks, statusDate, dayCount) : null;
     const f = (n: number | null) => (n === null ? '-' : String(roundHalfUp(n, 2)));
     const evmRaw = explainEvmRows(tasks, missingPlanned);
     const schedRaw = statusDate ? explainScheduleRows(schedTasks, statusDate, dayCount) : [];
@@ -93,7 +95,7 @@ export function ImportScreen() {
         }))
       : [];
     return {
-      agg, schedule, quality: assessQuality(items, tasks, agg), evmRows, schedRows, evmRaw, schedRaw,
+      agg, schedule, earned, quality: assessQuality(items, tasks, agg), evmRows, schedRows, evmRaw, schedRaw,
       evmGroups: evmSteps(agg),
       schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayCount) : [],
     };
@@ -102,6 +104,11 @@ export function ImportScreen() {
   const result = calc?.agg ?? null;
   const quality = calc?.quality ?? null;
   const schedule = calc?.schedule ?? null;
+  const earned = calc?.earned ?? null;
+  const fc = useMemo(
+    () => (result ? forecast({ ev: result.ev, ac: result.ac, bac: result.bac, pv: schedule?.pv ?? null, evSchedule: schedule?.ev ?? null }, eacMethod) : null),
+    [result, schedule, eacMethod],
+  );
   const assumptions = [
     `Progress rule: ${RULES.find((r) => r.value === rule)?.label}${rule === 'status_based' ? ` (${inProgressPercent}% while in progress)` : ''}.`,
     `Effort numbers without a unit are read as ${defaultUnit}; one working day = ${hoursPerDay} hours.`,
@@ -131,7 +138,7 @@ export function ImportScreen() {
   function reportInput() {
     return {
       fileName: fileName ?? '', toolName: adapter?.name ?? null, generatedOn: new Date().toLocaleDateString('en-CA'),
-      statusDate: statusDate || null, assumptions: assumptionsFull, evm: result, schedule, quality,
+      statusDate: statusDate || null, assumptions: assumptionsFull, evm: result, schedule, quality, forecast: fc, earnedSchedule: earned,
     };
   }
   const stamp = () => statusDate || new Date().toLocaleDateString('en-CA');
@@ -353,6 +360,32 @@ export function ImportScreen() {
                   rows={calc.evmRows}
                 />
               )}
+              {fc && fc.eac !== null || (fc && fc.reasons.length > 0) ? (
+                <>
+                  <h3>Forecast (where the cost is heading)</h3>
+                  <label className="form">
+                    How do you expect the rest of the work to go?
+                    <select value={eacMethod} onChange={(e) => setEacMethod(e.target.value as EacMethod)}>
+                      {EAC_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  </label>
+                  <p className="note">{EAC_METHODS.find((m) => m.value === eacMethod)?.when} The budget (BAC) here is the planned hours of the tasks used, not necessarily the whole project.</p>
+                  <div className="grid">
+                    <div className="card"><h4>Estimate at completion (EAC)</h4><p className="big">{fmt(fc.eac)}</p><p className="note">Forecast total hours when the work is finished.</p></div>
+                    <div className="card"><h4>Estimate to complete (ETC)</h4><p className="big">{fmt(fc.etc)}</p><p className="note">EAC - AC: hours still to spend.</p></div>
+                    <div className="card"><h4>Variance at completion (VAC)</h4><p className="big">{fmt(fc.vac)}</p><p className="note">BAC - EAC. Negative means a forecast overrun.</p></div>
+                    <div className="card"><h4>To-complete index (TCPI)</h4><p className="big">{fmt(fc.tcpiBac)}</p><p className="note">(BAC - EV) / (BAC - AC): the CPI the rest of the work needs to finish within budget.</p></div>
+                  </div>
+                  {fc.reasons.map((r) => <p key={r} className="warn">{r}</p>)}
+                  {fc.steps.length > 0 && (
+                    <StepsPanel
+                      title="Show the working for the forecast"
+                      assumptions={[...assumptions, `Forecast method: ${EAC_METHODS.find((m) => m.value === eacMethod)?.label}.`]}
+                      groups={fc.steps}
+                    />
+                  )}
+                </>
+              ) : null}
               <h3>Schedule (as of the status date)</h3>
               {!statusDate ? (
                 <p className="warn">Choose a status date in step 2 to see schedule performance. It is not assumed.</p>
@@ -383,6 +416,24 @@ export function ImportScreen() {
                       rows={calc.schedRows}
                     />
                   )}
+                  {earned && earned.status === 'computed' && (
+                    <>
+                      <h3>Earned schedule (schedule in time, not hours)</h3>
+                      <div className="grid">
+                        <div className="card"><h4>Earned schedule (ES)</h4><p className="big">{fmt(earned.es)}</p><p className="note">Days of the plan the work done so far is worth. Planned duration: {earned.plannedDuration} days.</p></div>
+                        <div className="card"><h4>Actual time (AT)</h4><p className="big">{earned.at}</p><p className="note">Days from the first planned start ({earned.projectStart}) to the status date.</p></div>
+                        <div className="card"><h4>Schedule performance in time, SPI(t)</h4><p className="big">{fmt(earned.spiT)}</p><p className="note">ES / AT. Below 1 means behind. Unlike SPI it does not drift back to 1 when a late project finishes.</p></div>
+                        <div className="card"><h4>Schedule variance in time, SV(t)</h4><p className="big">{fmt(earned.svT)}</p><p className="note">ES - AT, in days. Negative means behind.</p></div>
+                      </div>
+                      {earned.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
+                      <StepsPanel
+                        title="Show the working for earned schedule"
+                        assumptions={[...assumptions, `Status date: ${statusDate}.`, `Days are ${dayCount === 'weekdays' ? 'weekdays (holidays not known)' : 'calendar days'}.`]}
+                        groups={earned.steps}
+                      />
+                    </>
+                  )}
+                  {earned && earned.status === 'not_available' && <p className="warn">Earned schedule not available: {earned.reasons.join(' ')}</p>}
                 </>
               ) : (
                 <p className="warn">Not available. Missing: {schedule?.missing.join(', ')}. Choose the start and finish date columns in step 1.</p>

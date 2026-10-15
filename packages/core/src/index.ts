@@ -18,3 +18,6 @@ export * from './report';
 export * from './health';
 export * from './analyse';
 export * from './portfolio';
+export * from './forecast';
+export * from './earnedSchedule';
+export * from './flow';

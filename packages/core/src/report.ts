@@ -3,6 +3,9 @@ import type { ScheduleAggregate } from './schedule';
 import type { QualityReport } from './quality';
 import type { EvmRow, ScheduleRow } from './explain';
 import { roundHalfUp } from './format';
+import type { ForecastResult } from './forecast';
+import { EAC_METHODS } from './forecast';
+import type { EarnedScheduleResult } from './earnedSchedule';
 
 /**
  * Building shareable output: CSV text and the rows behind it.
@@ -39,6 +42,8 @@ export interface ReportInput {
   evm: EvmAggregate | null;
   schedule: ScheduleAggregate | null;
   quality: QualityReport | null;
+  forecast?: ForecastResult | null;
+  earnedSchedule?: EarnedScheduleResult | null;
 }
 
 const r4 = (n: number | null): number | null => (n === null ? null : roundHalfUp(n, 4));
@@ -79,6 +84,29 @@ export function summaryRows(input: ReportInput): CsvCell[][] {
       add('Schedule', 'Schedule variance (SV)', r4(s.sv), 'hours', 'EV - PV; negative means behind schedule');
       add('Schedule', 'Tasks used', `${s.counts.used} of ${s.counts.total}`);
       for (const c of s.caveats) add('Schedule', 'Caveat', c);
+    }
+  }
+  const fc = input.forecast;
+  if (fc) {
+    const label = EAC_METHODS.find((m) => m.value === fc.method)?.formula ?? fc.method;
+    add('Forecast', 'Method', label, '', 'You chose how the rest of the work is expected to go');
+    add('Forecast', 'Budget at completion (BAC)', r4(fc.bac), 'hours', 'Planned hours of the tasks used; tasks left out are not in it');
+    add('Forecast', 'Estimate at completion (EAC)', r4(fc.eac), 'hours');
+    add('Forecast', 'Estimate to complete (ETC)', r4(fc.etc), 'hours', 'EAC - AC');
+    add('Forecast', 'Variance at completion (VAC)', r4(fc.vac), 'hours', 'BAC - EAC; negative means a forecast overrun');
+    add('Forecast', 'To-complete index vs budget (TCPI)', r4(fc.tcpiBac), 'ratio', '(BAC - EV) / (BAC - AC)');
+    add('Forecast', 'To-complete index vs forecast (TCPI)', r4(fc.tcpiEac), 'ratio', '(BAC - EV) / (EAC - AC)');
+    for (const r of fc.reasons) add('Forecast', 'Note', r);
+  }
+  const es = input.earnedSchedule;
+  if (es) {
+    if (es.status === 'not_available') add('Earned schedule', 'Result', 'Not available', '', es.reasons.join(' '));
+    else {
+      add('Earned schedule', 'Earned schedule (ES)', r4(es.es), 'days', 'Time at which the plan expected the work now earned');
+      add('Earned schedule', 'Actual time (AT)', es.at, 'days', 'From the first planned start to the status date');
+      add('Earned schedule', 'Schedule variance in time, SV(t)', r4(es.svT), 'days', 'ES - AT; negative means behind');
+      add('Earned schedule', 'Schedule performance in time, SPI(t)', r4(es.spiT), 'ratio', 'ES / AT; below 1 means behind');
+      for (const c of es.caveats) add('Earned schedule', 'Caveat', c);
     }
   }
   const q = input.quality;

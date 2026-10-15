@@ -4,6 +4,7 @@ import { cards } from './cards';
 import { ImportScreen } from './Import';
 import { CoverageScreen } from './Coverage';
 import { PortfolioScreen } from './Portfolio';
+import { FlowScreen } from './Flow';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -61,7 +62,7 @@ function MetricCardView({ id }: { id: string }) {
 }
 
 export function App() {
-  const [tab, setTab] = useState<'import' | 'portfolio' | 'coverage' | 'library'>('import');
+  const [tab, setTab] = useState<'import' | 'portfolio' | 'flow' | 'coverage' | 'library'>('import');
   const [theme, setTheme] = useState<Theme>(() => {
     const t = document.documentElement.dataset.theme;
     return t === 'light' || t === 'dark' ? t : 'system';
@@ -93,6 +94,7 @@ export function App() {
         <nav className="tabs noprint" aria-label="Sections">
           <button type="button" aria-pressed={tab === 'import'} onClick={() => setTab('import')}>Import</button>
           <button type="button" aria-pressed={tab === 'portfolio'} onClick={() => setTab('portfolio')}>Portfolio</button>
+          <button type="button" aria-pressed={tab === 'flow'} onClick={() => setTab('flow')}>Flow metrics</button>
           <button type="button" aria-pressed={tab === 'coverage'} onClick={() => setTab('coverage')}>Tool coverage</button>
           <button type="button" aria-pressed={tab === 'library'} onClick={() => setTab('library')}>Metric library</button>
         </nav>
@@ -100,6 +102,8 @@ export function App() {
           <ImportScreen />
         ) : tab === 'portfolio' ? (
           <PortfolioScreen />
+        ) : tab === 'flow' ? (
+          <FlowScreen />
         ) : tab === 'coverage' ? (
           <CoverageScreen />
         ) : (
