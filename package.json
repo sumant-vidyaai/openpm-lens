@@ -1,6 +1,6 @@
 {
   "name": "openpm-lens",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "private": true,
   "description": "Open-source, tool-agnostic project management analytics: standard metrics, health scores and dashboards that run in the browser.",
   "license": "Apache-2.0",
