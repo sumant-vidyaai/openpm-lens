@@ -157,3 +157,11 @@ button.primary { background: var(--accent); color: var(--accent-fg); border-colo
 .panel { --text-muted: var(--muted); --text-secondary: var(--fg); --surface-1: var(--card); }
 @media (max-width: 40rem) { .ruler .viz-tick { font-size: 22px; } .ruler .viz-label { font-size: 24px; } }
 @media print { .shell { display: block; } .band, .panel, .facts { break-inside: avoid; } }
+
+/* Template tab and readiness list */
+.downloads { list-style: none; padding: 0; display: grid; gap: .6rem; }
+.downloads li { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+a.btn { display: inline-block; text-decoration: none; color: var(--text); }
+a.btn:hover { text-decoration: underline; }
+.readiness .plain li { margin: .7rem 0; }
+.readiness progress { display: block; width: min(18rem, 100%); height: .6rem; margin-top: .3rem; accent-color: var(--accent); }

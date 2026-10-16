@@ -1,4 +1,4 @@
-import type { CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@openpm-lens/core';
+import type { TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@openpm-lens/core';
 
 /**
  * What the Import tab has worked out, shared with the other tabs so a file is loaded and set up once.
@@ -14,6 +14,8 @@ export interface SharedData {
   dateOrder: DateOrder;
   dayCount: DayCount;
   hoursPerDay: number;
+  /** Present when the file is the openpm-lens template: its Settings and Rates sheets (null for a CSV) and the readiness counts. */
+  template: { settings: TemplateSettings | null; rates: Record<string, number>; readiness: TemplateReadiness } | null;
   /** Headline sums for the Overview tab (hours). Null where nothing could be used. */
   summary: { ev: number | null; ac: number | null; bac: number | null; pv: number | null; evSchedule: number | null; costTasks: number; scheduleTasks: number; tasksTotal: number };
 }

@@ -12,7 +12,14 @@ export function CostScreen({ shared, onGoImport }: { shared: SharedData | null; 
   const [defaultRate, setDefaultRate] = useState('');
   const [personRates, setPersonRates] = useState<Record<string, string>>({});
   const [method, setMethod] = useState<EacMethod>('typical');
-  useEffect(() => { setCol(undefined); setPersonRates({}); }, [shared?.fileName, shared?.table]);
+  useEffect(() => { setCol(undefined); }, [shared?.fileName, shared?.table]);
+  // A filled template brings its currency and rates; the user can still change them.
+  useEffect(() => {
+    const t = shared?.template;
+    setCurrency(t?.settings?.currency ?? '');
+    setDefaultRate(t?.settings?.defaultRate != null ? String(t.settings.defaultRate) : '');
+    setPersonRates(Object.fromEntries(Object.entries(t?.rates ?? {}).map(([k, v]) => [k, String(v)])));
+  }, [shared?.fileName, shared?.table]); // eslint-disable-line react-hooks/exhaustive-deps
   const assigneeCol = col === undefined ? (shared ? suggestAssignee(shared.table.headers) : null) : col;
 
   const tasks: MoneyTask[] = useMemo(() => {

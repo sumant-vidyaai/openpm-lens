@@ -10,6 +10,10 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
   const [over, setOver] = useState('100');
   const [own, setOwn] = useState<Record<string, string>>({});
   useEffect(() => { setCol(undefined); setOwn({}); }, [shared?.fileName, shared?.table]);
+  useEffect(() => {
+    const c = shared?.template?.settings?.capacity;
+    setCapacity(c != null ? String(c) : '40');
+  }, [shared?.fileName, shared?.table]); // eslint-disable-line react-hooks/exhaustive-deps
   const assigneeCol = col === undefined ? (shared ? suggestAssignee(shared.table.headers) : null) : col;
 
   const tasks: ResourceTask[] = useMemo(() => {

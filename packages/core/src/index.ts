@@ -26,3 +26,4 @@ export * from './money';
 export * from './resource';
 export * from './mspdi';
 export * from './defects';
+export * from './template';

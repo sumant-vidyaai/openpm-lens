@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  ALL_PROJECTS, analyseTable, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
+  ALL_PROJECTS, analyseTable, isTemplateTable, splitTemplateProjects, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
   toCsv, validateThresholds, type AnalyseSettings, type CsvCell, type CsvResult, type DateOrder, type DayCount,
-  type Health, type PortfolioProject, type RollupBy, type Unit,
+  type Health, type PercentRule, type PortfolioProject, type RollupBy, type Unit,
 } from '@openpm-lens/core';
 import { readTable } from './readFile';
 import { SAMPLE_PORTFOLIO } from './sample';
@@ -39,6 +39,8 @@ export function PortfolioScreen() {
   const [green, setGreen] = useState(String(DEFAULT_THRESHOLDS.greenMin));
   const [amber, setAmber] = useState(String(DEFAULT_THRESHOLDS.amberMin));
   const [minTasks, setMinTasks] = useState(String(DEFAULT_THRESHOLDS.minTasks));
+  const [ruleOverride, setRuleOverride] = useState<PercentRule | null>(null);
+  const [inProgressPercent, setInProgressPercent] = useState(50);
   const nextId = useRef(1);
 
   const parsed = { greenMin: Number(green), amberMin: Number(amber), minTasks: Number(minTasks) };
@@ -57,8 +59,27 @@ export function PortfolioScreen() {
     const problems: string[] = [];
     for (const f of Array.from(files)) {
       try {
-        const { table, note } = await readTable(f);
-        added.push({ name: f.name.replace(/\.[^.]+$/, ''), programme: '', team: '', fileName: f.name, table, unit: '', note });
+        const { table, note, template } = await readTable(f);
+        if (isTemplateTable(table.headers)) {
+          // Our template: one project per value in the Project column; Settings fill the shared controls.
+          const split = splitTemplateProjects(table);
+          for (const p of split.projects) {
+            added.push({ name: p.name, programme: p.programme, team: p.team, fileName: f.name, table: p.table, unit: '', note: null });
+          }
+          if (split.warnings.length > 0) problems.push(...split.warnings);
+          if (template) {
+            const t = template.settings;
+            if (t.statusDate) setStatusDate(t.statusDate);
+            if (t.hoursPerDay !== null) setHoursPerDay(t.hoursPerDay);
+            if (t.dayCount !== null) setDayCount(t.dayCount);
+            if (t.rule !== null && t.rule !== 'tool_reported') setRuleOverride(t.rule);
+            if (t.inProgressPercent !== null) setInProgressPercent(t.inProgressPercent);
+            if (t.greenMin !== null && t.amberMin !== null) { setGreen(String(t.greenMin)); setAmber(String(t.amberMin)); }
+            problems.push(...t.problems);
+          }
+        } else {
+          added.push({ name: f.name.replace(/\.[^.]+$/, ''), programme: '', team: '', fileName: f.name, table, unit: '', note });
+        }
       } catch (err) {
         problems.push(err instanceof Error ? err.message : `${f.name} could not be read.`);
       }
@@ -76,8 +97,8 @@ export function PortfolioScreen() {
   const edit = (id: string, patch: Partial<Entry>) => setEntries((cur) => cur.map((e) => (e.id === id ? { ...e, ...patch } : e)));
 
   const settings: AnalyseSettings = useMemo(
-    () => ({ ...DEFAULT_ANALYSE, statusDate, dateOrder, dayCount, hoursPerDay, percentScale }),
-    [statusDate, dateOrder, dayCount, hoursPerDay, percentScale],
+    () => ({ ...DEFAULT_ANALYSE, statusDate, dateOrder, dayCount, hoursPerDay, percentScale, ruleOverride, inProgressPercent }),
+    [statusDate, dateOrder, dayCount, hoursPerDay, percentScale, ruleOverride, inProgressPercent],
   );
   const projects: PortfolioProject[] = useMemo(
     () => entries.map((e) => ({
@@ -92,6 +113,7 @@ export function PortfolioScreen() {
   const assumptions = [
     `Hours are summed first; CPI and SPI are worked out from the sums (ratios are never averaged).`,
     `Status date: ${statusDate || 'not chosen (schedule measures not worked out)'}. Planned hours spread evenly over ${dayCount === 'weekdays' ? 'weekdays' : 'calendar days'}.`,
+    `Progress rule: ${ruleOverride === null ? "each file's own suggestion (the % complete column for the template)" : ruleOverride === 'zero_hundred' ? '0/100' : ruleOverride === 'fifty_fifty' ? '50/50' : ruleOverride === 'status_based' ? `status-based (${inProgressPercent}% while in progress)` : 'the % complete column'}${ruleOverride === null ? '' : " (from the template's Settings sheet)"}.`,
     `Date order: ${dateOrder === 'auto' ? 'unclear dates are refused' : dateOrder === 'dmy' ? 'day / month / year' : 'month / day / year'}. One working day = ${hoursPerDay} hours.`,
     `A roll-up includes every project that has numbers, even one whose own status is "Insufficient data".`,
     `Health: green at ${thresholds.greenMin} or above, amber at ${thresholds.amberMin} or above, red below; an index needs at least ${thresholds.minTasks} tasks behind it. These are starting values, not a standard${usingDefaults ? '' : ' (edited by you)'}.`,

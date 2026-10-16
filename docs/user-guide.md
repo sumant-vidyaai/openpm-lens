@@ -18,7 +18,8 @@ openpm-lens turns an export from your project tool into standard project numbers
 |---|---|---|
 | Overview | Where does my project stand? One health status, CPI and SPI on a ruler, key numbers (shows what you loaded on Import) | Nothing extra; load a file on Import first |
 | Import | Cost, schedule and forecast in hours: CPI, SPI, EAC, ETC, VAC, TCPI, earned schedule, data quality | Task name, planned hours, % complete; actual hours for cost; start and finish dates for schedule |
-| Portfolio | Which projects need attention? | One file per project; roll up by project, programme, team or all |
+| Template | No project tool, or one the app cannot read yet? Download the Excel or CSV template (or the filled example), fill it in and upload it. The app sets itself up | Nothing: it is a download and instructions page |
+| Portfolio | Which projects need attention? | One file per project (or one template file with a Project column); roll up by project, programme, team or all |
 | Flow metrics | Throughput, cycle time, WIP, work item age | Dates work started and finished |
 | Schedule | On-time rate, finish variance, overdue tasks | Planned finish and actual finish dates |
 | Cost in money | Cost in money and forecast | Hours plus hourly rates you type in |
@@ -75,3 +76,9 @@ CSV downloads open in Excel. Text that starts with `=`, `+`, `-` or `@` is saved
 ## 9. Checking a release
 
 Each release has `SHA256SUMS.txt`, a CycloneDX software bill of materials (`sbom.cdx.json`) and `THIRD_PARTY_NOTICES.txt`. To check a download: `sha256sum -c SHA256SUMS.txt` (Windows PowerShell: `Get-FileHash <file>` and compare).
+
+## The fill-in template
+
+On the **Template** tab, download the Excel workbook (or the plain CSV). Fill in the **Tasks** sheet, one row per task; use the **Settings** sheet for the status date and your own limits, and the **Rates** sheet for hourly rates. Upload it on **Import** (one project) or **Portfolio** (several: put the project name in the Project column).
+
+Rules: effort in hours; % complete as 0 to 100; dates as year-month-day; a blank means "not known" and is never counted as 0. After upload the app shows, for each area, how many tasks have what it needs (for example "Cost: 12 of 40 tasks have actual hours"). Cancelled tasks are left out of every measure. Excel workbooks with a very large sheet (several thousand rows) cannot be read here; save that sheet as CSV.

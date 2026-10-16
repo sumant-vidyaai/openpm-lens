@@ -1,6 +1,7 @@
 import { assessHealth, DEFAULT_THRESHOLDS, HEALTH_LABEL, roundHalfUp, type Health } from '@openpm-lens/core';
 import { IndexRuler } from './charts';
 import type { SharedData } from './shared';
+import { Readiness } from './Template';
 
 const SYMBOL: Record<Health, string> = { green: '●', amber: '▲', red: '■', insufficient: '○' };
 const BAND_TEXT: Record<Health, string> = { green: 'in the green zone', amber: 'in the amber zone', red: 'in the red zone', insufficient: 'not used (too few tasks)' };
@@ -22,6 +23,7 @@ export function OverviewScreen({ shared, onGo }: { shared: SharedData | null; on
         <p className="lead">Load a task export from the tool you already use. You get cost and schedule health, forecasts, flow, resources and quality, and every number comes with its working.</p>
         <p className="row">
           <button type="button" className="primary" onClick={() => onGo('import')}>Load a file</button>
+          <button type="button" onClick={() => onGo('template')}>Get the fill-in template</button>
           <button type="button" onClick={() => onGo('learn')}>Read how the numbers work</button>
         </p>
         <ul className="plain">
@@ -34,7 +36,10 @@ export function OverviewScreen({ shared, onGo }: { shared: SharedData | null; on
     );
   }
   const sm = shared.summary;
-  const h = assessHealth({ ev: sm.ev, ac: sm.ac, costTasks: sm.costTasks, evSchedule: sm.evSchedule, pv: sm.pv, scheduleTasks: sm.scheduleTasks }, DEFAULT_THRESHOLDS);
+  const ts = shared.template?.settings;
+  const fromTpl = ts != null && ts.greenMin !== null && ts.amberMin !== null;
+  const th = fromTpl ? { ...DEFAULT_THRESHOLDS, greenMin: ts.greenMin as number, amberMin: ts.amberMin as number } : DEFAULT_THRESHOLDS;
+  const h = assessHealth({ ev: sm.ev, ac: sm.ac, costTasks: sm.costTasks, evSchedule: sm.evSchedule, pv: sm.pv, scheduleTasks: sm.scheduleTasks }, th);
   return (
     <section aria-labelledby="ov-h">
       <h2 id="ov-h">Overview</h2>
@@ -43,19 +48,21 @@ export function OverviewScreen({ shared, onGo }: { shared: SharedData | null; on
       <div className={`band band-${h.health}`} role="status">
         <p className="band-main"><span aria-hidden="true" className="band-sym">{SYMBOL[h.health]}</span> <span>{HEALTH_LABEL[h.health]}</span></p>
         <ul className="plain">{h.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
-        <p className="note">Limits: green from {DEFAULT_THRESHOLDS.greenMin}, amber from {DEFAULT_THRESHOLDS.amberMin}, at least {DEFAULT_THRESHOLDS.minTasks} tasks. These are starting values, not a standard. Change them on the Portfolio tab.</p>
+        <p className="note">Limits: green from {th.greenMin}, amber from {th.amberMin}, at least {th.minTasks} tasks. These are starting values, not a standard. {fromTpl ? "Set by the template's Settings sheet. " : ''}Change them on the Portfolio tab.</p>
       </div>
 
       <div className="rulers">
         <div className="panel"><h3>Cost: are we getting what we pay for?</h3>
-          <IndexRuler name="CPI" value={h.cpi} greenMin={DEFAULT_THRESHOLDS.greenMin} amberMin={DEFAULT_THRESHOLDS.amberMin} band={BAND_TEXT[h.cpiBand]} />
+          <IndexRuler name="CPI" value={h.cpi} greenMin={th.greenMin} amberMin={th.amberMin} band={BAND_TEXT[h.cpiBand]} />
           <p className="note">Cost performance index = earned value / actual cost. Above 1 means more work done than hours spent would predict.</p>
         </div>
         <div className="panel"><h3>Schedule: are we on pace?</h3>
-          <IndexRuler name="SPI" value={h.spi} greenMin={DEFAULT_THRESHOLDS.greenMin} amberMin={DEFAULT_THRESHOLDS.amberMin} band={BAND_TEXT[h.spiBand]} />
+          <IndexRuler name="SPI" value={h.spi} greenMin={th.greenMin} amberMin={th.amberMin} band={BAND_TEXT[h.spiBand]} />
           <p className="note">Schedule performance index = earned value / planned value. Below 1 means behind the plan.</p>
         </div>
       </div>
+
+      {shared.template && <div className="panel"><Readiness readiness={shared.template.readiness} /></div>}
 
       <h3>Key numbers (hours)</h3>
       <dl className="facts">

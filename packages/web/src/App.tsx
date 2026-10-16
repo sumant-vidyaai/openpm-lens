@@ -3,6 +3,7 @@ import { metricFunctions, roundHalfUp } from '@openpm-lens/core';
 import { cards } from './cards';
 import { ImportScreen } from './Import';
 import { CoverageScreen } from './Coverage';
+import { TemplateScreen } from './Template';
 import { PortfolioScreen } from './Portfolio';
 import { FlowScreen } from './Flow';
 import { ScheduleScreen } from './ScheduleScreen';
@@ -68,9 +69,9 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
-type TabId = 'overview' | 'import' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'learn' | 'coverage' | 'library';
+type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'learn' | 'coverage' | 'library';
 const GROUPS: { title: string; tabs: { id: TabId; label: string }[] }[] = [
-  { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'portfolio', label: 'Portfolio' }] },
+  { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'template', label: 'Template' }, { id: 'portfolio', label: 'Portfolio' }] },
   { title: 'Analyse', tabs: [{ id: 'flow', label: 'Flow metrics' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' }] },
   { title: 'Learn', tabs: [{ id: 'learn', label: 'Learn' }, { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' }] },
 ];
@@ -124,6 +125,7 @@ export function App() {
         <h1 className="printonly">openpm-lens</h1>
         {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} />)}
         {panel('import', <ImportScreen onShare={setShared} />)}
+        {panel('template', <TemplateScreen onGoImport={goImport} />)}
         {panel('portfolio', <PortfolioScreen />)}
         {panel('flow', <FlowScreen />)}
         {panel('schedule', <ScheduleScreen shared={shared} onGoImport={goImport} />)}

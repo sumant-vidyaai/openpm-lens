@@ -52,7 +52,7 @@ export function suggestFlowColumns(headers: string[]): FlowColumns {
   const id = find([/^(task |issue |item )?(id|key|number|no\.?)$/i], name ? [name] : []);
   const status = find([/^status$/i, /state/i]);
   const start = find([/^(actual |work )?started( date)?$/i, /^(actual |work )?start( date)?$/i, /started/i]);
-  const done = find([/^(actual )?(done|resolved|closed|completed|finished)( date)?$/i, /resolved|closed date|done date|completed|finish(ed)? date/i], start ? [start] : []);
+  const done = find([/^actual (finish|end|completion)( date)?$/i, /^(actual )?(done|resolved|closed|completed|finished)( date)?$/i, /resolved|closed date|done date|completed|finish(ed)? date/i], start ? [start] : []);
   return { id, name, status, start, done };
 }
 

@@ -4,14 +4,15 @@ import {
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
   aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
+  extractTemplate, isTemplateTable, templateReadiness, type TemplateParts,
 } from '@openpm-lens/core';
-import readXlsxFile from 'read-excel-file/browser';
-import { MAX_XML_BYTES } from './readFile';
+import { MAX_XML_BYTES, readWorkbook } from './readFile';
 import { EarnedValueChart } from './charts';
 import { SAMPLE_CSV } from './sample';
 import { ExplainPanel, StepsPanel } from './Explain';
 import type { SharedData } from './shared';
 import { ReplaceButton } from './common';
+import { Readiness } from './Template';
 
 type Grid = (string | number | boolean | Date | null)[][];
 type Raw =
@@ -35,6 +36,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   const [fileName, setFileName] = useState<string | null>(null);
   const [raw, setRaw] = useState<Raw | null>(null);
   const [sheetIdx, setSheetIdx] = useState(0);
+  const [tpl, setTpl] = useState<TemplateParts | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mappingEdits, setMappingEdits] = useState<Partial<ColumnMapping>>({});
   const [statusEdits, setStatusEdits] = useState<StatusMap>({});
@@ -62,11 +64,26 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     if (suggestion?.defaultUnit) setDefaultUnit(suggestion.defaultUnit);
     else if (suggestion) setDefaultUnit(''); // unit unknown for this tool: the user must choose
     if (suggestion?.suggestedRule) setRule(suggestion.suggestedRule);
-  }, [suggestion]);
+    if (adapter?.id === 'openpm-lens-template') {
+      setPercentScale('0-100');
+      if (tpl?.settings.rule) setRule(tpl.settings.rule);
+    }
+  }, [suggestion, adapter, tpl]);
+  // A filled template carries its own settings (status date, hours per day...). Applied once per file; the user can still change them.
+  useEffect(() => {
+    const t = tpl?.settings;
+    if (!t) return;
+    if (t.statusDate) setStatusDate(t.statusDate);
+    if (t.hoursPerDay !== null) setHoursPerDay(t.hoursPerDay);
+    if (t.dayCount !== null) setDayCount(t.dayCount);
+    if (t.inProgressPercent !== null) setInProgressPercent(t.inProgressPercent);
+  }, [tpl]);
   const mapping: ColumnMapping | null = useMemo(
     () => (csv ? { ...mergeMapping(csv.headers, suggestion?.mapping ?? null), ...mappingEdits } : null),
     [csv, suggestion, mappingEdits],
   );
+  const isTpl = useMemo(() => csv !== null && isTemplateTable(csv.headers), [csv]);
+  const readiness = useMemo(() => (csv && isTpl ? templateReadiness(csv.headers, csv.rows) : null), [csv, isTpl]);
   const statuses = useMemo(
     () => (csv && mapping ? distinctStatuses(csv.headers, csv.rows, mapping) : []),
     [csv, mapping],
@@ -110,10 +127,10 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   useEffect(() => {
     onShare(
       calc && csv
-        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, hoursPerDay, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
+        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, hoursPerDay, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
         : null,
     );
-  }, [calc, csv, fileName, statusDate, dateOrder, dayCount, hoursPerDay, onShare]);
+  }, [calc, csv, fileName, statusDate, dateOrder, dayCount, hoursPerDay, tpl, readiness, onShare]);
   const result = calc?.agg ?? null;
   const quality = calc?.quality ?? null;
   const schedule = calc?.schedule ?? null;
@@ -164,15 +181,16 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     window.print();
   }
 
-  function reset(name: string, next: Raw) {
-    setFileName(name); setRaw(next); setSheetIdx(0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
+  function reset(name: string, next: Raw, tp: TemplateParts | null = null) {
+    setTpl(tp); setFileName(name); setRaw(next); setSheetIdx(tp ? tp.tasksIndex : 0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
   }
   async function onFile(f: File) {
     try {
       if (/\.xlsx$/i.test(f.name)) {
-        const sheets = await readXlsxFile(f);
+        const sheets = await readWorkbook(f);
         if (sheets.length === 0) throw new Error('The workbook has no sheets.');
-        reset(f.name, { kind: 'xlsx', sheets: sheets.map((s) => ({ name: s.sheet, data: s.data as Grid })) });
+        const mapped = sheets.map((s) => ({ name: s.sheet, data: s.data as Grid }));
+        reset(f.name, { kind: 'xlsx', sheets: mapped }, extractTemplate(mapped));
       } else if (/\.xml$/i.test(f.name)) {
         if (f.size > MAX_XML_BYTES) throw new Error('The XML file is larger than 25 MB, which is more than a project plan should be. It was not read.');
         const r = parseMspdi(await f.text());
@@ -215,7 +233,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
           />
         </label>
         <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV })} />
-        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
+        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setTpl(null); setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}
@@ -229,7 +247,17 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
               </select>
             </label>
           )}
-          {adapter && suggestion && (
+          {isTpl && readiness && (
+            <div className="card noprint" role="note">
+              <h3>Your openpm-lens template was recognised</h3>
+              <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings and Rates sheets were read.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
+              {tpl && [...tpl.settings.problems, ...tpl.rates.problems].length > 0 && (
+                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems].map((p) => <li key={p}>{p}</li>)}</ul>
+              )}
+              <Readiness readiness={readiness} />
+            </div>
+          )}
+          {adapter && suggestion && !isTpl && (
             <div className="card noprint" role="note">
               <h3>This looks like a {adapter.name}</h3>
               <ul>{suggestion.notes.map((n) => <li key={n}>{n}</li>)}</ul>
@@ -241,7 +269,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
               <ul>{raw.notes.map((n) => <li key={n}>{n}</li>)}</ul>
             </div>
           )}
-          {raw?.kind === 'xlsx' && (
+          {raw?.kind === 'xlsx' && !isTpl && (
             <p className="note noprint">Excel stores a cell shown as 40% as 0.4. If your % complete column looks like that, choose "0 to 1" below.</p>
           )}
           <p>

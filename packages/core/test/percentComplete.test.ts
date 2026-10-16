@@ -67,3 +67,14 @@ describe('storyPointPercent', () => {
     expect(storyPointPercent(Number.NaN, 5)).toBeNull();
   });
 });
+
+describe('cancelled items under the tool-reported rule', () => {
+  it('are excluded even when the file gives a percent', () => {
+    const r = percentComplete('tool_reported', { reportedPercent: 40, statusCategory: 'cancelled' });
+    expect(r.value).toBeNull();
+    expect(r.issues[0]).toMatch(/cancelled/);
+  });
+  it('a reported percent without a status is still used', () => {
+    expect(percentComplete('tool_reported', { reportedPercent: 40, statusCategory: null }).value).toBe(40);
+  });
+});

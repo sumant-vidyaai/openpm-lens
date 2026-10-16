@@ -66,6 +66,8 @@ interface AdapterSpec {
   suggestedRule: PercentRule | null;
   notes: string[];
   cannotSupply: string[];
+  /** True when the column names are our own, so nothing about them is unverified. */
+  ownColumns?: boolean;
   /** Notes added only when something expected is missing from this particular file. */
   extraNotes?: (mapping: ColumnMapping) => string[];
 }
@@ -95,7 +97,9 @@ function makeAdapter(spec: AdapterSpec): TableAdapter {
         (Object.keys(spec.columns) as ImportField[]).map((f) => [f, findHeader(headers, spec.columns[f])]),
       ) as ColumnMapping;
       const notes = [...spec.notes, ...(spec.extraNotes ? spec.extraNotes(mapping) : [])];
-      if (spec.columns.start.length === 0 || spec.columns.finish.length === 0) {
+      if (spec.ownColumns) {
+        // Our own template: its names are fixed, nothing to verify.
+      } else if (spec.columns.start.length === 0 || spec.columns.finish.length === 0) {
         notes.push('This tool\'s export has no planned start date, so schedule performance (SPI) cannot be worked out from it. Choose date columns in step 1 if your file has them.');
       } else {
         notes.push('Date column names are this tool\'s usual field names but are not confirmed from its documentation. Please check the start and finish choices in step 1.');
@@ -273,6 +277,24 @@ export const msProjectAdapter = makeAdapter({
       : [],
 });
 
+export const templateAdapter = makeAdapter({
+  id: 'openpm-lens-template',
+  name: 'openpm-lens template',
+  required: [['task'], ['status'], ['estimate (h)'], ['actual (h)'], ['% complete'], ['planned start'], ['actual start']],
+  bonus: [['planned finish'], ['actual finish'], ['assignee'], ['found in'], ['programme']],
+  columns: {
+    id: ['id'], name: ['task'], status: ['status'], planned: ['estimate (h)'], actual: ['actual (h)'],
+    percent: ['% complete'], start: ['planned start'], finish: ['planned finish'],
+  },
+  defaultUnit: 'hours',
+  suggestedRule: 'tool_reported',
+  notes: [
+    'This is the openpm-lens template, so the columns, hours and 0-100 percent are set up for you. Check the progress rule and status date in step 2.',
+  ],
+  cannotSupply: [],
+  ownColumns: true,
+});
+
 export const TABLE_ADAPTERS: TableAdapter[] = [
   jiraAdapter, azureDevOpsAdapter, linearAdapter, clickUpAdapter, workfrontAdapter, msProjectAdapter,
 ];
@@ -280,7 +302,7 @@ export const TABLE_ADAPTERS: TableAdapter[] = [
 /** The best-matching adapter for these headers, or null for a generic file. */
 export function detectTableAdapter(headers: string[]): TableAdapter | null {
   let best: { adapter: TableAdapter; confidence: number } | null = null;
-  for (const adapter of TABLE_ADAPTERS) {
+  for (const adapter of [templateAdapter, ...TABLE_ADAPTERS]) {
     const d = adapter.detect(headers);
     if (d.matches && (best === null || d.confidence > best.confidence)) best = { adapter, confidence: d.confidence };
   }

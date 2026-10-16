@@ -37,6 +37,7 @@ export function FlowScreen() {
     try {
       const r = await readTable(f);
       setFileName(f.name); setTable(r.table); setNote(r.note); setError(null); setEdits({});
+      if (r.template?.settings.statusDate) setStatusDate(r.template.settings.statusDate);
     } catch (e) { setError(e instanceof Error ? e.message : 'This file could not be read.'); }
   }
   const f = (n: number | null, d = 1) => (n === null ? 'Not available' : String(roundHalfUp(n, d)));

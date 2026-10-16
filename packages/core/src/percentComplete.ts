@@ -50,6 +50,10 @@ export function percentComplete(
   const base = { missing: [] as string[], issues: [] as string[], assumption: ASSUMPTIONS[rule] };
 
   if (rule === 'tool_reported') {
+    // A cancelled item is out of scope under every rule: it must not add to the budget or to earned value.
+    if (input.statusCategory === 'cancelled') {
+      return { ...base, value: null, issues: ['Item is cancelled; excluded from earned value.'] };
+    }
     if (input.reportedPercent === null) {
       return { ...base, value: null, missing: ['percentCompleteReported'] };
     }
