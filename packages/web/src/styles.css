@@ -92,3 +92,4 @@ input[type='date'] { font: inherit; color: var(--fg); background: var(--bg); bor
 .viz-table { margin-top: .5rem; }
 .viz-table summary { cursor: pointer; }
 @media print { .viz-root { break-inside: avoid; } }
+.glossary { margin: 0; } .glossary .card { margin: .5rem 0; } .glossary dd { margin: 0; }
