@@ -169,3 +169,13 @@ a.btn:hover { text-decoration: underline; }
 .readiness .plain li { margin: .7rem 0; }
 .readiness progress { display: block; width: min(18rem, 100%); height: .6rem; margin-top: .3rem; accent-color: var(--accent); }
 textarea { font: inherit; padding: .4rem .5rem; border: 1px solid var(--border); border-radius: .35rem; background: var(--field); color: var(--fg); width: 100%; box-sizing: border-box; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.facts dd .sub { font-size: .8125rem; font-weight: 400; color: var(--muted); }
+table.heat { width: auto; border-collapse: separate; border-spacing: 3px; }
+table.heat th, table.heat td { text-align: center; min-width: 3.4rem; padding: .35rem .4rem; border-radius: .3rem; }
+table.heat th[scope='row'] { text-align: right; white-space: nowrap; background: transparent; }
+table.heat td.corner { background: transparent; border: 0; }
+table.heat .heat-n { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+table.heat .heat-b { font-size: .75rem; }
+table.heat td { position: relative; }

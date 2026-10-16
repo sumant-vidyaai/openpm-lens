@@ -29,4 +29,5 @@ export * from './defects';
 export * from './template';
 export * from './drilldown';
 export * from './milestones';
+export * from './raid';
 export * from './phasing';

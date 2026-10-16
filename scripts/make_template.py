@@ -64,6 +64,32 @@ EXAMPLE = [
 EXAMPLE_SETTINGS = {'Status date': '2026-03-31', 'Currency': 'INR', 'Default hourly rate': 40}
 EXAMPLE_HOLIDAYS = [('2026-03-25', 'Festival day (made up)')]
 EXAMPLE_LEAVE = [('Kiran', '2026-03-30', '2026-04-03')]
+EXAMPLE_SETTINGS['Original budget (h)'] = 540
+RISK_HEAD = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done']
+ISSUE_HEAD = ['ID', 'Issue', 'Priority', 'Owner', 'Status', 'Raised', 'Due', 'Resolved']
+CHANGE_HEAD = ['ID', 'Change', 'Requested by', 'Decision', 'Requested', 'Decided', 'Cost impact (h)', 'Schedule impact (days)']
+EXAMPLE_RISKS = [
+    ['R-1', 'Payment vendor delivers the API late', 4, 4, 'Asha', 'Mitigate', 'Open', 'Agree a fallback sandbox', '2026-03-20', ''],
+    ['R-2', 'Key developer leaves', 2, 5, 'Ravi', 'Mitigate', 'Open', 'Cross-train a second person', '2026-04-10', ''],
+    ['R-3', 'App store review takes longer than planned', 3, 3, 'Dev', 'Accept', 'Open', 'Submit two weeks early', '2026-03-25', '2026-03-24'],
+    ['R-4', 'Test data is not available', 3, 2, '', '', 'Open', '', '', ''],
+    ['R-5', 'Design sign-off delayed', 4, 2, 'Meena', 'Avoid', 'Closed', 'Weekly review set up', '2026-03-05', '2026-03-04'],
+    ['R-6', 'Server capacity too small', 2, 4, 'Kiran', 'Mitigate', 'Occurred', 'See issue I-1', '', ''],
+]
+EXAMPLE_ISSUES = [
+    ['I-1', 'Staging server runs out of memory', 'High', 'Kiran', 'Open', '2026-03-01', '2026-03-20', ''],
+    ['I-2', 'Report export is slow', 'Medium', 'Ravi', 'Open', '2026-03-21', '2026-04-07', ''],
+    ['I-3', 'Login fails for some users', 'Critical', 'Asha', 'Resolved', '2026-03-01', '', '2026-03-05'],
+    ['I-4', 'Wrong colour on button', 'Low', 'Meena', 'Closed', '2026-03-10', '', '2026-03-12'],
+    ['I-5', 'Licence for design tool not yet bought', 'Medium', '', 'Open', '2026-03-24', '', ''],
+]
+EXAMPLE_CHANGES = [
+    ['C-1', 'Add an export-to-Excel report', 'Sponsor', 'Approved', '2026-03-01', '2026-03-10', 40, 5],
+    ['C-2', 'Extra field on sign-up form', 'Product owner', 'Approved', '2026-02-20', '2026-03-05', 14, 2],
+    ['C-3', 'Drop the old reporting module', 'PM', 'Approved', '2026-03-12', '2026-03-20', -16, -2],
+    ['C-4', 'Connect to the new data feed', 'Operations', 'Requested', '2026-03-15', '', 30, 3],
+    ['C-5', 'Change the logo', 'Sponsor', 'Rejected', '2026-03-02', '2026-03-03', 10, 0],
+]
 EXAMPLE_RATES = [('Asha', 55), ('Ravi', 50), ('Meena', 45), ('Dev', 60), ('Kiran', 65)]
 
 HEAD_FILL = PatternFill('solid', fgColor='0B6B73')
@@ -79,7 +105,7 @@ def build(path, example):
     s.title = 'Start here'
     lines = [
         ('openpm-lens template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays and Leave sheets, then upload this file to openpm-lens (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets, then upload this file to openpm-lens (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -180,7 +206,7 @@ def build(path, example):
     settings = [
         ('Status date', '', 'The "as of" day for the report, year-month-day. Required for schedule, flow and quality. Never assumed.'),
         ('Hours per working day', 8, 'Used to turn days into hours and to spread planned work over days.'),
-        ('Days counted', 'Weekdays', 'Weekdays (Mon-Fri; holidays are not known) or All days.'),
+        ('Days counted', 'Weekdays', 'Weekdays (Mon-Fri; days on the Holidays sheet are skipped) or All days.'),
         ('Weekly capacity (h)', 40, 'Hours one person can work in a week, for the Resources tab.'),
         ('Currency', '', 'A label such as INR or USD. Optional; for the Cost in money tab.'),
         ('Default hourly rate', '', 'Rate used for people not listed on the Rates sheet. Optional.'),
@@ -188,6 +214,9 @@ def build(path, example):
         ('Amber from', 0.85, 'CPI/SPI at or above this (but below Green) is Amber; below is Red. A starting value, not a standard.'),
         ('Progress rule', RULES[0], 'How % complete is decided. The first choice uses the % complete column.'),
         ('In-progress credit (%)', 50, 'Only for the Status-based rule: % credited to tasks that are In progress.'),
+        ('Original budget (h)', '', 'Hours in the plan before any approved change. Only used to show scope growth on the RAID tab. Optional.'),
+        ('Risk medium from', 7, 'A risk score (probability x impact, 1 to 25) at or above this is Medium. A starting value, not a standard.'),
+        ('Risk high from', 13, 'A risk score at or above this is High. A starting value, not a standard.'),
     ]
     for i, (k, v, d) in enumerate(settings, start=2):
         if example and k in EXAMPLE_SETTINGS:
@@ -257,6 +286,55 @@ def build(path, example):
     lv.column_dimensions['B'].width = 16
     lv.column_dimensions['C'].width = 16
     lv.cell(row=1, column=5, value='Days a person is away. Leave "To" blank for a single day. Names must match the Assignee column. Optional.')
+
+    def log_sheet(name, head, widths, example_rows, date_cols, lists, whole, numeric, note):
+        ws = wb.create_sheet(name)
+        for j, h in enumerate(head, start=1):
+            c = ws.cell(row=1, column=j, value=h)
+            c.fill, c.font = HEAD_FILL, HEAD_FONT
+            ws.column_dimensions[get_column_letter(j)].width = widths[j - 1]
+        for i in range(2, 202):
+            for j, h in enumerate(head, start=1):
+                c = ws.cell(row=i, column=j)
+                c.fill = INPUT_FILL
+                if h in date_cols or h in ('ID',):
+                    c.number_format = '@'
+        if example:
+            for i, row in enumerate(example_rows, start=2):
+                for j, v in enumerate(row, start=1):
+                    if v != '':
+                        ws.cell(row=i, column=j, value=v)
+        col = lambda h: get_column_letter(head.index(h) + 1)
+        for h, values in lists.items():
+            dv = DataValidation(type='list', formula1='"' + ','.join(values) + '"', allow_blank=True, showErrorMessage=True,
+                                errorTitle=h, error='Pick one from the list.')
+            ws.add_data_validation(dv); dv.add(f'{col(h)}2:{col(h)}201')
+        for h in date_cols:
+            c_ = col(h)
+            dv = DataValidation(type='custom',
+                                formula1=f'OR({c_}2="",AND(LEN({c_}2)=10,MID({c_}2,5,1)="-",MID({c_}2,8,1)="-",ISNUMBER(--LEFT({c_}2,4)),ISNUMBER(--MID({c_}2,6,2)),ISNUMBER(--RIGHT({c_}2,2))))',
+                                allow_blank=True, showErrorMessage=True, errorTitle='Date', error='Write the date as year-month-day, for example 2026-03-31.')
+            ws.add_data_validation(dv); dv.add(f'{c_}2:{c_}201')
+        for h in whole:
+            dv = DataValidation(type='whole', operator='between', formula1='1', formula2='5', allow_blank=True, showErrorMessage=True,
+                                errorTitle=h, error='Enter a whole number from 1 to 5.')
+            ws.add_data_validation(dv); dv.add(f'{col(h)}2:{col(h)}201')
+        for h in numeric:
+            dv = DataValidation(type='decimal', operator='between', formula1='-100000', formula2='100000', allow_blank=True, showErrorMessage=True,
+                                errorTitle=h, error='Enter a plain number (use a minus sign for a reduction).')
+            ws.add_data_validation(dv); dv.add(f'{col(h)}2:{col(h)}201')
+        ws.cell(row=1, column=len(head) + 2, value=note)
+
+    log_sheet('Risks', RISK_HEAD, [8, 44, 18, 14, 14, 14, 12, 34, 14, 14], EXAMPLE_RISKS, ['Action due', 'Action done'],
+              {'Response': ['Avoid', 'Mitigate', 'Transfer', 'Accept'], 'Status': ['Open', 'Closed', 'Occurred']},
+              ['Probability (1-5)', 'Impact (1-5)'], [],
+              'Optional. Probability and Impact are whole numbers 1 (lowest) to 5 (highest); score = probability x impact. Leave blank if not yet rated: the risk is listed as not scored.')
+    log_sheet('Issues', ISSUE_HEAD, [8, 44, 12, 14, 12, 14, 14, 14], EXAMPLE_ISSUES, ['Raised', 'Due', 'Resolved'],
+              {'Priority': ['Low', 'Medium', 'High', 'Critical'], 'Status': ['Open', 'Resolved', 'Closed']}, [], [],
+              'Optional. An issue is a problem that has already happened. Age is counted from Raised to the status date (calendar days).')
+    log_sheet('Changes', CHANGE_HEAD, [8, 44, 16, 12, 14, 14, 16, 22], EXAMPLE_CHANGES, ['Requested', 'Decided'],
+              {'Decision': ['Requested', 'Approved', 'Rejected', 'Withdrawn']}, [], ['Cost impact (h)', 'Schedule impact (days)'],
+              'Optional. Cost impact in hours and schedule impact in days; use a minus sign for a reduction. Only Approved changes are added up.')
     wb.active = 1
     wb.save(path)
 

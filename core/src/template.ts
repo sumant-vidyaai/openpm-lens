@@ -3,6 +3,7 @@ import type { DayCount } from './dates';
 import type { PercentRule } from './percentComplete';
 import { parseDateText } from './dates';
 import { suggestStatusCategory } from './importTasks';
+import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
 
 /**
  * The openpm-lens fill-in template. Its column names are fixed so the app can recognise a
@@ -38,6 +39,9 @@ export const SETTING_LABELS = {
   amberMin: 'Amber from',
   rule: 'Progress rule',
   inProgressPercent: 'In-progress credit (%)',
+  originalBudget: 'Original budget (h)',
+  riskMediumMin: 'Risk medium from',
+  riskHighMin: 'Risk high from',
 } as const;
 
 export const RULE_CHOICES: { label: string; rule: PercentRule }[] = [
@@ -62,6 +66,11 @@ export interface TemplateSettings {
   amberMin: number | null;
   rule: PercentRule | null;
   inProgressPercent: number | null;
+  /** Hours in the plan before any approved change; used only for scope growth. */
+  originalBudget: number | null;
+  /** Risk score (probability x impact) from which a risk is Medium / High. Starting values, not a standard. */
+  riskMediumMin: number | null;
+  riskHighMin: number | null;
   /** Things in the Settings sheet that were not understood (shown to the user, never guessed). */
   problems: string[];
 }
@@ -86,7 +95,7 @@ const num = (c: GridCell): number | null => {
 export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
   const s: TemplateSettings = {
     statusDate: null, hoursPerDay: null, dayCount: null, capacity: null, currency: null,
-    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, problems: [],
+    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, problems: [],
   };
   const byLabel = new Map<string, GridCell>();
   for (const r of grid) {
@@ -149,6 +158,24 @@ export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
     const n = num(ip);
     if (n === null || n < 0 || n > 100) s.problems.push('Settings: "In-progress credit (%)" should be 0 to 100. It was ignored.');
     else s.inProgressPercent = n;
+  }
+  s.originalBudget = positive(SETTING_LABELS.originalBudget);
+  const riskLimit = (label: string): number | null => {
+    const c = get(label);
+    if (txt(c) === '') return null;
+    const n = num(c);
+    if (n === null || !Number.isInteger(n) || n < 2 || n > 25) {
+      s.problems.push(`Settings: "${label}" should be a whole number from 2 to 25. It was ignored.`);
+      return null;
+    }
+    return n;
+  };
+  s.riskMediumMin = riskLimit(SETTING_LABELS.riskMediumMin);
+  s.riskHighMin = riskLimit(SETTING_LABELS.riskHighMin);
+  if (s.riskMediumMin !== null && s.riskHighMin !== null && s.riskMediumMin >= s.riskHighMin) {
+    s.problems.push('Settings: "Risk medium from" must be lower than "Risk high from". Both were ignored.');
+    s.riskMediumMin = null;
+    s.riskHighMin = null;
   }
   return s;
 }
@@ -244,6 +271,10 @@ export interface TemplateParts {
   rates: TemplateRates;
   holidays: TemplateHolidays;
   leave: TemplateLeave;
+  /** The optional Risks, Issues and Changes sheets (present = false when the sheet is not in the file). */
+  risks: RiskParse;
+  issues: IssueParse;
+  changes: ChangeParse;
   /** True when a Settings sheet was present at all. */
   hasSettings: boolean;
 }
@@ -257,6 +288,7 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
   const ratesSheet = sheets[find('rates')];
   const holSheet = sheets[find('holidays')];
   const leaveSheet = sheets[find('leave')];
+  const grid = (n: string) => sheets[find(n)]?.data;
   return {
     tasksIndex: t,
     hasSettings: settingsSheet !== undefined,
@@ -264,6 +296,9 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
     rates: ratesSheet ? parseTemplateRates(ratesSheet.data) : { rates: {}, problems: [] },
     holidays: holSheet ? parseTemplateHolidays(holSheet.data) : { dates: [], problems: [] },
     leave: leaveSheet ? parseTemplateLeave(leaveSheet.data) : { entries: [], problems: [] },
+    risks: parseRisks(grid('risks')),
+    issues: parseIssues(grid('issues')),
+    changes: parseChanges(grid('changes')),
   };
 }
 

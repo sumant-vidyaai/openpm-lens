@@ -131,7 +131,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   useEffect(() => {
     onShare(
       calc && csv
-        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, evmRows: calc.evmRaw, schedRows: calc.schedRaw, holidays: holidays.dates, leave: tpl?.leave.entries ?? [], hoursPerDay, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
+        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, evmRows: calc.evmRaw, schedRows: calc.schedRaw, holidays: holidays.dates, leave: tpl?.leave.entries ?? [], hoursPerDay, raid: tpl ? { risks: tpl.risks, issues: tpl.issues, changes: tpl.changes } : null, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
         : null,
     );
   }, [calc, csv, fileName, statusDate, dateOrder, dayCount, holidays, hoursPerDay, tpl, readiness, onShare]);
@@ -271,9 +271,9 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
           {isTpl && readiness && (
             <div className="card noprint" role="note">
               <h3>Your openpm-lens template was recognised</h3>
-              <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings and Rates sheets were read.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
-              {tpl && [...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems].length > 0 && (
-                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems].map((p) => <li key={p}>{p}</li>)}</ul>
+              <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets were read where present.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
+              {tpl && [...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems].length > 0 && (
+                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems].map((p) => <li key={p}>{p}</li>)}</ul>
               )}
               <Readiness readiness={readiness} />
             </div>
