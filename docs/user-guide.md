@@ -4,17 +4,19 @@ openpm-lens turns an export from your project tool into standard project numbers
 
 ## 1. Quick start
 
-1. Open the app. Choose **Import**.
+1. Open the app. The **Overview** screen opens first. Choose **Import** in the left menu (on a phone the menu runs along the top; swipe it sideways).
 2. Choose your export file (CSV, Excel `.xlsx`, or Microsoft Project XML `.xml`), or press **Try the made-up example**.
 3. Check the column guesses in step 1. Fix any that are wrong.
 4. Choose a **status date** (the "as of" date). The app never assumes today.
 5. Read the results. Open **Show the working** under any number to see each step.
-6. Use **Download** or **Print or save as PDF** to share.
+6. Return to **Overview** for the one-screen summary: a health status in words, CPI and SPI shown on a ruler (red, amber and green zones; 1.0 is on plan) and the key numbers. Status never relies on colour alone.
+7. Use **Download** or **Print or save as PDF** to share.
 
 ## 2. What each tab does
 
 | Tab | Question it answers | What the file needs |
 |---|---|---|
+| Overview | Where does my project stand? One health status, CPI and SPI on a ruler, key numbers (shows what you loaded on Import) | Nothing extra; load a file on Import first |
 | Import | Cost, schedule and forecast in hours: CPI, SPI, EAC, ETC, VAC, TCPI, earned schedule, data quality | Task name, planned hours, % complete; actual hours for cost; start and finish dates for schedule |
 | Portfolio | Which projects need attention? | One file per project; roll up by project, programme, team or all |
 | Flow metrics | Throughput, cycle time, WIP, work item age | Dates work started and finished |
@@ -56,7 +58,7 @@ CSV downloads open in Excel. Text that starts with `=`, `+`, `-` or `@` is saved
 ## 7. Accessibility
 
 - Works with a keyboard: Tab to move, Enter or Space to press. A "Skip to content" link appears first.
-- Light, dark and system themes.
+- Light, dark and system themes (Theme box at the bottom of the left menu).
 - Charts have a text description, hover text and a **Show as table** view.
 - Checked with the axe automated tool on every tab in both themes (no problems found) and at a 360 px phone width. Automated tools find only part of the problems; an independent review with real assistive technology is still advisable.
 

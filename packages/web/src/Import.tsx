@@ -110,7 +110,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   useEffect(() => {
     onShare(
       calc && csv
-        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, hoursPerDay }
+        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, hoursPerDay, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
         : null,
     );
   }, [calc, csv, fileName, statusDate, dateOrder, dayCount, hoursPerDay, onShare]);

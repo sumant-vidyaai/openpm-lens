@@ -148,3 +148,33 @@ export function CycleScatter({ points, p50, p85 }: { points: CyclePoint[]; p50: 
     </figure>
   );
 }
+
+const RULER_MIN = 0.6, RULER_MAX = 1.4;
+
+/** A ruler for a performance index (CPI or SPI): coloured zones from the thresholds and a marker at the value. 1.0 means exactly on plan. */
+export function IndexRuler({ name, value, greenMin, amberMin, band }: { name: string; value: number | null; greenMin: number; amberMin: number; band: string }) {
+  const w = 640, left = 12, right = 12, pw = w - left - right, barY = 30, barH = 14;
+  const x = (v: number) => left + ((Math.min(RULER_MAX, Math.max(RULER_MIN, v)) - RULER_MIN) / (RULER_MAX - RULER_MIN)) * pw;
+  const off = value !== null && (value < RULER_MIN || value > RULER_MAX);
+  const label = value === null ? `${name} is not available.` : `${name} is ${+value.toFixed(2)}, ${band}.`;
+  const f = (n: number) => String(+n.toFixed(2));
+  return (
+    <svg className="viz-svg ruler" viewBox={`0 0 ${w} 96`} role="img" aria-label={label}>
+      <title>{label}</title>
+      <rect className="zone zone-bad" x={x(RULER_MIN)} y={barY} width={x(amberMin) - x(RULER_MIN)} height={barH} />
+      <rect className="zone zone-warn" x={x(amberMin)} y={barY} width={x(greenMin) - x(amberMin)} height={barH} />
+      <rect className="zone zone-good" x={x(greenMin)} y={barY} width={x(RULER_MAX) - x(greenMin)} height={barH} />
+      <line className="viz-ref" x1={x(1)} x2={x(1)} y1={barY - 4} y2={barY + barH + 4} />
+      <text className="viz-tick" x={x(RULER_MIN)} y={barY + barH + 16} textAnchor="start">below {f(amberMin)}</text>
+      <text className="viz-tick" x={(x(amberMin) + x(greenMin)) / 2} y={barY + barH + 16} textAnchor="middle">{f(amberMin)} to {f(greenMin)}</text>
+      <text className="viz-tick" x={x(RULER_MAX)} y={barY + barH + 16} textAnchor="end">{f(greenMin)} and above</text>
+      <text className="viz-tick" x={x(1)} y={barY + barH + 36} textAnchor="middle">1.0 = on plan</text>
+      {value !== null && (
+        <g>
+          <polygon className="marker" points={`${x(value) - 7},${barY - 12} ${x(value) + 7},${barY - 12} ${x(value)},${barY - 1}`}><title>{label}</title></polygon>
+          <text className="viz-label strong" x={Math.min(Math.max(x(value), 40), w - 40)} y={barY - 17} textAnchor="middle">{name} {f(value)}{off ? (value < RULER_MIN ? ' (off the scale, lower)' : ' (off the scale, higher)') : ''}</text>
+        </g>
+      )}
+    </svg>
+  );
+}

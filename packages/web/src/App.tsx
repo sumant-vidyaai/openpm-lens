@@ -10,6 +10,7 @@ import { CostScreen } from './CostScreen';
 import { ResourceScreen } from './ResourceScreen';
 import { QualityScreen } from './QualityScreen';
 import { LearnScreen } from './Learn';
+import { OverviewScreen } from './Overview';
 import type { SharedData } from './shared';
 
 type Theme = 'system' | 'light' | 'dark';
@@ -67,15 +68,15 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
-type TabId = 'import' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'learn' | 'coverage' | 'library';
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'import', label: 'Import' }, { id: 'portfolio', label: 'Portfolio' }, { id: 'flow', label: 'Flow metrics' },
-  { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' }, { id: 'learn', label: 'Learn' },
-  { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' },
+type TabId = 'overview' | 'import' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'learn' | 'coverage' | 'library';
+const GROUPS: { title: string; tabs: { id: TabId; label: string }[] }[] = [
+  { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'portfolio', label: 'Portfolio' }] },
+  { title: 'Analyse', tabs: [{ id: 'flow', label: 'Flow metrics' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' }] },
+  { title: 'Learn', tabs: [{ id: 'learn', label: 'Learn' }, { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' }] },
 ];
 
 export function App() {
-  const [tab, setTab] = useState<TabId>('import');
+  const [tab, setTab] = useState<TabId>('overview');
   const [shared, setShared] = useState<SharedData | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     const t = document.documentElement.dataset.theme;
@@ -89,30 +90,39 @@ export function App() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header>
-        <h1>openpm-lens</h1>
-        <label className="noprint">
-          Theme{' '}
-          <select
-            value={theme}
-            onChange={(e) => {
-              const t = e.target.value as Theme;
-              setTheme(t);
-              applyTheme(t);
-            }}
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </label>
-      </header>
+      <div className="shell">
+        <aside className="side noprint">
+          <h1 className="brand"><span aria-hidden="true" className="brand-mark" />openpm-lens</h1>
+          <nav className="tabs side-nav" aria-label="Sections">
+            {GROUPS.map((g) => (
+              <div key={g.title} className="side-group">
+                <p className="side-title">{g.title}</p>
+                {g.tabs.map((t) => (
+                  <button key={t.id} type="button" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
+                ))}
+              </div>
+            ))}
+          </nav>
+          <label className="theme">
+            Theme{' '}
+            <select
+              value={theme}
+              onChange={(e) => {
+                const t = e.target.value as Theme;
+                setTheme(t);
+                applyTheme(t);
+              }}
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </aside>
+        <div className="content">
       <main id="main">
-        <nav className="tabs noprint" aria-label="Sections">
-          {TABS.map((t) => (
-            <button key={t.id} type="button" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
-          ))}
-        </nav>
+        <h1 className="printonly">openpm-lens</h1>
+        {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} />)}
         {panel('import', <ImportScreen onShare={setShared} />)}
         {panel('portfolio', <PortfolioScreen />)}
         {panel('flow', <FlowScreen />)}
@@ -138,8 +148,10 @@ export function App() {
         ))}
       </main>
       <footer>
-        <p>Open source, Apache-2.0. Thresholds shown are starting values, not a standard.</p>
+        <p>Open source, Apache-2.0. Your data stays on this device. Thresholds shown are starting values, not a standard.</p>
       </footer>
+        </div>
+      </div>
     </>
   );
 }

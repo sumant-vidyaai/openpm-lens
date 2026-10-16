@@ -14,4 +14,6 @@ export interface SharedData {
   dateOrder: DateOrder;
   dayCount: DayCount;
   hoursPerDay: number;
+  /** Headline sums for the Overview tab (hours). Null where nothing could be used. */
+  summary: { ev: number | null; ac: number | null; bac: number | null; pv: number | null; evSchedule: number | null; costTasks: number; scheduleTasks: number; tasksTotal: number };
 }
