@@ -4,9 +4,10 @@ An open-source, tool-agnostic project management analytics app. Bring an export 
 tool you already use and get standard project metrics, health scores and dashboards for waterfall,
 Agile, Kanban and hybrid work, with every number explained step by step.
 
-**Status: v0.1 (foundation).** This release contains the tested formula library, the
-canonical data model, the adapter interface and the first metric recipe cards. The importer,
-dashboard and tool connectors come next. See `docs/decisions.md` for the roadmap.
+**Status: v0.16 (pre-1.0).** Import (CSV, Excel, Microsoft Project XML), cost and schedule
+metrics with forecasts and earned schedule, portfolio roll-up with health status, flow metrics,
+schedule, cost in money, resources, quality (defects), charts, and a Learn section. See
+`docs/user-guide.md` for how to use it and `docs/decisions.md` for every design decision.
 
 ## Principles
 
@@ -46,6 +47,17 @@ Each metric is a YAML card in `packages/registry/metrics/`. It names its domain 
 formula, its meaning in plain language, the inputs it needs, how to read the result, and one
 worked example. A test runs the worked example through the formula library, so documentation
 and code cannot drift apart. See `CONTRIBUTING.md` to add one.
+
+## Documentation
+
+- `docs/user-guide.md`: how to use the app, the rules it follows, privacy, accessibility and known limits.
+- `docs/decisions.md`: the decision log, version by version.
+- `docs/architecture.md`: how the code is organised.
+
+## Releases
+
+`scripts/release.sh` builds the static site zip, `SHA256SUMS.txt`, a CycloneDX SBOM and `THIRD_PARTY_NOTICES.txt`
+(run `npm ci` first; needs Python 3 and `zip`).
 
 ## Disclaimers
 

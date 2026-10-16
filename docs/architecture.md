@@ -6,8 +6,8 @@
 |---|---|---|
 | Formula library | `packages/core` | Pure maths, canonical data model types, adapter interface types. No screens, no network, no file access. |
 | Metric registry | `packages/registry` | Each metric declared as a YAML "recipe card"; loader and validator. |
-| Adapters (planned) | `packages/adapters` | One plugin per tool, plus the generic CSV/XLSX importer. |
-| Web app (planned) | `apps/web` | Importer, mapping screen, capability matrix, dashboards, explanations. Static files only. |
+| Importers | `packages/core` | Generic CSV/Excel mapping, tool-specific header adapters and the Microsoft Project XML reader live in the core package (no network, no screens). |
+| Web app | `packages/web` | Importer, mapping screen, capability matrix, dashboards, explanations. Static files only. |
 
 The app is a static site. All calculation happens in the user's browser.
 
