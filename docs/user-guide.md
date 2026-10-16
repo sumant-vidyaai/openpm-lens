@@ -16,13 +16,13 @@ openpm-lens turns an export from your project tool into standard project numbers
 
 | Tab | Question it answers | What the file needs |
 |---|---|---|
-| Overview | Where does my project stand? One health status, CPI and SPI on a ruler, key numbers (shows what you loaded on Import) | Nothing extra; load a file on Import first |
+| Overview | Where does my project stand? One health status, CPI and SPI on a ruler, key numbers, "Why is it red?" (tasks pulling cost or schedule down) and "Fix these first" (shows what you loaded on Import) | Nothing extra; load a file on Import first |
 | Import | Cost, schedule and forecast in hours: CPI, SPI, EAC, ETC, VAC, TCPI, earned schedule, data quality | Task name, planned hours, % complete; actual hours for cost; start and finish dates for schedule |
 | Template | No project tool, or one the app cannot read yet? Download the Excel or CSV template (or the filled example), fill it in and upload it. The app sets itself up | Nothing: it is a download and instructions page |
 | Portfolio | Which projects need attention? | One file per project (or one template file with a Project column); roll up by project, programme, team or all |
 | Flow metrics | Throughput, cycle time, WIP, work item age | Dates work started and finished |
-| Schedule | On-time rate, finish variance, overdue tasks | Planned finish and actual finish dates |
-| Cost in money | Cost in money and forecast | Hours plus hourly rates you type in |
+| Schedule | On-time rate, finish variance, overdue tasks, milestones (done, late, overdue, due soon) | Planned finish and actual finish dates |
+| Cost in money | Cost in money and forecast, monthly cash flow (planned vs actual) | Hours plus hourly rates you type in |
 | Resources | Weekly load and utilisation per person | Planned hours, dates and an assignee |
 | Quality | Defects: counts, age, resolution time, severity, removal efficiency | Item type, created and resolved dates |
 | Learn | What a term means; which metric answers which question | Nothing |
@@ -82,3 +82,5 @@ Each release has `SHA256SUMS.txt`, a CycloneDX software bill of materials (`sbom
 On the **Template** tab, download the Excel workbook (or the plain CSV). Fill in the **Tasks** sheet, one row per task; use the **Settings** sheet for the status date and your own limits, and the **Rates** sheet for hourly rates. Upload it on **Import** (one project) or **Portfolio** (several: put the project name in the Project column).
 
 Rules: effort in hours; % complete as 0 to 100; dates as year-month-day; a blank means "not known" and is never counted as 0. After upload the app shows, for each area, how many tasks have what it needs (for example "Cost: 12 of 40 tasks have actual hours"). Cancelled tasks are left out of every measure. Excel workbooks with a very large sheet (several thousand rows) cannot be read here; save that sheet as CSV.
+
+Holidays and leave: list dates on the **Holidays** sheet and each person's days away on the **Leave** sheet (on Portfolio, type holidays in the box). They count only when days are counted as weekdays. The dashed actual-cost line and the cash flow spread each task's actual hours evenly over its dates; this is an assumption, stated on screen.

@@ -62,6 +62,8 @@ EXAMPLE = [
     ['Mobile app', 'Digital', 'Apps', 'M-6', 'Store listing', 'Task', 'Cancelled', 'Kiran', '2026-03-30', '2026-04-03', '', '', 16, 0, 0, '', '', ''],
 ]
 EXAMPLE_SETTINGS = {'Status date': '2026-03-31', 'Currency': 'INR', 'Default hourly rate': 40}
+EXAMPLE_HOLIDAYS = [('2026-03-25', 'Festival day (made up)')]
+EXAMPLE_LEAVE = [('Kiran', '2026-03-30', '2026-04-03')]
 EXAMPLE_RATES = [('Asha', 55), ('Ravi', 50), ('Meena', 45), ('Dev', 60), ('Kiran', 65)]
 
 HEAD_FILL = PatternFill('solid', fgColor='0B6B73')
@@ -77,7 +79,7 @@ def build(path, example):
     s.title = 'Start here'
     lines = [
         ('openpm-lens template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings and Rates sheets, then upload this file to openpm-lens (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays and Leave sheets, then upload this file to openpm-lens (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -219,6 +221,42 @@ def build(path, example):
     rt.column_dimensions['A'].width = 28
     rt.column_dimensions['B'].width = 16
     rt.cell(row=1, column=4, value='Names must match the Assignee column exactly. Optional.')
+    # --- Holidays
+    ho = wb.create_sheet('Holidays')
+    for j, h in enumerate(['Date', 'Name'], start=1):
+        c = ho.cell(row=1, column=j, value=h)
+        c.fill, c.font = HEAD_FILL, HEAD_FONT
+    for i in range(2, 202):
+        ho.cell(row=i, column=1).fill = INPUT_FILL
+        ho.cell(row=i, column=1).number_format = '@'
+        ho.cell(row=i, column=2).fill = INPUT_FILL
+    if example:
+        for i, (d, n) in enumerate(EXAMPLE_HOLIDAYS, start=2):
+            ho.cell(row=i, column=1, value=d)
+            ho.cell(row=i, column=2, value=n)
+    ho.column_dimensions['A'].width = 16
+    ho.column_dimensions['B'].width = 32
+    ho.cell(row=1, column=4, value='Days everyone is off (year-month-day). Used when days are counted as Weekdays. Optional.')
+
+    # --- Leave
+    lv = wb.create_sheet('Leave')
+    for j, h in enumerate(['Person', 'From', 'To'], start=1):
+        c = lv.cell(row=1, column=j, value=h)
+        c.fill, c.font = HEAD_FILL, HEAD_FONT
+    for i in range(2, 202):
+        for j in (1, 2, 3):
+            lv.cell(row=i, column=j).fill = INPUT_FILL
+            if j > 1:
+                lv.cell(row=i, column=j).number_format = '@'
+    if example:
+        for i, (p_, f_, t_) in enumerate(EXAMPLE_LEAVE, start=2):
+            lv.cell(row=i, column=1, value=p_)
+            lv.cell(row=i, column=2, value=f_)
+            lv.cell(row=i, column=3, value=t_)
+    lv.column_dimensions['A'].width = 24
+    lv.column_dimensions['B'].width = 16
+    lv.column_dimensions['C'].width = 16
+    lv.cell(row=1, column=5, value='Days a person is away. Leave "To" blank for a single day. Names must match the Assignee column. Optional.')
     wb.active = 1
     wb.save(path)
 

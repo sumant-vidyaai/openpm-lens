@@ -1,0 +1,25 @@
+id: evm.eac_typical
+name: Estimate at Completion, typical variance (EAC = BAC / CPI)
+domain: Finance
+area: Cost
+formula: EAC = BAC / CPI
+meaning: >
+  A forecast of the total final cost if the cost performance seen so far continues for the
+  rest of the project. Use it when past overspend or underspend is likely to repeat. Other
+  EAC variants (atypical, CPI x SPI, bottom-up) answer different "what will happen next"
+  assumptions.
+required: [BAC, EV, AC]
+optional: []
+interpretation:
+  note: Compare the forecast with BAC. Any threshold is a local policy choice, not a standard.
+  bands:
+    - { label: Within budget, rule: "EAC <= BAC" }
+    - { label: Forecast overrun, rule: "EAC > BAC" }
+worked_example:
+  inputs: { BAC: 1000, EV: 400, AC: 450 }
+  steps:
+    - "CPI = EV / AC = 400 / 450 (kept unrounded)"
+    - "EAC = BAC / CPI = 1000 / (400 / 450)"
+    - "EAC = 1125"
+  expected: 1125
+  decimals: 2

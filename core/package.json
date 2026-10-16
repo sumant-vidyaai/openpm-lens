@@ -1,0 +1,13 @@
+{
+  "name": "@openpm-lens/core",
+  "version": "0.19.0",
+  "description": "Pure formula library, canonical data model and adapter interface for openpm-lens.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "fast-xml-parser": "^5.11.2"
+  }
+}

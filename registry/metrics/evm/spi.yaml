@@ -1,0 +1,24 @@
+id: evm.spi
+name: Schedule Performance Index (SPI)
+domain: Schedule
+area: Schedule
+formula: SPI = EV / PV
+meaning: >
+  How much of the planned work has actually been done so far. 1.00 means exactly on plan,
+  below 1.00 means behind schedule, above 1.00 means ahead.
+required: [EV, PV]
+optional: []
+interpretation:
+  note: Starting values for illustration only. They are not a standard; set your own policy.
+  bands:
+    - { label: Green, rule: "SPI >= 0.95" }
+    - { label: Amber, rule: "0.85 <= SPI < 0.95" }
+    - { label: Red, rule: "SPI < 0.85" }
+worked_example:
+  inputs: { EV: 400, PV: 500 }
+  steps:
+    - "SPI = EV / PV"
+    - "SPI = 400 / 500"
+    - "SPI = 0.8"
+  expected: 0.8
+  decimals: 4

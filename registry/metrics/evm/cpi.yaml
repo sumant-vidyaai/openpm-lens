@@ -1,0 +1,24 @@
+id: evm.cpi
+name: Cost Performance Index (CPI)
+domain: Finance
+area: Cost
+formula: CPI = EV / AC
+meaning: >
+  The value earned for every unit of money (or hours) spent. 1.00 means on budget, below
+  1.00 means over budget, above 1.00 means under budget.
+required: [EV, AC]
+optional: []
+interpretation:
+  note: Starting values for illustration only. They are not a standard; set your own policy.
+  bands:
+    - { label: Green, rule: "CPI >= 0.95" }
+    - { label: Amber, rule: "0.85 <= CPI < 0.95" }
+    - { label: Red, rule: "CPI < 0.85" }
+worked_example:
+  inputs: { EV: 400, AC: 450 }
+  steps:
+    - "CPI = EV / AC"
+    - "CPI = 400 / 450"
+    - "CPI = 0.8889 (to 4 decimals; calculations keep the unrounded value)"
+  expected: 0.8889
+  decimals: 4

@@ -1,0 +1,15 @@
+Project,Programme,Team,ID,Task,Type,Status,Assignee,Planned start,Planned finish,Actual start,Actual finish,Estimate (h),Actual (h),% complete,Created,Severity,Found in
+Website relaunch,Digital,Web,W-1,Requirements,Task,Done,Asha,2026-03-02,2026-03-06,2026-03-02,2026-03-06,40,44,100,,,
+Website relaunch,Digital,Web,W-2,Design mock-ups,Task,Done,Ravi,2026-03-09,2026-03-13,2026-03-09,2026-03-16,40,52,100,,,
+Website relaunch,Digital,Web,W-3,Build pages,Story,In progress,Asha,2026-03-16,2026-04-03,2026-03-17,,80,56,60,,,
+Website relaunch,Digital,Web,W-4,Build search,Story,In progress,Meena,2026-03-16,2026-03-27,2026-03-18,,48,30,50,,,
+Website relaunch,Digital,Web,W-5,Content migration,Task,Not started,Ravi,2026-04-06,2026-04-17,,,60,0,0,,,
+Website relaunch,Digital,Web,W-6,Broken contact form,Bug,Done,Meena,,,2026-03-10,2026-03-12,8,6,100,2026-03-09,High,Testing
+Website relaunch,Digital,Web,W-7,Logo blurry on phones,Bug,In progress,Asha,,,2026-03-24,,4,2,50,2026-03-23,Low,Production
+Website relaunch,Digital,Web,W-8,Launch,Milestone,Not started,Asha,2026-04-20,2026-04-20,,,8,0,0,,,
+Mobile app,Digital,Apps,M-1,Login screen,Story,Done,Dev,2026-03-02,2026-03-13,2026-03-02,2026-03-12,60,54,100,,,
+Mobile app,Digital,Apps,M-2,Profile screen,Story,Done,Dev,2026-03-09,2026-03-20,2026-03-13,2026-03-24,50,62,100,,,
+Mobile app,Digital,Apps,M-3,Payments,Story,In progress,Kiran,2026-03-16,2026-04-10,2026-03-16,,120,70,40,,,
+Mobile app,Digital,Apps,M-4,Crash on start,Bug,Done,Kiran,,,2026-03-20,2026-03-21,6,9,100,2026-03-19,Critical,Production
+Mobile app,Digital,Apps,M-5,Notifications,Story,Not started,Dev,2026-04-06,2026-04-24,,,70,0,0,,,
+Mobile app,Digital,Apps,M-6,Store listing,Task,Cancelled,Kiran,2026-03-30,2026-04-03,,,16,0,0,,,

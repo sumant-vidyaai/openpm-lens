@@ -1,0 +1,26 @@
+id: evm.tcpi_bac
+name: To-Complete Performance Index to BAC (TCPI)
+domain: Finance
+area: Cost
+formula: TCPI = (BAC - EV) / (BAC - AC)
+meaning: >
+  The cost efficiency the remaining work must achieve to finish exactly on the original
+  budget. Around 1.00 means keep doing what you are doing; well above 1.00 means the rest
+  of the work must be done much more cheaply than so far, which may be unrealistic.
+required: [BAC, EV, AC]
+optional: []
+interpretation:
+  note: Starting values for illustration only. They are not a standard; set your own policy.
+  bands:
+    - { label: Green, rule: "TCPI <= 1.10" }
+    - { label: Amber, rule: "1.10 < TCPI <= 1.25" }
+    - { label: Red, rule: "TCPI > 1.25" }
+worked_example:
+  inputs: { BAC: 1000, EV: 400, AC: 450 }
+  steps:
+    - "TCPI = (BAC - EV) / (BAC - AC)"
+    - "TCPI = (1000 - 400) / (1000 - 450)"
+    - "TCPI = 600 / 550"
+    - "TCPI = 1.0909 (to 4 decimals)"
+  expected: 1.0909
+  decimals: 4
