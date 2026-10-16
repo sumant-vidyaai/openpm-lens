@@ -7,6 +7,7 @@ import {
 import { readTable } from './readFile';
 import { SAMPLE_FLOW } from './sample';
 import { StepsPanel } from './Explain';
+import { ReplaceButton } from './common';
 
 const FIELDS: { key: keyof FlowColumns; label: string }[] = [
   { key: 'name', label: 'Item name' },
@@ -86,9 +87,7 @@ export function FlowScreen() {
           Choose file{' '}
           <input type="file" accept=".csv,text/csv,.txt,.xlsx" onChange={async (e) => { const x = e.target.files?.[0]; if (x) await onFile(x); }} />
         </label>
-        <button type="button" onClick={() => { setFileName('flow-sample.csv (made-up example)'); setTable(parseCsv(SAMPLE_FLOW)); setNote(null); setError(null); setEdits({}); setStatusDate('2026-01-28'); setWeeks(2); }}>
-          Try the made-up example
-        </button>
+        <ReplaceButton loaded={table !== null && fileName !== 'flow-sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => { setFileName('flow-sample.csv (made-up example)'); setTable(parseCsv(SAMPLE_FLOW)); setNote(null); setError(null); setEdits({}); setStatusDate('2026-01-28'); setWeeks(2); }} />
       </div>
       {error && <p className="warn" role="alert">{error}</p>}
       {table && cols && (

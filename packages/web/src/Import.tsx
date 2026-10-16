@@ -11,6 +11,7 @@ import { EarnedValueChart } from './charts';
 import { SAMPLE_CSV } from './sample';
 import { ExplainPanel, StepsPanel } from './Explain';
 import type { SharedData } from './shared';
+import { ReplaceButton } from './common';
 
 type Grid = (string | number | boolean | Date | null)[][];
 type Raw =
@@ -212,9 +213,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
             }}
           />
         </label>
-        <button type="button" onClick={() => reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV })}>
-          Try the made-up example
-        </button>
+        <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV })} />
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}

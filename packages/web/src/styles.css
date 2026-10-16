@@ -94,3 +94,4 @@ input[type='date'] { font: inherit; color: var(--fg); background: var(--bg); bor
 @media print { .viz-root { break-inside: avoid; } }
 .glossary { margin: 0; } .glossary .card { margin: .5rem 0; } .glossary dd { margin: 0; }
 select, input { max-width: 100%; min-width: 0; }
+.confirm { display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: .4rem; background: var(--card); }

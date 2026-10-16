@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { toCsv, type CsvCell } from '@openpm-lens/core';
 
 export function NeedsImport({ onGo }: { onGo: () => void }) {
@@ -38,5 +39,20 @@ export function ColumnSelect(props: { label: string; headers: string[]; value: s
         {props.headers.map((h) => <option key={h} value={h}>{h}</option>)}
       </select>
     </label>
+  );
+}
+
+/** A button that replaces what is already loaded. If something is loaded it asks first, so work is not lost by accident. */
+export function ReplaceButton({ loaded, what, label, onConfirm }: { loaded: boolean; what: string; label: string; onConfirm: () => void }) {
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return <button type="button" onClick={() => (loaded ? setAsking(true) : onConfirm())}>{label}</button>;
+  }
+  return (
+    <span className="confirm" role="alertdialog" aria-label="Replace what is loaded?">
+      <span>This replaces <strong>{what}</strong> and the choices you made. </span>
+      <button type="button" onClick={() => { setAsking(false); onConfirm(); }}>Replace</button>{' '}
+      <button type="button" onClick={() => setAsking(false)}>Keep my file</button>
+    </span>
   );
 }
