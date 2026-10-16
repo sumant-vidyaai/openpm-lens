@@ -85,9 +85,10 @@ export function FlowScreen() {
       <div className="row">
         <label className="btn">
           Choose file{' '}
-          <input type="file" accept=".csv,text/csv,.txt,.xlsx" onChange={async (e) => { const x = e.target.files?.[0]; if (x) await onFile(x); }} />
+          <input type="file" accept=".csv,text/csv,.txt,.xlsx" onChange={async (e) => { const x = e.target.files?.[0]; const input = e.target; if (x) await onFile(x); input.value = ''; }} />
         </label>
         <ReplaceButton loaded={table !== null && fileName !== 'flow-sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => { setFileName('flow-sample.csv (made-up example)'); setTable(parseCsv(SAMPLE_FLOW)); setNote(null); setError(null); setEdits({}); setStatusDate('2026-01-28'); setWeeks(2); }} />
+        {table !== null && <ReplaceButton loaded={fileName !== 'flow-sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setFileName(null); setTable(null); setNote(null); setError(null); setEdits({}); }} />}
       </div>
       {error && <p className="warn" role="alert">{error}</p>}
       {table && cols && (

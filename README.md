@@ -4,7 +4,7 @@ An open-source, tool-agnostic project management analytics app. Bring an export 
 tool you already use and get standard project metrics, health scores and dashboards for waterfall,
 Agile, Kanban and hybrid work, with every number explained step by step.
 
-**Status: v0.16.1 (pre-1.0).** Import (CSV, Excel, Microsoft Project XML), cost and schedule
+**Status: v0.16.2 (pre-1.0).** Import (CSV, Excel, Microsoft Project XML), cost and schedule
 metrics with forecasts and earned schedule, portfolio roll-up with health status, flow metrics,
 schedule, cost in money, resources, quality (defects), charts, and a Learn section. See
 `docs/user-guide.md` for how to use it and `docs/decisions.md` for every design decision.

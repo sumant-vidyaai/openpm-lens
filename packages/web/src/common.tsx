@@ -42,16 +42,16 @@ export function ColumnSelect(props: { label: string; headers: string[]; value: s
   );
 }
 
-/** A button that replaces what is already loaded. If something is loaded it asks first, so work is not lost by accident. */
-export function ReplaceButton({ loaded, what, label, onConfirm }: { loaded: boolean; what: string; label: string; onConfirm: () => void }) {
+/** A button for an action that throws away what is loaded. If the user's own work is loaded it asks first, so nothing is lost by accident. */
+export function ReplaceButton({ loaded, what, label, onConfirm, verb = 'replaces', confirmLabel = 'Replace' }: { loaded: boolean; what: string; label: string; onConfirm: () => void; verb?: string; confirmLabel?: string }) {
   const [asking, setAsking] = useState(false);
   if (!asking) {
     return <button type="button" onClick={() => (loaded ? setAsking(true) : onConfirm())}>{label}</button>;
   }
   return (
-    <span className="confirm" role="alertdialog" aria-label="Replace what is loaded?">
-      <span>This replaces <strong>{what}</strong> and the choices you made. </span>
-      <button type="button" onClick={() => { setAsking(false); onConfirm(); }}>Replace</button>{' '}
+    <span className="confirm" role="alertdialog" aria-label={`${confirmLabel} what is loaded?`}>
+      <span>This {verb} <strong>{what}</strong> and the choices you made. </span>
+      <button type="button" onClick={() => { setAsking(false); onConfirm(); }}>{confirmLabel}</button>{' '}
       <button type="button" onClick={() => setAsking(false)}>Keep my file</button>
     </span>
   );

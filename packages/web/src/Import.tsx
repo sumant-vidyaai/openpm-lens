@@ -210,10 +210,12 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (f) await onFile(f);
+              e.target.value = '';
             }}
           />
         </label>
         <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV })} />
+        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}
