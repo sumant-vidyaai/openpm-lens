@@ -16,6 +16,8 @@ export interface AnalyseSettings {
   hoursPerDay: number;
   dateOrder: DateOrder;
   dayCount: DayCount;
+  /** Holidays (ISO dates) left out of the count in weekdays mode. */
+  holidays?: string[];
   /** ISO date, or '' when not chosen (schedule measures are then not worked out). */
   statusDate: string;
   missingPlanned: MissingPlannedPolicy;
@@ -77,7 +79,7 @@ export function analyseTable(table: CsvResult, s: AnalyseSettings = DEFAULT_ANAL
   const config = rule === 'status_based' ? { inProgressPercent: s.inProgressPercent } : undefined;
   const tasks = toHoursTasks(items, calendar, rule, config);
   const agg = aggregateHoursEvm(tasks, s.missingPlanned);
-  const sched = s.statusDate ? aggregateSchedule(toScheduleTasks(items, calendar, rule, config), s.statusDate, s.dayCount) : null;
+  const sched = s.statusDate ? aggregateSchedule(toScheduleTasks(items, calendar, rule, config), s.statusDate, { mode: s.dayCount, holidays: s.holidays }) : null;
   const notes = [...agg.caveats, ...(sched?.caveats ?? [])];
   if (!s.statusDate) notes.push('No status date chosen: schedule measures not worked out.');
   return {

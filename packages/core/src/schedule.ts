@@ -1,5 +1,5 @@
 import type { MetricStatus } from './result';
-import { countDays, type DayCount } from './dates';
+import { countDays, dayHolidays, dayMode, type DayRule } from './dates';
 import { scheduleVariance, schedulePerformanceIndex } from './evm';
 
 /**
@@ -38,7 +38,7 @@ export interface ScheduleAggregate {
 }
 
 /** Share (0-1) of a task's planned work that should be done by the status date. */
-export function plannedFraction(start: string, finish: string, statusDate: string, mode: DayCount): number {
+export function plannedFraction(start: string, finish: string, statusDate: string, mode: DayRule): number {
   if (statusDate < start) return 0;
   if (statusDate >= finish) return 1;
   const total = countDays(start, finish, mode);
@@ -46,7 +46,7 @@ export function plannedFraction(start: string, finish: string, statusDate: strin
   return Math.min(1, countDays(start, statusDate, mode) / total);
 }
 
-export function aggregateSchedule(tasks: ScheduleTask[], statusDate: string, mode: DayCount): ScheduleAggregate {
+export function aggregateSchedule(tasks: ScheduleTask[], statusDate: string, mode: DayRule): ScheduleAggregate {
   let pv = 0, ev = 0, used = 0;
   const excluded: ScheduleExcluded[] = [];
   for (const t of tasks) {
@@ -67,9 +67,12 @@ export function aggregateSchedule(tasks: ScheduleTask[], statusDate: string, mod
     const detail = [...by.entries()].map(([r, n]) => `${n} ${r}`).join('; ');
     caveats.push(`${excluded.length} of ${total} tasks excluded from schedule measures (${detail}).`);
   }
+  const nHol = dayHolidays(mode).length;
   caveats.push(
-    mode === 'weekdays'
-      ? 'Assumption: planned hours are spread evenly over Monday to Friday; holidays are not known.'
+    dayMode(mode) === 'weekdays'
+      ? nHol > 0
+        ? `Assumption: planned hours are spread evenly over Monday to Friday, leaving out the ${nHol} holiday${nHol === 1 ? '' : 's'} you listed.`
+        : 'Assumption: planned hours are spread evenly over Monday to Friday; holidays are not known.'
       : 'Assumption: planned hours are spread evenly over every calendar day, weekends included.',
   );
   if (used === 0) {

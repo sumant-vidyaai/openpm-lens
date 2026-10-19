@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { parseDateText, suggestFlowColumns, type DateOrder } from '@openpm-lens/core';
 import { toCsv, type CsvCell } from '@openpm-lens/core';
 
 export function NeedsImport({ onGo }: { onGo: () => void }) {
@@ -55,4 +56,27 @@ export function ReplaceButton({ loaded, what, label, onConfirm, verb = 'replaces
       <button type="button" onClick={() => setAsking(false)}>Keep my file</button>
     </span>
   );
+}
+
+/** A column holding the date work ACTUALLY started. A bare "Start" is not used: in many tools it is the planned start. */
+export function suggestActualStart(headers: string[]): string | null {
+  for (const re of [/^actual start( date)?$/i, /^(work )?started( date)?$/i, /started/i]) {
+    const hit = headers.find((h) => re.test(h.trim()));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** Actual start and finish dates per row (null when blank or unclear), from guessed or chosen columns. */
+export function actualDatesOf(headers: string[], rows: string[][], order: DateOrder, startCol?: string | null, finishCol?: string | null) {
+  const sc = startCol === undefined ? suggestActualStart(headers) : startCol;
+  const fc = finishCol === undefined ? suggestFlowColumns(headers).done : finishCol;
+  const read = (col: string | null) => {
+    const j = col === null ? -1 : headers.indexOf(col);
+    return rows.map((r) => {
+      const t = j < 0 ? '' : (r[j] ?? '').trim();
+      return t === '' ? null : parseDateText(t, order, 'date').iso;
+    });
+  };
+  return { startCol: sc, finishCol: fc, start: read(sc), finish: read(fc) };
 }

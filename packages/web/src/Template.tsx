@@ -76,12 +76,14 @@ export function TemplateScreen({ onGoImport }: { onGoImport: () => void }) {
         <li>Effort is in <strong>hours</strong>, percent is <strong>0 to 100</strong>, dates are <strong>year-month-day</strong>.</li>
         <li>On the <strong>Settings</strong> sheet, type the status date (the &ldquo;as of&rdquo; day). It is never assumed.</li>
         <li>Optional: put each person&rsquo;s hourly rate on the <strong>Rates</strong> sheet to see cost in money.</li>
+        <li>Optional: list company holidays on the <strong>Holidays</strong> sheet and days away on the <strong>Leave</strong> sheet. Holidays are left out of weekday counts; leave takes one fifth off that person&rsquo;s weekly capacity per day.</li>
+        <li>To mark a milestone, set its Type to Milestone.</li>
         <li>A blank cell means &ldquo;not known&rdquo;. It is never counted as 0.</li>
       </ol>
       <h3>3. Upload</h3>
       <p>Use <button type="button" onClick={onGoImport}>Import</button> for one project, or Portfolio for several: put the project name in the Project column and one file can hold them all.</p>
       <h3>The columns</h3>
-      <div className="scroll">
+      <div className="scroll" tabIndex={0}>
         <table>
           <caption className="sr">Template columns</caption>
           <thead><tr><th scope="col">Column</th><th scope="col">Needed for</th><th scope="col">What to put there</th></tr></thead>

@@ -35,23 +35,23 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
     return o;
   }, [own]);
   const result = useMemo(
-    () => (shared && assigneeCol !== null && capOk && ovOk ? analyseResources(tasks, { capacityDefault: cap, capacityByPerson: capByPerson, mode: shared.dayCount, overPercent: ov }) : null),
+    () => (shared && assigneeCol !== null && capOk && ovOk ? analyseResources(tasks, { capacityDefault: cap, capacityByPerson: capByPerson, mode: { mode: shared.dayCount, holidays: shared.holidays }, leave: shared.leave, overPercent: ov }) : null),
     [shared, assigneeCol, tasks, cap, ov, capOk, ovOk, capByPerson],
   );
   const pct = (n: number | null) => (n === null ? '-' : `${roundHalfUp(n, 0)}%`);
   const assumptions = [
     `File: ${shared?.fileName ?? ''}. Weekly capacity: ${capacity} hours per person unless set for a person. A week is flagged above ${over}%.`,
-    `Planned hours are spread evenly over each task's planned ${shared?.dayCount === 'calendar' ? 'calendar days' : 'weekdays (holidays and leave not known)'}; weeks start on Monday.`,
+    `Planned hours are spread evenly over each task's planned ${shared?.dayCount === 'calendar' ? 'calendar days' : shared && shared.holidays.length > 0 ? `weekdays, leaving out ${shared.holidays.length} holiday${shared.holidays.length === 1 ? '' : 's'}` : 'weekdays (holidays not known)'}; ${shared && shared.leave.length > 0 ? `${shared.leave.length} leave entr${shared.leave.length === 1 ? 'y' : 'ies'} reduce capacity` : 'leave not listed, so everyone is assumed available'}; weeks start on Monday.`,
     'A task naming several people (separated by ";") is left out, because how the hours split is not known. Tasks with nobody assigned are shown on their own row.',
     'These are this app\'s own arithmetic rules, not a standard.',
   ];
 
   function download() {
     if (!result || !shared) return;
-    const rows: CsvCell[][] = [['Person', 'Capacity (h/week)', 'Tasks', 'Planned hours', 'Actual vs planned', 'Weeks over limit', 'Peak utilisation %', ...result.weeks.map((w) => `Week of ${w} (planned h)`), ...result.weeks.map((w) => `Week of ${w} (utilisation %)`)]];
+    const rows: CsvCell[][] = [['Person', 'Capacity (h/week)', 'Tasks', 'Planned hours', 'Actual vs planned', 'Weeks over limit', 'Peak utilisation %', ...result.weeks.map((w) => `Week of ${w} (planned h)`), ...result.weeks.map((w) => `Week of ${w} (utilisation %)`), ...result.weeks.map((w) => `Week of ${w} (capacity h)`)]];
     for (const p of result.people) {
       rows.push([p.person, p.capacity, p.tasks, roundHalfUp(p.plannedTotal, 4), p.actualVsPlanned === null ? null : roundHalfUp(p.actualVsPlanned, 4), p.overWeeks, p.peak === null ? null : roundHalfUp(p.peak, 2),
-        ...p.weeks.map((w) => roundHalfUp(w.planned, 4)), ...p.weeks.map((w) => (w.utilisation === null ? null : roundHalfUp(w.utilisation, 2)))]);
+        ...p.weeks.map((w) => roundHalfUp(w.planned, 4)), ...p.weeks.map((w) => (w.utilisation === null ? null : roundHalfUp(w.utilisation, 2))), ...p.weeks.map((w) => roundHalfUp(w.capacity, 2))]);
     }
     rows.push([]);
     assumptions.forEach((a) => rows.push(['Assumption', a]));
@@ -91,7 +91,7 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
               <h3>Results</h3>
               {result.people.length === 0 ? <p className="warn">No tasks could be read.</p> : (
                 <>
-                  <div className="scroll">
+                  <div className="scroll" tabIndex={0}>
                     <table>
                       <caption>Utilisation by week (planned hours / capacity). ▲ = above {over}%</caption>
                       <thead><tr><th scope="col">Person</th><th scope="col">Capacity</th>{result.weeks.map((w) => <th scope="col" key={w}>{w}</th>)}<th scope="col">Weeks over</th></tr></thead>
@@ -100,8 +100,9 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
                           <tr key={p.person}>
                             <th scope="row">{p.person}</th><td>{p.capacity} h</td>
                             {p.weeks.map((w) => {
-                              const flagged = w.utilisation !== null && w.utilisation > ov + 1e-9;
-                              return <td key={w.weekStart} className={flagged ? 'rag-red' : undefined}>{flagged ? '▲ ' : ''}{pct(w.utilisation)}</td>;
+                              const noRoom = w.capacity === 0 && w.planned > 1e-9;
+                              const flagged = noRoom || (w.utilisation !== null && w.utilisation > ov + 1e-9);
+                              return <td key={w.weekStart} className={flagged ? 'rag-red' : undefined}>{flagged ? '▲ ' : ''}{noRoom ? 'no capacity' : pct(w.utilisation)}{w.capacity < p.capacity - 1e-9 && !noRoom ? ` (capacity ${roundHalfUp(w.capacity, 1)} h)` : ''}</td>;
                             })}
                             <td>{p.overWeeks}</td>
                           </tr>
@@ -109,7 +110,7 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
                       </tbody>
                     </table>
                   </div>
-                  <div className="scroll">
+                  <div className="scroll" tabIndex={0}>
                     <table>
                       <caption>Totals per person</caption>
                       <thead><tr><th scope="col">Person</th><th scope="col">Tasks</th><th scope="col">Planned hours</th><th scope="col">Actual vs planned</th><th scope="col">Peak week</th></tr></thead>

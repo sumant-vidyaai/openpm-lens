@@ -1,5 +1,5 @@
 import type { ScheduleTask } from './schedule';
-import type { DayCount } from './dates';
+import { dayCounter, dayHolidays, dayMode, type DayRule } from './dates';
 import { countDays } from './dates';
 import type { StepGroup } from './explain';
 import { roundHalfUp } from './format';
@@ -54,18 +54,18 @@ export interface PvCurve {
 }
 
 /** Cumulative planned value by day, for the tasks that can be used in schedule measures. */
-export function plannedValueCurve(tasks: ScheduleTask[], mode: DayCount): PvCurve {
+export function plannedValueCurve(tasks: ScheduleTask[], mode: DayRule): PvCurve {
   const u = usable(tasks);
   if (u.length === 0) return { dates: [], pv: [] };
   const first = Math.min(...u.map((t) => toUtc(t.start)));
   const last = Math.max(...u.map((t) => toUtc(t.finish)));
   const days = Math.round((last - first) / DAY) + 1;
+  const counts = dayCounter(mode);
   const counted: boolean[] = [];
   const cum: number[] = [];
   let c = 0;
   for (let i = 0; i < days; i++) {
-    const wd = new Date(first + i * DAY).getUTCDay();
-    const ok = mode === 'calendar' || (wd !== 0 && wd !== 6);
+    const ok = counts(first + i * DAY);
     counted.push(ok);
     if (ok) c += 1;
     cum.push(c);
@@ -108,7 +108,7 @@ export interface EarnedScheduleResult {
 
 const num = (x: number | null, d = 2) => (x === null ? 'not available' : String(roundHalfUp(x, d)));
 
-export function earnedSchedule(tasks: ScheduleTask[], statusDate: string, mode: DayCount): EarnedScheduleResult {
+export function earnedSchedule(tasks: ScheduleTask[], statusDate: string, mode: DayRule): EarnedScheduleResult {
   const u = usable(tasks);
   const none = (reason: string, extra: Partial<EarnedScheduleResult> = {}): EarnedScheduleResult => ({
     status: 'not_available', es: null, at: null, svT: null, spiT: null, plannedDuration: 0, capped: false,
@@ -144,7 +144,7 @@ export function earnedSchedule(tasks: ScheduleTask[], statusDate: string, mode: 
   }
   const spiT = at > 0 ? es / at : null;
   const svT = es - at;
-  const unit = mode === 'weekdays' ? 'weekdays' : 'calendar days';
+  const unit = dayMode(mode) === 'weekdays' ? 'weekdays' : 'calendar days';
   const steps: StepGroup[] = [
     { label: 'Planned duration and actual time', steps: [
       `Planned duration = ${N} ${unit} (${start} to ${end}).`,
@@ -161,7 +161,7 @@ export function earnedSchedule(tasks: ScheduleTask[], statusDate: string, mode: 
     { label: 'Schedule performance in time, SPI(t)', steps: spiT === null ? ['SPI(t) = ES / AT', 'AT is 0, so SPI(t) is not available'] : ['SPI(t) = ES / AT', `SPI(t) = ${num(es, 4)} / ${at}`, `SPI(t) = ${num(spiT, 4)}, shown as ${num(spiT)}`] },
   ];
   const caveats = [
-    `Time is counted in ${unit}. Holidays are not known.`,
+    dayMode(mode) === 'calendar' ? `Time is counted in ${unit}.` : dayHolidays(mode).length > 0 ? `Time is counted in ${unit}, leaving out the ${dayHolidays(mode).length} holiday${dayHolidays(mode).length === 1 ? '' : 's'} you listed.` : `Time is counted in ${unit}. Holidays are not known.`,
     'Only tasks with planned hours, progress and usable planned dates are in the planned value curve.',
   ];
   if (capped) caveats.push('All planned work is earned, so ES is capped at the planned duration (our rule; the published method does not cover this case).');

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { analyseMoney, EAC_METHODS, forecastMoney, roundHalfUp, splitPeople, type CsvCell, type EacMethod, type MoneyTask } from '@openpm-lens/core';
 import { ColumnSelect, NeedsImport, saveCsv, suggestAssignee } from './common';
 import { StepsPanel } from './Explain';
+import { CashFlow } from './CashFlow';
 import type { SharedData } from './shared';
 
 const METHODS = EAC_METHODS.filter((m) => m.value !== 'cpi_spi');
@@ -129,6 +130,7 @@ export function CostScreen({ shared, onGoImport }: { shared: SharedData | null; 
                   <p className="note">The method that also uses schedule performance is not offered here, because planned value is not priced.</p>
                 </>
               )}
+              {shared && <CashFlow shared={shared} money={money} cur={cur} />}
               {money.excluded.length > 0 && (
                 <details><summary>Tasks left out, and why ({money.excluded.length})</summary>
                   <ul>{money.excluded.map((e) => <li key={e.id}>{e.id}: {e.reason}</li>)}</ul>

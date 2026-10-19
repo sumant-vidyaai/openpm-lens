@@ -16,7 +16,7 @@ export function CoverageScreen() {
         Built from each tool's public documentation. A tool that cannot supply an input cannot feed the metric that
         needs it, and the app says so instead of guessing. Please confirm against a real export from your own setup.
       </p>
-      <div className="scroll">
+      <div className="scroll" tabIndex={0}>
         <table>
           <caption>Tool coverage</caption>
           <thead>

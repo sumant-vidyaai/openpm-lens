@@ -13,7 +13,7 @@ export function LearnScreen() {
       <p className="lead">Plain-language help for the numbers in this app. Start with "Which question, which metric?", then look up any word in the glossary.</p>
 
       <h3>Which question, which metric?</h3>
-      <div className="scroll">
+      <div className="scroll" tabIndex={0}>
         <table>
           <caption>Questions a project manager asks, and where to find the answer</caption>
           <thead><tr><th scope="col">Question</th><th scope="col">Look at</th><th scope="col">Tab</th><th scope="col">What your file needs</th></tr></thead>

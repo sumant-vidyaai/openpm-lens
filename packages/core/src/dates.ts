@@ -84,23 +84,40 @@ export function parseDateText(input: string | null | undefined, order: DateOrder
 
 export type DayCount = 'weekdays' | 'calendar';
 
+/**
+ * How days are counted. A plain DayCount, or a DayCount plus a list of holidays (ISO dates).
+ * Holidays only take a day out of the count in weekdays mode: "every calendar day" means every day.
+ */
+export interface DaySpec { mode: DayCount; holidays?: readonly string[] }
+export type DayRule = DayCount | DaySpec;
+
+export const dayMode = (r: DayRule): DayCount => (typeof r === 'string' ? r : r.mode);
+export const dayHolidays = (r: DayRule): readonly string[] => (typeof r === 'string' || r.mode !== 'weekdays' ? [] : (r.holidays ?? []));
+
 const toUtc = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
   return Date.UTC(y, m - 1, d);
 };
 
-/** Number of days from `from` to `to` inclusive (0 if to is before from). */
-export function countDays(from: string, to: string, mode: DayCount): number {
+/** A fast lookup: is this UTC day counted under the rule? */
+export function dayCounter(rule: DayRule): (utcMs: number) => boolean {
+  const mode = dayMode(rule);
+  const hol = new Set(dayHolidays(rule));
+  return (t) => {
+    if (mode === 'calendar') return true;
+    const wd = new Date(t).getUTCDay();
+    if (wd === 0 || wd === 6) return false;
+    return hol.size === 0 || !hol.has(new Date(t).toISOString().slice(0, 10));
+  };
+}
+
+/** Number of counted days from `from` to `to` inclusive (0 if to is before from). */
+export function countDays(from: string, to: string, rule: DayRule): number {
   const a = toUtc(from), b = toUtc(to);
   if (b < a) return 0;
   const DAY = 86_400_000;
+  const counted = dayCounter(rule);
   let n = 0;
-  for (let t = a; t <= b; t += DAY) {
-    if (mode === 'calendar') n += 1;
-    else {
-      const wd = new Date(t).getUTCDay();
-      if (wd !== 0 && wd !== 6) n += 1;
-    }
-  }
+  for (let t = a; t <= b; t += DAY) if (counted(t)) n += 1;
   return n;
 }

@@ -1,7 +1,7 @@
 import type { EvmAggregate, HoursTask, MissingPlannedPolicy } from './aggregate';
 import type { ScheduleAggregate, ScheduleTask } from './schedule';
 import { plannedFraction } from './schedule';
-import type { DayCount } from './dates';
+import { dayMode, type DayRule } from './dates';
 import { roundHalfUp } from './format';
 
 /**
@@ -57,7 +57,7 @@ export interface ScheduleRow {
   note: string;
 }
 
-export function explainScheduleRows(tasks: ScheduleTask[], statusDate: string, mode: DayCount): ScheduleRow[] {
+export function explainScheduleRows(tasks: ScheduleTask[], statusDate: string, mode: DayRule): ScheduleRow[] {
   return tasks.map((t) => {
     const base = {
       id: t.id, plannedHours: t.plannedHours, plannedStart: t.plannedStart, plannedFinish: t.plannedFinish,
@@ -102,14 +102,14 @@ export function evmSteps(agg: EvmAggregate): StepGroup[] {
 }
 
 /** Formula walk-through for PV, EV, SPI and SV. */
-export function scheduleSteps(agg: ScheduleAggregate, statusDate: string, mode: DayCount): StepGroup[] {
+export function scheduleSteps(agg: ScheduleAggregate, statusDate: string, mode: DayRule): StepGroup[] {
   if (agg.pv === null || agg.ev === null) return [];
   const { pv, ev } = agg;
   const groups: StepGroup[] = [
     {
       label: 'Planned value (PV)',
       steps: [
-        `PV = sum of (planned hours x share of its planned ${mode === 'weekdays' ? 'weekdays' : 'calendar days'} elapsed by ${statusDate})`,
+        `PV = sum of (planned hours x share of its planned ${dayMode(mode) === 'weekdays' ? 'weekdays' : 'calendar days'} elapsed by ${statusDate})`,
         `PV = ${num(pv)} hours`,
       ],
     },

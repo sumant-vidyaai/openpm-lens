@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  ALL_PROJECTS, analyseTable, isTemplateTable, splitTemplateProjects, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
+  ALL_PROJECTS, analyseTable, isTemplateTable, parseHolidayText, splitTemplateProjects, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
   toCsv, validateThresholds, type AnalyseSettings, type CsvCell, type CsvResult, type DateOrder, type DayCount,
   type Health, type PercentRule, type PortfolioProject, type RollupBy, type Unit,
 } from '@openpm-lens/core';
@@ -33,6 +33,7 @@ export function PortfolioScreen() {
   const [statusDate, setStatusDate] = useState('');
   const [dateOrder, setDateOrder] = useState<DateOrder>('auto');
   const [dayCount, setDayCount] = useState<DayCount>('weekdays');
+  const [holidayText, setHolidayText] = useState('');
   const [hoursPerDay, setHoursPerDay] = useState(8);
   const [percentScale, setPercentScale] = useState<'0-100' | '0-1'>('0-100');
   const [by, setBy] = useState<RollupBy>('programme');
@@ -72,6 +73,8 @@ export function PortfolioScreen() {
             if (t.statusDate) setStatusDate(t.statusDate);
             if (t.hoursPerDay !== null) setHoursPerDay(t.hoursPerDay);
             if (t.dayCount !== null) setDayCount(t.dayCount);
+            if (template.holidays.dates.length > 0) setHolidayText(template.holidays.dates.join('\n'));
+            problems.push(...template.holidays.problems);
             if (t.rule !== null && t.rule !== 'tool_reported') setRuleOverride(t.rule);
             if (t.inProgressPercent !== null) setInProgressPercent(t.inProgressPercent);
             if (t.greenMin !== null && t.amberMin !== null) { setGreen(String(t.greenMin)); setAmber(String(t.amberMin)); }
@@ -96,9 +99,10 @@ export function PortfolioScreen() {
   }
   const edit = (id: string, patch: Partial<Entry>) => setEntries((cur) => cur.map((e) => (e.id === id ? { ...e, ...patch } : e)));
 
+  const holidays = useMemo(() => parseHolidayText(holidayText), [holidayText]);
   const settings: AnalyseSettings = useMemo(
-    () => ({ ...DEFAULT_ANALYSE, statusDate, dateOrder, dayCount, hoursPerDay, percentScale, ruleOverride, inProgressPercent }),
-    [statusDate, dateOrder, dayCount, hoursPerDay, percentScale, ruleOverride, inProgressPercent],
+    () => ({ ...DEFAULT_ANALYSE, statusDate, dateOrder, dayCount, holidays: holidays.dates, hoursPerDay, percentScale, ruleOverride, inProgressPercent }),
+    [statusDate, dateOrder, dayCount, holidays, hoursPerDay, percentScale, ruleOverride, inProgressPercent],
   );
   const projects: PortfolioProject[] = useMemo(
     () => entries.map((e) => ({
@@ -112,7 +116,7 @@ export function PortfolioScreen() {
   const f = (n: number | null, d = 2) => (n === null ? '-' : String(roundHalfUp(n, d)));
   const assumptions = [
     `Hours are summed first; CPI and SPI are worked out from the sums (ratios are never averaged).`,
-    `Status date: ${statusDate || 'not chosen (schedule measures not worked out)'}. Planned hours spread evenly over ${dayCount === 'weekdays' ? 'weekdays' : 'calendar days'}.`,
+    `Status date: ${statusDate || 'not chosen (schedule measures not worked out)'}. Planned hours spread evenly over ${dayCount === 'weekdays' ? (holidays.dates.length > 0 ? `weekdays, leaving out ${holidays.dates.length} holiday${holidays.dates.length === 1 ? '' : 's'}` : 'weekdays (holidays not known)') : 'calendar days'}.`,
     `Progress rule: ${ruleOverride === null ? "each file's own suggestion (the % complete column for the template)" : ruleOverride === 'zero_hundred' ? '0/100' : ruleOverride === 'fifty_fifty' ? '50/50' : ruleOverride === 'status_based' ? `status-based (${inProgressPercent}% while in progress)` : 'the % complete column'}${ruleOverride === null ? '' : " (from the template's Settings sheet)"}.`,
     `Date order: ${dateOrder === 'auto' ? 'unclear dates are refused' : dateOrder === 'dmy' ? 'day / month / year' : 'month / day / year'}. One working day = ${hoursPerDay} hours.`,
     `A roll-up includes every project that has numbers, even one whose own status is "Insufficient data".`,
@@ -168,7 +172,7 @@ export function PortfolioScreen() {
         <>
           <h3>1. Your projects</h3>
           <p className="note">Type a programme and a team for each project to roll them up. Leave blank if not needed.</p>
-          <div className="scroll">
+          <div className="scroll" tabIndex={0}>
             <table>
               <caption>Projects loaded</caption>
               <thead><tr><th>Project</th><th>Programme</th><th>Team</th><th>Effort unit</th><th>Tasks</th><th>Status</th><th><span className="sr">Remove</span></th></tr></thead>
@@ -219,6 +223,12 @@ export function PortfolioScreen() {
                 <option value="calendar">every calendar day</option>
               </select>
             </label>
+            {dayCount === 'weekdays' && (
+              <label>Holidays everyone is off (optional, one date per line, year-month-day)
+                <textarea rows={3} value={holidayText} onChange={(e) => setHolidayText(e.target.value)} placeholder={'2026-03-25'} />
+                {holidays.problems.length > 0 && <span className="warn" role="alert">{holidays.problems.join(' ')}</span>}
+              </label>
+            )}
             <label>Hours in one working day
               <input type="number" min={1} max={24} value={hoursPerDay} onChange={(e) => setHoursPerDay(Number(e.target.value) || 8)} />
             </label>
@@ -257,7 +267,7 @@ export function PortfolioScreen() {
             </label>
             <button type="button" className="noprint" onClick={download}>Download roll-up (CSV)</button>
           </div>
-          <div className="scroll">
+          <div className="scroll" tabIndex={0}>
             <table>
               <caption>{BY_LABEL[by]} (hours)</caption>
               <thead>

@@ -141,14 +141,14 @@ export function FlowScreen() {
               {flow.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
               <ThroughputChart blocks={flow.throughput} />
               <CycleScatter points={flow.points} p50={flow.cycle?.p50 ?? null} p85={flow.cycle?.p85 ?? null} />
-              <div className="scroll">
+              <div className="scroll" tabIndex={0}>
                 <table>
                   <caption>Items finished in each block of 7 days</caption>
                   <thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Items finished</th></tr></thead>
                   <tbody>{flow.throughput.map((b) => <tr key={b.from}><td>{b.from}</td><td>{b.to}</td><td>{b.count}</td></tr>)}</tbody>
                 </table>
               </div>
-              <div className="scroll">
+              <div className="scroll" tabIndex={0}>
                 <table>
                   <caption>Work in progress, oldest first (age in days)</caption>
                   <thead><tr><th scope="col">Item</th><th scope="col">Started</th><th scope="col">Age (days)</th><th scope="col">Compared with finished items</th></tr></thead>

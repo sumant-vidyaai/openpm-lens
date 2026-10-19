@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { analyseFinish, MIN_FLOW_SAMPLE, parseDateText, roundHalfUp, suggestFlowColumns, type CsvCell, type FinishItem } from '@openpm-lens/core';
 import { ColumnSelect, NeedsImport, saveCsv } from './common';
 import { StepsPanel } from './Explain';
+import { MilestoneSection } from './Milestones';
 import type { SharedData } from './shared';
 
 export function ScheduleScreen({ shared, onGoImport }: { shared: SharedData | null; onGoImport: () => void }) {
@@ -66,6 +67,7 @@ export function ScheduleScreen({ shared, onGoImport }: { shared: SharedData | nu
           </div>
           {actualCol === null && <p className="warn">No actual-finish column chosen, so there is nothing to compare with the plan. Overdue tasks can still be found once you choose a status date.</p>}
           {!shared.statusDate && <p className="warn">Choose a status date on the Import tab to see results. It is not assumed.</p>}
+          {shared.statusDate && <MilestoneSection shared={shared} actualCol={actualCol} />}
           {result && (
             <div aria-live="polite">
               <h3>Results</h3>
@@ -76,7 +78,7 @@ export function ScheduleScreen({ shared, onGoImport }: { shared: SharedData | nu
                 <div className="card"><h4>Overdue, not finished</h4><p className="big">{result.overdue.length}</p><p className="note">Planned finish is before {shared.statusDate}. Not yet due: {result.notYetDue}.</p></div>
               </div>
               {result.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
-              <div className="scroll">
+              <div className="scroll" tabIndex={0}>
                 <table>
                   <caption>Overdue tasks, longest first</caption>
                   <thead><tr><th scope="col">Task</th><th scope="col">Planned finish</th><th scope="col">Days overdue</th></tr></thead>
@@ -86,7 +88,7 @@ export function ScheduleScreen({ shared, onGoImport }: { shared: SharedData | nu
                   </tbody>
                 </table>
               </div>
-              <div className="scroll">
+              <div className="scroll" tabIndex={0}>
                 <table>
                   <caption>Finished tasks, latest first</caption>
                   <thead><tr><th scope="col">Task</th><th scope="col">Planned finish</th><th scope="col">Actual finish</th><th scope="col">Variance (days)</th></tr></thead>

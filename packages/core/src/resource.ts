@@ -1,4 +1,4 @@
-import type { DayCount } from './dates';
+import { dayCounter, dayHolidays, dayMode, type DayRule } from './dates';
 import type { StepGroup } from './explain';
 import { roundHalfUp } from './format';
 
@@ -36,12 +36,16 @@ export interface ResourceSettings {
   capacityDefault: number;
   /** Own weekly capacity by person (name ignoring case and spacing). */
   capacityByPerson: Record<string, number>;
-  mode: DayCount;
+  mode: DayRule;
   /** Flag a week above this percent (default 100). */
   overPercent: number;
+  /** Days a person is away (inclusive ISO dates). Each Monday-to-Friday day away takes 1/5 off that person's capacity for the week. */
+  leave?: LeaveEntry[];
 }
 
-export interface PersonWeek { weekStart: string; planned: number; utilisation: number | null }
+export interface LeaveEntry { person: string; from: string; to: string }
+
+export interface PersonWeek { weekStart: string; planned: number; utilisation: number | null; /** Capacity that week after holidays and leave. */ capacity: number }
 export interface PersonRow {
   person: string;
   capacity: number;
@@ -79,6 +83,22 @@ export const MAX_WEEKS = 104;
 
 export function analyseResources(tasks: ResourceTask[], s: ResourceSettings): ResourceResult {
   const cap = new Map(Object.entries(s.capacityByPerson).filter(([, v]) => Number.isFinite(v) && v > 0).map(([k, v]) => [key(k), v]));
+  const counted = dayCounter(s.mode);
+  const holidays = new Set(dayHolidays(s.mode));
+  const leaveBy = new Map<string, LeaveEntry[]>();
+  for (const l of s.leave ?? []) { const k = key(l.person); leaveBy.set(k, [...(leaveBy.get(k) ?? []), l]); }
+  /** Monday-to-Friday days of the week that are not holidays and not on this person's leave. */
+  const availableDays = (person: string, week: string): number => {
+    const mine = leaveBy.get(key(person)) ?? [];
+    let n = 0;
+    for (let i = 0; i < 5; i++) {
+      const d = iso(utc(week) + i * DAY);
+      if (holidays.has(d)) continue;
+      if (mine.some((l) => d >= l.from && d <= l.to)) continue;
+      n += 1;
+    }
+    return n;
+  };
   const excluded: { id: string; reason: string }[] = [];
   interface Acc { name: string; tasks: number; planned: number; plannedBoth: number; actual: number; load: Map<string, number> }
   const accs = new Map<string, Acc>();
@@ -101,8 +121,7 @@ export function analyseResources(tasks: ResourceTask[], s: ResourceSettings): Re
     // counted days
     const days: string[] = [];
     for (let d = utc(t.plannedStart); d <= utc(t.plannedFinish); d += DAY) {
-      const wd = new Date(d).getUTCDay();
-      if (s.mode === 'calendar' || (wd !== 0 && wd !== 6)) days.push(iso(d));
+      if (counted(d)) days.push(iso(d));
     }
     const spread = days.length === 0 ? [t.plannedFinish] : days; // a span with no counted days is due on its finish date
     const per = t.plannedHours / spread.length;
@@ -120,23 +139,28 @@ export function analyseResources(tasks: ResourceTask[], s: ResourceSettings): Re
     const capacity = cap.get(key(a.name)) ?? s.capacityDefault;
     const wk: PersonWeek[] = weeks.map((w) => {
       const planned = a.load.get(w) ?? 0;
-      return { weekStart: w, planned, utilisation: capacity > 0 ? (planned / capacity) * 100 : null };
+      const cw = capacity * (availableDays(a.name, w) / 5);
+      return { weekStart: w, planned, capacity: cw, utilisation: cw > 0 ? (planned / cw) * 100 : null };
     });
+    // Work planned in a week with no capacity at all (all five days away or holidays) counts as over the limit.
+    const noRoom = wk.filter((x) => x.capacity === 0 && x.planned > 1e-9).length;
     const util = wk.map((x) => x.utilisation).filter((x): x is number => x !== null);
     return {
       person: a.name, capacity, tasks: a.tasks, plannedTotal: a.planned, plannedForActual: a.plannedBoth, actualTotal: a.actual,
       actualVsPlanned: a.plannedBoth > 0 ? a.actual / a.plannedBoth : null, weeks: wk,
-      overWeeks: util.filter((u) => u > s.overPercent + 1e-9).length, peak: util.length === 0 ? null : Math.max(...util),
+      overWeeks: util.filter((u) => u > s.overPercent + 1e-9).length + noRoom, peak: util.length === 0 ? null : Math.max(...util),
     };
   });
   if (people.some((p) => p.person === UNASSIGNED)) caveats.push('Some tasks have nobody assigned; their load is shown on the "(unassigned)" row and not given to anyone.');
   if (excluded.length > 0) caveats.push(`${excluded.length} task${excluded.length === 1 ? '' : 's'} left out of some or all figures (see the list).`);
-  caveats.push(`Weekly load spreads each task's planned hours evenly over its ${s.mode === 'weekdays' ? 'weekdays (holidays and leave not known)' : 'calendar days'}. Weeks start on Monday.`);
+  const nHol = holidays.size, nLeave = (s.leave ?? []).length;
+  caveats.push(`Weekly load spreads each task's planned hours evenly over its ${dayMode(s.mode) === 'weekdays' ? (nHol > 0 ? `weekdays, leaving out the ${nHol} holiday${nHol === 1 ? '' : 's'} you listed` : 'weekdays (holidays not known)') : 'calendar days'}. Weeks start on Monday.`);
+  caveats.push(nLeave > 0 ? `Leave: ${nLeave} leave entr${nLeave === 1 ? 'y' : 'ies'} used. Each Monday-to-Friday day away (or holiday) takes one fifth off that person's weekly capacity.` : 'Leave: none listed, so everyone is assumed available every working day.');
   const n = (x: number | null, d = 0) => (x === null ? 'not available' : String(roundHalfUp(x, d)));
   const worst = [...people].filter((p) => p.peak !== null).sort((a, b) => (b.peak as number) - (a.peak as number))[0];
   const steps: StepGroup[] = [
     { label: 'Weekly load', steps: ['Each task: planned hours / number of counted days in its planned dates = hours per day', 'Load in a week = sum of those daily hours that fall in the week (Monday to Sunday), per person'] },
-    { label: 'Utilisation', steps: ['Utilisation = load in the week / weekly capacity', `Capacity: ${s.capacityDefault} hours a week unless set for a person; a week is flagged above ${s.overPercent}%`, worst ? `Highest week: ${worst.person}, ${n(worst.peak)}% of ${worst.capacity} hours` : 'No weekly load could be worked out'] },
+    { label: 'Utilisation', steps: ['Utilisation = load in the week / weekly capacity (capacity is reduced by one fifth for each holiday or day of leave that week)', `Capacity: ${s.capacityDefault} hours a week unless set for a person; a week is flagged above ${s.overPercent}%`, worst ? `Highest week: ${worst.person}, ${n(worst.peak)}% of ${worst.capacity} hours` : 'No weekly load could be worked out'] },
     { label: 'Planned vs actual per person', steps: ['Actual / planned = actual hours / planned hours, over the tasks that have both'] },
   ];
   return { weeks, people, excluded, caveats, steps };

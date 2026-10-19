@@ -37,7 +37,7 @@ export function ChartTable({ caption, head, rows }: { caption: string; head: str
   return (
     <details className="viz-table">
       <summary>Show as table</summary>
-      <div className="scroll">
+      <div className="scroll" tabIndex={0}>
         <table>
           <caption>{caption}</caption>
           <thead><tr>{head.map((h) => <th key={h} scope="col">{h}</th>)}</tr></thead>
@@ -49,29 +49,35 @@ export function ChartTable({ caption, head, rows }: { caption: string; head: str
 }
 
 /** Planned value over time, with the earned value at the status date. */
-export function EarnedValueChart({ dates, pv, statusDate, ev }: { dates: string[]; pv: number[]; statusDate: string; ev: number | null }) {
+export function EarnedValueChart({ dates, pv, statusDate, ev, ac, acNote }: { dates: string[]; pv: number[]; statusDate: string; ev: number | null; ac?: (number | null)[]; acNote?: string }) {
   if (dates.length < 2) return null;
-  const max = niceMax(Math.max(...pv, ev ?? 0));
+  const acVals = (ac ?? []).filter((v): v is number => v !== null);
+  const hasAc = acVals.length > 0;
+  const max = niceMax(Math.max(...pv, ev ?? 0, ...acVals));
   const x = (i: number) => L + (i / (dates.length - 1)) * PW;
   const y = (v: number) => T + PH - (v / max) * PH;
   const path = pv.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const acPath = (ac ?? []).map((v, i) => (v === null ? '' : `${i === 0 || (ac ?? [])[i - 1] === null ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`)).filter((t) => t !== '').join(' ');
   // status date position: last counted day on or before it
   let si = -1;
   dates.forEach((d, i) => { if (d <= statusDate) si = i; });
   const showEv = ev !== null && si >= 0;
   const pvAtStatus = si >= 0 ? (pv[si] ?? null) : null;
+  const acAtStatus = hasAc && si >= 0 ? ((ac ?? [])[si] ?? null) : null;
   const hours = (n: number) => `${+n.toFixed(2)} h`;
   return (
     <figure className="viz-root">
-      <figcaption><strong>Planned value and earned value (hours)</strong></figcaption>
+      <figcaption><strong>Planned value{hasAc ? ', earned value and actual cost' : ' and earned value'} (hours)</strong></figcaption>
       <div className="viz-legend" aria-hidden="true">
         <span><i className="sw sw-1" /> Planned value (plan)</span>
         {showEv && <span><i className="sw sw-2" /> Earned value at status date</span>}
+        {hasAc && <span><i className="sw sw-3" /> Actual cost (dashed)</span>}
       </div>
-      <Frame title="Planned value and earned value" desc={`Planned value rises to ${hours(pv[pv.length - 1] ?? 0)} by ${dates[dates.length - 1] ?? ''}.${showEv ? ` Earned value at ${statusDate} is ${hours(ev as number)}.` : ''}`} yLabel="Hours" xLabel="Date" max={max}>
+      <Frame title="Planned value, earned value and actual cost" desc={`Planned value rises to ${hours(pv[pv.length - 1] ?? 0)} by ${dates[dates.length - 1] ?? ''}.${showEv ? ` Earned value at ${statusDate} is ${hours(ev as number)}.` : ''}${acAtStatus !== null ? ` Actual cost at ${statusDate} is ${hours(acAtStatus)}.` : ''}`} yLabel="Hours" xLabel="Date" max={max}>
         <text className="viz-tick" x={L} y={H - 22} textAnchor="start">{dates[0] ?? ''}</text>
         <text className="viz-tick" x={W - R} y={H - 22} textAnchor="end">{dates[dates.length - 1] ?? ''}</text>
         <path className="viz-line s1" d={path} />
+        {hasAc && acPath && <path className="viz-line s3" d={acPath} />}
         {si >= 0 && <line className="viz-ref" x1={x(si)} x2={x(si)} y1={T} y2={T + PH} />}
         {si >= 0 && <text className="viz-tick" x={Math.min(Math.max(x(si), L + 30), W - R - 30)} y={H - 8} textAnchor="middle">Status {statusDate}</text>}
         {showEv && (
@@ -80,11 +86,56 @@ export function EarnedValueChart({ dates, pv, statusDate, ev }: { dates: string[
             <text className="viz-label" x={x(si) + 10} y={y(ev as number) - 8}>EV {hours(ev as number)}</text>
           </g>
         )}
+        {acAtStatus !== null && (
+          <g>
+            <circle className="viz-dot s3" cx={x(si)} cy={y(acAtStatus)} r={4}><title>{`Actual cost ${hours(acAtStatus)} at ${statusDate}`}</title></circle>
+            <text className="viz-label" x={x(si) + 10} y={y(acAtStatus) + 14}>AC {hours(acAtStatus)}</text>
+          </g>
+        )}
         {pvAtStatus !== null && (
           <circle className="viz-dot s1" cx={x(si)} cy={y(pvAtStatus)} r={4}><title>{`Planned value ${hours(pvAtStatus)} at ${statusDate}`}</title></circle>
         )}
       </Frame>
-      <ChartTable caption="Planned value by day (hours)" head={['Date', 'Planned value (h)']} rows={dates.map((d, i) => [d, +(pv[i] ?? 0).toFixed(2)])} />
+      {acNote && <p className="note">{acNote}</p>}
+      <ChartTable
+        caption={hasAc ? 'Planned value and actual cost by day (hours)' : 'Planned value by day (hours)'}
+        head={hasAc ? ['Date', 'Planned value (h)', 'Actual cost (h)'] : ['Date', 'Planned value (h)']}
+        rows={dates.map((d, i) => (hasAc ? [d, +(pv[i] ?? 0).toFixed(2), (ac ?? [])[i] == null ? '-' : +((ac ?? [])[i] as number).toFixed(2)] : [d, +(pv[i] ?? 0).toFixed(2)]))}
+      />
+    </figure>
+  );
+}
+
+/** Cumulative planned and actual amounts by month (hours or money). */
+export function CashFlowChart({ rows, unit, statusDate }: { rows: { month: string; plannedCum: number; actualCum: number | null }[]; unit: string; statusDate: string }) {
+  if (rows.length < 2) return null;
+  const max = niceMax(Math.max(...rows.map((r) => Math.max(r.plannedCum, r.actualCum ?? 0)), 1));
+  const x = (i: number) => L + (i / (rows.length - 1)) * PW;
+  const y = (v: number) => T + PH - (v / max) * PH;
+  const line = (f: (r: (typeof rows)[number]) => number | null) =>
+    rows.map((r, i) => { const v = f(r); return v === null ? '' : `${i === 0 || f(rows[i - 1] as (typeof rows)[number]) === null ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`; }).filter((t) => t !== '').join(' ');
+  const last = [...rows].reverse().find((r) => r.actualCum !== null);
+  const lastI = last ? rows.indexOf(last) : -1;
+  const fmt = (n: number) => `${unit ? unit + ' ' : ''}${Math.round(n).toLocaleString('en-US')}`;
+  return (
+    <figure className="viz-root">
+      <figcaption><strong>Cumulative planned and actual, by month ({unit || 'hours'})</strong></figcaption>
+      <div className="viz-legend" aria-hidden="true">
+        <span><i className="sw sw-1" /> Planned</span>
+        <span><i className="sw sw-3" /> Actual (dashed, up to {statusDate})</span>
+      </div>
+      <Frame title="Cumulative planned and actual by month" desc={`Planned reaches ${fmt(rows[rows.length - 1]?.plannedCum ?? 0)} by ${rows[rows.length - 1]?.month ?? ''}.${last ? ` Actual is ${fmt(last.actualCum as number)} by ${last.month}.` : ''}`} yLabel={unit || 'Hours'} xLabel="Month" max={max}>
+        {rows.map((r, i) => (i % Math.ceil(rows.length / 8) === 0 ? <text key={r.month} className="viz-tick" x={x(i)} y={H - 22} textAnchor="middle">{r.month}</text> : null))}
+        <path className="viz-line s1" d={line((r) => r.plannedCum)} />
+        <path className="viz-line s3" d={line((r) => r.actualCum)} />
+        {last && lastI >= 0 && (
+          <g>
+            <circle className="viz-dot s3" cx={x(lastI)} cy={y(last.actualCum as number)} r={4}><title>{`Actual ${fmt(last.actualCum as number)} by ${last.month}`}</title></circle>
+            <text className="viz-label" x={Math.min(x(lastI) + 8, W - R - 90)} y={y(last.actualCum as number) + 14}>Actual {fmt(last.actualCum as number)}</text>
+          </g>
+        )}
+      </Frame>
+      <ChartTable caption="Cumulative planned and actual by month" head={['Month', `Planned (${unit || 'hours'})`, `Actual (${unit || 'hours'})`]} rows={rows.map((r) => [r.month, Math.round(r.plannedCum), r.actualCum === null ? '-' : Math.round(r.actualCum)])} />
     </figure>
   );
 }

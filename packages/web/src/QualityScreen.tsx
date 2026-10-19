@@ -150,7 +150,7 @@ export function QualityScreen({ shared, onGoImport }: { shared: SharedData | nul
               </div>
               {col.found !== null && afterVals.size === 0 && <p className="warn">Tick at least one "found after release" value above to work out removal efficiency.</p>}
               {result.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
-              <div className="scroll">
+              <div className="scroll" tabIndex={0}>
                 <table>
                   <caption>Defects by severity</caption>
                   <thead><tr><th scope="col">Severity</th><th scope="col">Defects</th><th scope="col">Open</th><th scope="col">Closed</th></tr></thead>
@@ -160,7 +160,7 @@ export function QualityScreen({ shared, onGoImport }: { shared: SharedData | nul
                   </tbody>
                 </table>
               </div>
-              <div className="scroll">
+              <div className="scroll" tabIndex={0}>
                 <table>
                   <caption>Open defects, oldest first</caption>
                   <thead><tr><th scope="col">Defect</th><th scope="col">Severity</th><th scope="col">Created</th><th scope="col">Age (days)</th></tr></thead>

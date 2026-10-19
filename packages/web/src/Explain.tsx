@@ -23,7 +23,7 @@ export function ExplainPanel(props: {
         </div>
       ))}
       <h4>Task by task</h4>
-      <div className="scroll">
+      <div className="scroll" tabIndex={0}>
         <table>
           <caption>Each task's contribution. Tasks left out say why.</caption>
           <thead><tr>{props.columns.map((c) => <th scope="col" key={c}>{c}</th>)}</tr></thead>
