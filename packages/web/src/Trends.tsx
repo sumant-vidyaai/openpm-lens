@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  addSnapshot, compareSnapshots, cpiOf, daysSinceUpdate, roundHalfUp, seriesOf, snapshotId, snapshotLabels, SNAPSHOT_FORMAT, spiOf,
+  addSnapshot, compareSnapshots, type CsvCell, cpiOf, daysSinceUpdate, roundHalfUp, seriesOf, snapshotId, snapshotLabels, SNAPSHOT_FORMAT, spiOf,
   toggleBaseline, trendPoints, validateSnapshot, type Snapshot,
 } from '@openpm-lens/core';
 import { computeRaid } from './Raid';
 import { StackedChart, TrendChart } from './trendCharts';
-import { NeedsImport } from './common';
+import { NeedsImport, saveCsv } from './common';
 import type { SharedData } from './shared';
 
 const KEY = 'openpm-lens-snapshots-v1';
@@ -26,6 +26,20 @@ function download(name: string, text: string) {
   a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+/** One row per snapshot, for opening in Excel. A number that was not known is left blank, never 0. */
+export function snapshotRows(list: Snapshot[]): CsvCell[][] {
+  const head = ['Label', 'Status date', 'Saved at', 'Source file', 'Baseline', 'Budget (h)', 'Planned value (h)', 'Earned value (h)', 'Actual cost (h)', 'CPI', 'SPI',
+    'Earned value for schedule (h)', 'Tasks', 'Not started', 'In progress', 'Done', 'Cancelled', 'Open defects', 'Open high risks', 'Open medium risks', 'Open low risks',
+    'Open unscored risks', 'Open issues', 'Approved change hours', 'Approved change days'];
+  const r4 = (n: number | null) => (n === null ? '' : roundHalfUp(n, 4));
+  const v = (n: number | null) => (n === null ? '' : n);
+  const sorted = [...list].sort((a, b) => a.label.localeCompare(b.label) || a.statusDate.localeCompare(b.statusDate));
+  return [head, ...sorted.map((s) => [
+    s.label, s.statusDate, s.savedAt, s.source, s.baseline ? 'Yes' : 'No', v(s.bac), r4(s.pv), v(s.ev), v(s.ac), r4(cpiOf(s)), r4(spiOf(s)), v(s.evSchedule),
+    s.counts.total, s.counts.notStarted, s.counts.inProgress, s.counts.done, s.counts.cancelled, v(s.openDefects),
+    v(s.raid?.risksHigh ?? null), v(s.raid?.risksMedium ?? null), v(s.raid?.risksLow ?? null), v(s.raid?.risksUnscored ?? null), v(s.raid?.openIssues ?? null), v(s.raid?.approvedHours ?? null), v(s.raid?.approvedDays ?? null),
+  ])];
 }
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const guessType = (headers: string[]) => headers.find((h) => /^(issue |work item |item )?type$/i.test(h.trim())) ?? null;
@@ -144,6 +158,7 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
         <div className="snap-actions">
           <label className="btn">Add snapshot files <input type="file" accept=".json,application/json" multiple onChange={(e) => { void upload(e.target.files); e.target.value = ''; }} /></label>
           {list.length > 0 && <button type="button" onClick={() => download('openpm-lens-snapshots.json', JSON.stringify(list, null, 2))}>Download all snapshots</button>}
+          {list.length > 0 && <button type="button" onClick={() => saveCsv('openpm-lens-snapshots.csv', snapshotRows(list))}>Download as spreadsheet (CSV, opens in Excel)</button>}
         </div>
         <p role="status" aria-live="polite">{msg}</p>
         {!stored && <p className="warn">This browser would not keep the snapshots on this device (a private window or blocked storage). They are kept until you close the tab: download them to keep them.</p>}

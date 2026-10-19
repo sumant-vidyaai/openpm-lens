@@ -1,6 +1,6 @@
 {
   "name": "@openpm-lens/core",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "description": "Pure formula library, canonical data model and adapter interface for openpm-lens.",
   "license": "Apache-2.0",
   "private": true,
