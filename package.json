@@ -1,23 +1,25 @@
 {
-  "name": "openpm-lens",
-  "version": "0.20.0",
-  "private": true,
-  "description": "Open-source, tool-agnostic project management analytics: standard metrics, health scores and dashboards that run in the browser.",
+  "name": "@openpm-lens/web",
+  "version": "0.21.0",
+  "description": "The browser app. Runs entirely on the user's device.",
   "license": "Apache-2.0",
-  "workspaces": [
-    "packages/*"
-  ],
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json",
-    "dev": "npm run dev -w @openpm-lens/web",
-    "build": "npm run build -w @openpm-lens/web"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@openpm-lens/core": "0.21.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "read-excel-file": "^9.3.12",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.4",
-    "yaml": "^2.9.1"
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0"
   }
 }
