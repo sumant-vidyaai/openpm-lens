@@ -12,8 +12,7 @@ const f1 = (n: number | null) => (n === null ? 'not available' : String(roundHal
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
 /** One place that turns the template's three optional sheets into results, shared by the RAID tab and the Overview panel. */
-export function useRaid(shared: SharedData | null) {
-  return useMemo(() => {
+export function computeRaid(shared: SharedData | null) {
     if (!shared || !shared.raid) return null;
     const st = shared.template?.settings ?? null;
     const bands = {
@@ -30,7 +29,9 @@ export function useRaid(shared: SharedData | null) {
       changes: changes.present ? analyseChanges(changes.changes, date, st?.originalBudget ?? null) : null,
       problems: [...risks.problems, ...issues.problems, ...changes.problems],
     };
-  }, [shared]);
+}
+export function useRaid(shared: SharedData | null) {
+  return useMemo(() => computeRaid(shared), [shared]);
 }
 type Raid = NonNullable<ReturnType<typeof useRaid>>;
 

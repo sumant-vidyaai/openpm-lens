@@ -179,3 +179,13 @@ table.heat td.corner { background: transparent; border: 0; }
 table.heat .heat-n { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 table.heat .heat-b { font-size: .75rem; }
 table.heat td { position: relative; }
+
+.viz-line.s2 { stroke: var(--series-2); }
+.viz-area { stroke: var(--surface-1); stroke-width: 2; }
+.viz-area.s1 { fill: var(--series-1); }
+.viz-area.s2 { fill: var(--series-2); }
+.viz-area.s3 { fill: var(--series-3); }
+.viz-dot.s1 { fill: var(--series-1); }
+.snap-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+.snap-form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-end; margin: .5rem 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }

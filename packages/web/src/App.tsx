@@ -13,6 +13,7 @@ import { QualityScreen } from './QualityScreen';
 import { LearnScreen } from './Learn';
 import { OverviewScreen } from './Overview';
 import { RaidScreen } from './Raid';
+import { TrendsScreen } from './Trends';
 import type { SharedData } from './shared';
 
 type Theme = 'system' | 'light' | 'dark';
@@ -70,10 +71,10 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
-type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'learn' | 'coverage' | 'library';
+type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'trends' | 'learn' | 'coverage' | 'library';
 const GROUPS: { title: string; tabs: { id: TabId; label: string }[] }[] = [
   { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'template', label: 'Template' }, { id: 'portfolio', label: 'Portfolio' }] },
-  { title: 'Analyse', tabs: [{ id: 'flow', label: 'Flow metrics' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' }, { id: 'raid', label: 'Risks, issues, changes' }] },
+  { title: 'Analyse', tabs: [{ id: 'flow', label: 'Flow metrics' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' }, { id: 'raid', label: 'Risks, issues, changes' }, { id: 'trends', label: 'Snapshots and trends' }] },
   { title: 'Learn', tabs: [{ id: 'learn', label: 'Learn' }, { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' }] },
 ];
 
@@ -134,6 +135,7 @@ export function App() {
         {panel('resources', <ResourceScreen shared={shared} onGoImport={goImport} />)}
         {panel('quality', <QualityScreen shared={shared} onGoImport={goImport} />)}
         {panel('raid', <RaidScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
+        {panel('trends', <TrendsScreen shared={shared} onGoImport={goImport} />)}
         {panel('learn', <LearnScreen />)}
         {panel('coverage', <CoverageScreen />)}
         {panel('library', (
