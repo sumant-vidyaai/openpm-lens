@@ -1,10 +1,10 @@
 import type { CyclePoint, ThroughputBlock } from '@openpm-lens/core';
 
 /* Charts are plain SVG. Colours come from CSS classes (see styles.css), never inline styles (the CSP forbids them). */
-const W = 640, H = 280, L = 48, R = 16, T = 16, B = 40;
-const PW = W - L - R, PH = H - T - B;
+export const W = 640, H = 280, L = 48, R = 16, T = 16, B = 40;
+export const PW = W - L - R, PH = H - T - B;
 
-function niceMax(v: number): number {
+export function niceMax(v: number): number {
   if (!(v > 0)) return 1;
   const p = 10 ** Math.floor(Math.log10(v));
   const n = v / p;
@@ -13,7 +13,7 @@ function niceMax(v: number): number {
 const compact = (n: number) => (n >= 1000 ? `${+(n / 1000).toFixed(1)}K` : String(n));
 const ticks = (max: number) => [0, 0.25, 0.5, 0.75, 1].map((f) => +(max * f).toFixed(2));
 
-function Frame({ title, desc, yLabel, xLabel, max, children }: { title: string; desc: string; yLabel: string; xLabel: string; max: number; children: React.ReactNode }) {
+export function Frame({ title, desc, yLabel, xLabel, max, children }: { title: string; desc: string; yLabel: string; xLabel: string; max: number; children: React.ReactNode }) {
   return (
     <svg className="viz-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}. ${desc}`}>
       <title>{title}</title>
