@@ -2,6 +2,8 @@ import { assessHealth, DEFAULT_THRESHOLDS, HEALTH_LABEL, roundHalfUp, type Healt
 import { IndexRuler } from './charts';
 import type { SharedData } from './shared';
 import { Readiness } from './Template';
+import { FixPanel, WhyPanel } from './Drilldown';
+import { RaidPanel } from './Raid';
 
 const SYMBOL: Record<Health, string> = { green: '●', amber: '▲', red: '■', insufficient: '○' };
 const BAND_TEXT: Record<Health, string> = { green: 'in the green zone', amber: 'in the amber zone', red: 'in the red zone', insufficient: 'not used (too few tasks)' };
@@ -61,6 +63,12 @@ export function OverviewScreen({ shared, onGo }: { shared: SharedData | null; on
           <p className="note">Schedule performance index = earned value / planned value. Below 1 means behind the plan.</p>
         </div>
       </div>
+
+      <WhyPanel shared={shared} />
+
+      <FixPanel shared={shared} />
+
+      <RaidPanel shared={shared} onGo={() => onGo('raid')} />
 
       {shared.template && <div className="panel"><Readiness readiness={shared.template.readiness} /></div>}
 

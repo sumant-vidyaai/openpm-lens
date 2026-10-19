@@ -70,11 +70,11 @@ section.card { margin: 1rem 0; }
 td input[type='text'], td input:not([type]) { font: inherit; color: var(--fg); background: var(--field); border: 1px solid var(--border); border-radius: .3rem; padding: .3rem; width: 100%; min-width: 8rem; }
 input[type='date'] { font: inherit; color: var(--fg); background: var(--field); border: 1px solid var(--border); border-radius: .3rem; padding: .35rem; }
 .sr { position: absolute; left: -999px; }
-.viz-root { color-scheme: light; --surface-1: #fcfcfb; --text-secondary: #52514e; --text-muted: #898781; --grid: #e1e0d9; --axis: #c3c2b7; --series-1: #2a78d6; --series-2: #eb6834; margin: 1rem 0; }
+.viz-root { color-scheme: light; --surface-1: #fcfcfb; --text-secondary: #52514e; --text-muted: #898781; --grid: #e1e0d9; --axis: #c3c2b7; --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; margin: 1rem 0; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .viz-root { color-scheme: dark; --surface-1: #1a1a19; --text-secondary: #c3c2b7; --grid: #2c2c2a; --axis: #383835; --series-1: #3987e5; --series-2: #d95926; }
+  :root:not([data-theme='light']) .viz-root { color-scheme: dark; --surface-1: #1a1a19; --text-secondary: #c3c2b7; --grid: #2c2c2a; --axis: #383835; --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; }
 }
-:root[data-theme='dark'] .viz-root { color-scheme: dark; --surface-1: #1a1a19; --text-secondary: #c3c2b7; --grid: #2c2c2a; --axis: #383835; --series-1: #3987e5; --series-2: #d95926; }
+:root[data-theme='dark'] .viz-root { color-scheme: dark; --surface-1: #1a1a19; --text-secondary: #c3c2b7; --grid: #2c2c2a; --axis: #383835; --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; }
 .viz-root { background: var(--surface-1); border: 1px solid var(--border); border-radius: .5rem; padding: .75rem; }
 .viz-svg { width: 100%; height: auto; max-width: 720px; display: block; }
 .viz-grid { stroke: var(--grid); stroke-width: 1; }
@@ -84,18 +84,21 @@ input[type='date'] { font: inherit; color: var(--fg); background: var(--field); 
 .viz-label { fill: var(--text-secondary); font-size: 12px; }
 .viz-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .viz-line.s1 { stroke: var(--series-1); }
+.viz-line.s3 { stroke: var(--series-3); stroke-dasharray: 7 4; }
 .viz-dot { stroke: var(--surface-1); stroke-width: 2; }
 .viz-dot.s1, .viz-bar.s1 { fill: var(--series-1); }
 .viz-dot.s2 { fill: var(--series-2); }
+.viz-dot.s3 { fill: var(--series-3); }
 .viz-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .9rem; color: var(--text-secondary); margin: .25rem 0; }
 .sw { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; vertical-align: middle; }
 .sw-1 { background: var(--series-1); }
 .sw-2 { background: var(--series-2); }
+.sw-3 { background: var(--series-3); }
 .viz-table { margin-top: .5rem; }
 .viz-table summary { cursor: pointer; }
 @media print { .viz-root { break-inside: avoid; } }
 .glossary { margin: 0; } .glossary .card { margin: .5rem 0; } .glossary dd { margin: 0; }
-select, input { max-width: 100%; min-width: 0; }
+select, input, textarea { max-width: 100%; min-width: 0; }
 .confirm { display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: .4rem; background: var(--card); }
 
 /* Layout: sidebar and content */
@@ -165,3 +168,14 @@ a.btn { display: inline-block; text-decoration: none; color: var(--text); }
 a.btn:hover { text-decoration: underline; }
 .readiness .plain li { margin: .7rem 0; }
 .readiness progress { display: block; width: min(18rem, 100%); height: .6rem; margin-top: .3rem; accent-color: var(--accent); }
+textarea { font: inherit; padding: .4rem .5rem; border: 1px solid var(--border); border-radius: .35rem; background: var(--field); color: var(--fg); width: 100%; box-sizing: border-box; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.facts dd .sub { font-size: .8125rem; font-weight: 400; color: var(--muted); }
+table.heat { width: auto; border-collapse: separate; border-spacing: 3px; }
+table.heat th, table.heat td { text-align: center; min-width: 3.4rem; padding: .35rem .4rem; border-radius: .3rem; }
+table.heat th[scope='row'] { text-align: right; white-space: nowrap; background: transparent; }
+table.heat td.corner { background: transparent; border: 0; }
+table.heat .heat-n { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+table.heat .heat-b { font-size: .75rem; }
+table.heat td { position: relative; }

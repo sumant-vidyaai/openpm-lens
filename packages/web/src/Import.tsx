@@ -4,14 +4,14 @@ import {
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
   aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit,
-  extractTemplate, isTemplateTable, templateReadiness, type TemplateParts,
+  extractTemplate, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
 } from '@openpm-lens/core';
 import { MAX_XML_BYTES, readWorkbook } from './readFile';
 import { EarnedValueChart } from './charts';
 import { SAMPLE_CSV } from './sample';
 import { ExplainPanel, StepsPanel } from './Explain';
 import type { SharedData } from './shared';
-import { ReplaceButton } from './common';
+import { ReplaceButton, actualDatesOf } from './common';
 import { Readiness } from './Template';
 
 type Grid = (string | number | boolean | Date | null)[][];
@@ -47,6 +47,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   const [inProgressPercent, setInProgressPercent] = useState(50);
   const [dateOrder, setDateOrder] = useState<DateOrder>('auto');
   const [dayCount, setDayCount] = useState<DayCount>('weekdays');
+  const [holidayText, setHolidayText] = useState('');
   const [statusDate, setStatusDate] = useState('');
   const [missingPlanned, setMissingPlanned] = useState<MissingPlannedPolicy>('exclude');
   const [eacMethod, setEacMethod] = useState<EacMethod>('typical');
@@ -76,12 +77,15 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     if (t.statusDate) setStatusDate(t.statusDate);
     if (t.hoursPerDay !== null) setHoursPerDay(t.hoursPerDay);
     if (t.dayCount !== null) setDayCount(t.dayCount);
+    if (tpl && tpl.holidays.dates.length > 0) setHolidayText(tpl.holidays.dates.join('\n'));
     if (t.inProgressPercent !== null) setInProgressPercent(t.inProgressPercent);
   }, [tpl]);
   const mapping: ColumnMapping | null = useMemo(
     () => (csv ? { ...mergeMapping(csv.headers, suggestion?.mapping ?? null), ...mappingEdits } : null),
     [csv, suggestion, mappingEdits],
   );
+  const holidays = useMemo(() => parseHolidayText(holidayText), [holidayText]);
+  const dayRule = useMemo(() => ({ mode: dayCount, holidays: holidays.dates }), [dayCount, holidays]);
   const isTpl = useMemo(() => csv !== null && isTemplateTable(csv.headers), [csv]);
   const readiness = useMemo(() => (csv && isTpl ? templateReadiness(csv.headers, csv.rows) : null), [csv, isTpl]);
   const statuses = useMemo(
@@ -101,11 +105,11 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     const tasks = toHoursTasks(items, calendar, rule, config);
     const agg = aggregateHoursEvm(tasks, missingPlanned);
     const schedTasks = toScheduleTasks(items, calendar, rule, config);
-    const schedule = statusDate ? aggregateSchedule(schedTasks, statusDate, dayCount) : null;
-    const earned = statusDate ? earnedSchedule(schedTasks, statusDate, dayCount) : null;
+    const schedule = statusDate ? aggregateSchedule(schedTasks, statusDate, dayRule) : null;
+    const earned = statusDate ? earnedSchedule(schedTasks, statusDate, dayRule) : null;
     const f = (n: number | null) => (n === null ? '-' : String(roundHalfUp(n, 2)));
     const evmRaw = explainEvmRows(tasks, missingPlanned);
-    const schedRaw = statusDate ? explainScheduleRows(schedTasks, statusDate, dayCount) : [];
+    const schedRaw = statusDate ? explainScheduleRows(schedTasks, statusDate, dayRule) : [];
     const evmRows = evmRaw.map((r) => ({
       key: r.id, used: r.used,
       cells: [r.id, f(r.plannedHours), f(r.percentComplete), f(r.actualHours), f(r.ev), f(r.ac), r.note],
@@ -120,17 +124,33 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     return {
       items, tasks, schedTasks, agg, schedule, earned, quality: assessQuality(items, tasks, agg), evmRows, schedRows, evmRaw, schedRaw,
       evmGroups: evmSteps(agg),
-      schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayCount) : [],
+      schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayRule) : [],
     };
-  }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayCount, statusDate]);
+  }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayRule, dayCount, statusDate]);
 
   useEffect(() => {
     onShare(
       calc && csv
-        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, hoursPerDay, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
+        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, evmRows: calc.evmRaw, schedRows: calc.schedRaw, holidays: holidays.dates, leave: tpl?.leave.entries ?? [], hoursPerDay, raid: tpl ? { risks: tpl.risks, issues: tpl.issues, changes: tpl.changes } : null, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
         : null,
     );
-  }, [calc, csv, fileName, statusDate, dateOrder, dayCount, hoursPerDay, tpl, readiness, onShare]);
+  }, [calc, csv, fileName, statusDate, dateOrder, dayCount, holidays, hoursPerDay, tpl, readiness, onShare]);
+  // Actual cost over time: each task's actual hours spread evenly from its actual start (an assumption, stated on screen).
+  const acLine = useMemo(() => {
+    if (!calc || !csv || !statusDate) return null;
+    const curve = plannedValueCurve(calc.schedTasks, dayRule);
+    if (curve.dates.length < 2) return null;
+    const a = actualDatesOf(csv.headers, csv.rows, dateOrder);
+    if (a.startCol === null) return { values: null, note: 'No "actual start" column was found, so the actual-cost line is not drawn. Add one (the template has "Actual start") to see it.' };
+    const tasks = calc.evmRaw.map((r, i) => ({ id: r.id, amount: r.used ? r.ac : null, start: a.start[i] ?? null, finish: a.finish[i] ?? null }));
+    const { items, left: noStart } = actualSpendItems(tasks, statusDate);
+    const sp = spreadDaily(items, dayRule);
+    const total = tasks.reduce((n, t) => n + (t.amount !== null && t.amount > 0 ? t.amount : 0), 0);
+    return {
+      values: cumulativeAt(sp.days, curve.dates, statusDate),
+      note: `Actual-cost line: each task's actual hours are spread evenly over its counted days, from its actual start ("${a.startCol}") to its actual finish or the status date. This is an assumption: task lists do not record spending day by day. It covers ${roundHalfUp(sp.spread, 1)} of ${roundHalfUp(total, 1)} actual hours${noStart.length + sp.left.length > 0 ? `; ${noStart.length + sp.left.length} task${noStart.length + sp.left.length === 1 ? ' has' : 's have'} no usable actual start date and ${noStart.length + sp.left.length === 1 ? 'is' : 'are'} not on the line` : ''}.`,
+    };
+  }, [calc, csv, statusDate, dayRule, dateOrder]);
   const result = calc?.agg ?? null;
   const quality = calc?.quality ?? null;
   const schedule = calc?.schedule ?? null;
@@ -139,6 +159,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     () => (result ? forecast({ ev: result.ev, ac: result.ac, bac: result.bac, pv: schedule?.pv ?? null, evSchedule: schedule?.ev ?? null }, eacMethod) : null),
     [result, schedule, eacMethod],
   );
+  const dayText = dayCount === 'calendar' ? 'every calendar day' : holidays.dates.length > 0 ? `weekdays, leaving out ${holidays.dates.length} holiday${holidays.dates.length === 1 ? '' : 's'}` : 'weekdays (holidays not known)';
   const assumptions = [
     `Progress rule: ${RULES.find((r) => r.value === rule)?.label}${rule === 'status_based' ? ` (${inProgressPercent}% while in progress)` : ''}.`,
     `Effort numbers without a unit are read as ${defaultUnit}; one working day = ${hoursPerDay} hours.`,
@@ -149,7 +170,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
     ...assumptions,
     ...(statusDate
       ? [
-          `Status date: ${statusDate}. Planned hours spread evenly over ${dayCount === 'weekdays' ? 'weekdays (holidays not known)' : 'every calendar day'}.`,
+          `Status date: ${statusDate}. Planned hours spread evenly over ${dayText}.`,
           `Date order: ${dateOrder === 'auto' ? 'unclear dates are refused' : dateOrder === 'dmy' ? 'day / month / year' : 'month / day / year'}.`,
         ]
       : []),
@@ -250,9 +271,9 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
           {isTpl && readiness && (
             <div className="card noprint" role="note">
               <h3>Your openpm-lens template was recognised</h3>
-              <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings and Rates sheets were read.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
-              {tpl && [...tpl.settings.problems, ...tpl.rates.problems].length > 0 && (
-                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems].map((p) => <li key={p}>{p}</li>)}</ul>
+              <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets were read where present.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
+              {tpl && [...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems].length > 0 && (
+                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems].map((p) => <li key={p}>{p}</li>)}</ul>
               )}
               <Readiness readiness={readiness} />
             </div>
@@ -355,6 +376,13 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
                 <option value="calendar">Every calendar day</option>
               </select>
             </label>
+            {dayCount === 'weekdays' && (
+              <label>
+                Holidays everyone is off (optional, one date per line, year-month-day)
+                <textarea rows={3} value={holidayText} onChange={(e) => setHolidayText(e.target.value)} placeholder={'2026-03-25'} />
+                {holidays.problems.length > 0 && <span className="warn" role="alert">{holidays.problems.join(' ')}</span>}
+              </label>
+            )}
             <label>
               Status date (the day these numbers are as of)
               <span className="row">
@@ -453,7 +481,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
                     </div>
                     <div className="card"><h4>Schedule variance (SV)</h4><p className="big">{fmt(schedule.sv)}</p><p className="note">EV - PV. Negative means behind schedule.</p></div>
                   </div>
-                  {calc && (() => { const c = plannedValueCurve(calc.schedTasks, dayCount); return <EarnedValueChart dates={c.dates} pv={c.pv} statusDate={statusDate} ev={schedule.ev} />; })()}
+                  {calc && (() => { const c = plannedValueCurve(calc.schedTasks, dayRule); return <EarnedValueChart dates={c.dates} pv={c.pv} statusDate={statusDate} ev={schedule.ev} ac={acLine?.values ?? undefined} acNote={acLine?.note} />; })()}
                   <p><strong>{schedule.counts.used} of {schedule.counts.total}</strong> tasks used for schedule measures.</p>
                   {schedule.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
                   {calc && calc.schedGroups.length > 0 && (
@@ -461,7 +489,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
                       title="Show the working for the schedule numbers"
                       assumptions={[
                         ...assumptions,
-                        `Status date: ${statusDate}. Planned hours are spread evenly over ${dayCount === 'weekdays' ? 'weekdays (holidays not known)' : 'every calendar day'}.`,
+                        `Status date: ${statusDate}. Planned hours are spread evenly over ${dayText}.`,
                         `Date order: ${dateOrder === 'auto' ? 'unclear dates are refused' : dateOrder === 'dmy' ? 'day / month / year' : 'month / day / year'}.`,
                       ]}
                       groups={calc.schedGroups}
@@ -481,7 +509,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
                       {earned.caveats.map((c) => <p key={c} className="warn">{c}</p>)}
                       <StepsPanel
                         title="Show the working for earned schedule"
-                        assumptions={[...assumptions, `Status date: ${statusDate}.`, `Days are ${dayCount === 'weekdays' ? 'weekdays (holidays not known)' : 'calendar days'}.`]}
+                        assumptions={[...assumptions, `Status date: ${statusDate}.`, `Days are ${dayText}.`]}
                         groups={earned.steps}
                       />
                     </>
