@@ -4,6 +4,7 @@ import type { SharedData } from './shared';
 import { Readiness } from './Template';
 import { FixPanel, WhyPanel } from './Drilldown';
 import { RaidPanel } from './Raid';
+import { GroupFilter } from './Dashboard';
 
 const SYMBOL: Record<Health, string> = { green: '●', amber: '▲', red: '■', insufficient: '○' };
 const BAND_TEXT: Record<Health, string> = { green: 'in the green zone', amber: 'in the amber zone', red: 'in the red zone', insufficient: 'not used (too few tasks)' };
@@ -17,14 +18,19 @@ const NEXT: Goto[] = [
   { id: 'quality', label: 'Quality', why: 'Defects, age and resolution time' },
 ];
 
-export function OverviewScreen({ shared, onGo }: { shared: SharedData | null; onGo: (id: string) => void }) {
+export function OverviewScreen({ shared, onGo, onTryExample }: { shared: SharedData | null; onGo: (id: string) => void; onTryExample: () => void }) {
   if (!shared) {
     return (
       <section aria-labelledby="ov-h" className="hero">
         <h2 id="ov-h">See where your project stands</h2>
         <p className="lead">Load a task export from the tool you already use. You get cost and schedule health, forecasts, flow, resources and quality, and every number comes with its working.</p>
+        <ol className="firstrun">
+          <li><strong>See it first.</strong> One click loads a made-up project with dates, risks and issues, so every tab shows something. <button type="button" className="primary" onClick={onTryExample}>Try the example</button></li>
+          <li><strong>Use your own data.</strong> Load an export from your tool, or fill in the template. <button type="button" onClick={() => onGo('import')}>Load a file</button></li>
+          <li><strong>Share it.</strong> Open Status report for a one-page summary you can save as PDF. <button type="button" onClick={() => onGo('learn')}>How the numbers work</button></li>
+        </ol>
         <p className="row">
-          <button type="button" className="primary" onClick={() => onGo('import')}>Load a file</button>
+          <button type="button" onClick={() => onGo('import')}>Load a file</button>
           <button type="button" onClick={() => onGo('template')}>Get the fill-in template</button>
           <button type="button" onClick={() => onGo('learn')}>Read how the numbers work</button>
         </p>
@@ -52,6 +58,32 @@ export function OverviewScreen({ shared, onGo }: { shared: SharedData | null; on
         <ul className="plain">{h.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
         <p className="note">Limits: green from {th.greenMin}, amber from {th.amberMin}, at least {th.minTasks} tasks. These are starting values, not a standard. {fromTpl ? "Set by the template's Settings sheet. " : ''}Change them on the Portfolio tab.</p>
       </div>
+
+      <div className="panel progress-panel">
+        <h3>Progress</h3>
+        {(() => {
+          const c = shared.items.filter((i) => i.statusCategory !== 'cancelled');
+          const done = c.filter((i) => i.statusCategory === 'done').length;
+          const bars: { label: string; value: number; text: string }[] = [];
+          if (c.length > 0) bars.push({ label: 'Items done', value: done / c.length, text: `${done} of ${c.length} items (${roundHalfUp((done / c.length) * 100, 0)}%)` });
+          if (sm.bac !== null && sm.bac > 0 && sm.ev !== null) bars.push({ label: 'Work earned against budget', value: sm.ev / sm.bac, text: `${fmt(sm.ev)} of ${fmt(sm.bac)} hours (${roundHalfUp((sm.ev / sm.bac) * 100, 0)}%)` });
+          if (sm.bac !== null && sm.bac > 0 && sm.ac !== null) bars.push({ label: 'Hours spent against budget', value: sm.ac / sm.bac, text: `${fmt(sm.ac)} of ${fmt(sm.bac)} hours (${roundHalfUp((sm.ac / sm.bac) * 100, 0)}%)${sm.ac > sm.bac ? ', over budget' : ''}` });
+          return bars.length === 0 ? <p className="note">Not enough data for progress bars.</p> : (
+            <ul className="plain bars">
+              {bars.map((b) => (
+                <li key={b.label}>
+                  <label>{b.label}: <strong>{b.text}</strong>
+                    <progress max={1} value={Math.min(1, Math.max(0, b.value))} aria-label={b.label}>{b.text}</progress>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          );
+        })()}
+        <p className="note">Earned value counts finished work by your chosen progress rule. Spending more than you have earned is the cost problem the CPI measures.</p>
+      </div>
+
+      <GroupFilter shared={shared} th={th} />
 
       <div className="rulers">
         <div className="panel"><h3>Cost: are we getting what we pay for?</h3>

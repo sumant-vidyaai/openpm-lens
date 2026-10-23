@@ -15,6 +15,7 @@ import { OverviewScreen } from './Overview';
 import { RaidScreen } from './Raid';
 import { ForecastScreen } from './Forecast';
 import { StatusReportScreen } from './StatusReport';
+import { StatusStrip } from './StatusStrip';
 import { TrendsScreen } from './Trends';
 import type { SharedData } from './shared';
 
@@ -75,10 +76,20 @@ function MetricCardView({ id }: { id: string }) {
 
 type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'forecast' | 'report' | 'trends' | 'learn' | 'coverage' | 'library';
 const GROUPS: { title: string; tabs: { id: TabId; label: string }[] }[] = [
-  { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'template', label: 'Template' }, { id: 'portfolio', label: 'Portfolio' }] },
-  { title: 'Analyse', tabs: [{ id: 'flow', label: 'Flow metrics' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'quality', label: 'Quality' }, { id: 'raid', label: 'Risks, issues, changes' }, { id: 'forecast', label: 'Forecast' }, { id: 'report', label: 'Status report' }, { id: 'trends', label: 'Snapshots and trends' }] },
+  { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'template', label: 'Template' }] },
+  { title: 'Plan and track', tabs: [{ id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'flow', label: 'Flow metrics' }] },
+  { title: 'Control', tabs: [{ id: 'quality', label: 'Quality' }, { id: 'raid', label: 'Risks, issues, changes' }, { id: 'forecast', label: 'Forecast' }] },
+  { title: 'Report', tabs: [{ id: 'report', label: 'Status report' }, { id: 'trends', label: 'Snapshots and trends' }] },
+  { title: 'Portfolio', tabs: [{ id: 'portfolio', label: 'Portfolio' }] },
   { title: 'Learn', tabs: [{ id: 'learn', label: 'Learn' }, { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' }] },
 ];
+type Accent = 'teal' | 'blue' | 'violet' | 'orange';
+function applyAccent(a: Accent) {
+  if (a === 'teal') delete document.documentElement.dataset.accent;
+  else document.documentElement.dataset.accent = a;
+  try { if (a === 'teal') localStorage.removeItem('openpm-lens-accent'); else localStorage.setItem('openpm-lens-accent', a); } catch { /* ignore */ }
+}
+
 
 export function App() {
   const [tab, setTab] = useState<TabId>('overview');
@@ -87,6 +98,11 @@ export function App() {
     const t = document.documentElement.dataset.theme;
     return t === 'light' || t === 'dark' ? t : 'system';
   });
+  const [accent, setAccent] = useState<Accent>(() => {
+    const a = document.documentElement.dataset.accent;
+    return a === 'blue' || a === 'violet' || a === 'orange' ? a : 'teal';
+  });
+  const [exampleTick, setExampleTick] = useState(0);
   const goImport = () => setTab('import');
   // Every tab stays mounted (just hidden) so what you loaded and typed is kept when you switch.
   const panel = (id: TabId, node: React.ReactNode) => <div hidden={tab !== id}>{node}</div>;
@@ -123,12 +139,22 @@ export function App() {
               <option value="dark">Dark</option>
             </select>
           </label>
+          <label className="theme">
+            Accent colour{' '}
+            <select value={accent} onChange={(e) => { const a = e.target.value as Accent; setAccent(a); applyAccent(a); }}>
+              <option value="teal">Teal</option>
+              <option value="blue">Blue</option>
+              <option value="violet">Violet</option>
+              <option value="orange">Orange</option>
+            </select>
+          </label>
         </aside>
         <div className="content">
+      <StatusStrip shared={shared} />
       <main id="main">
         <h1 className="printonly">openpm-lens</h1>
-        {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} />)}
-        {panel('import', <ImportScreen onShare={setShared} />)}
+        {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} onTryExample={() => setExampleTick((n) => n + 1)} />)}
+        {panel('import', <ImportScreen onShare={setShared} exampleTick={exampleTick} />)}
         {panel('template', <TemplateScreen onGoImport={goImport} />)}
         {panel('portfolio', <PortfolioScreen />)}
         {panel('flow', <FlowScreen />)}

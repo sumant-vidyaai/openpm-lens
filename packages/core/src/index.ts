@@ -34,3 +34,4 @@ export * from './snapshots';
 export * from './phasing';
 export * from './finish';
 export * from './commentary';
+export * from './subset';

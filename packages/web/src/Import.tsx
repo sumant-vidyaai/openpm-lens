@@ -3,7 +3,7 @@ import {
   IMPORT_FIELDS, parseMspdi, aggregateHoursEvm, buildWorkItems, costPerformanceIndex, costVariance,
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
   aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
-  type StatusCategory, type StatusMap, type Unit,
+  type StatusCategory, type StatusMap, type Unit, type DecimalStyle,
   extractTemplate, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
 } from '@openpm-lens/core';
 import { MAX_XML_BYTES, readWorkbook } from './readFile';
@@ -32,7 +32,7 @@ const RULES: { value: PercentRule; label: string }[] = [
   { value: 'status_based', label: 'Status-based: I choose the % for in progress' },
 ];
 
-export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => void }) {
+export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: SharedData | null) => void; exampleTick?: number }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [raw, setRaw] = useState<Raw | null>(null);
   const [sheetIdx, setSheetIdx] = useState(0);
@@ -41,6 +41,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   const [mappingEdits, setMappingEdits] = useState<Partial<ColumnMapping>>({});
   const [statusEdits, setStatusEdits] = useState<StatusMap>({});
   const [defaultUnit, setDefaultUnit] = useState<Unit | ''>('hours');
+  const [decimal, setDecimal] = useState<DecimalStyle>('auto');
   const [percentScale, setPercentScale] = useState<'0-100' | '0-1'>('0-100');
   const [hoursPerDay, setHoursPerDay] = useState(8);
   const [rule, setRule] = useState<PercentRule>('tool_reported');
@@ -99,7 +100,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
 
   const calc = useMemo(() => {
     if (!csv || !mapping || mapping.name === null || defaultUnit === '') return null;
-    const items = buildWorkItems(csv.headers, csv.rows, mapping, { defaultUnit, percentScale, statusMap, dateOrder });
+    const items = buildWorkItems(csv.headers, csv.rows, mapping, { defaultUnit, percentScale, statusMap, dateOrder, decimal });
     const calendar = { hoursPerDay, daysPerWeek: 5 };
     const config = rule === 'status_based' ? { inProgressPercent } : undefined;
     const tasks = toHoursTasks(items, calendar, rule, config);
@@ -126,7 +127,7 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
       evmGroups: evmSteps(agg),
       schedGroups: schedule ? scheduleSteps(schedule, statusDate, dayRule) : [],
     };
-  }, [csv, mapping, defaultUnit, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayRule, dayCount, statusDate]);
+  }, [csv, mapping, defaultUnit, decimal, percentScale, statusMap, hoursPerDay, rule, inProgressPercent, missingPlanned, dateOrder, dayRule, dayCount, statusDate]);
 
   useEffect(() => {
     onShare(
@@ -203,8 +204,19 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
   }
 
   function reset(name: string, next: Raw, tp: TemplateParts | null = null) {
-    setTpl(tp); setFileName(name); setRaw(next); setSheetIdx(tp ? tp.tasksIndex : 0); setLoadError(null); setDefaultUnit('hours'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
+    setTpl(tp); setFileName(name); setRaw(next); setSheetIdx(tp ? tp.tasksIndex : 0); setLoadError(null); setDefaultUnit('hours'); setDecimal('auto'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
   }
+  async function loadExample() {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}templates/openpm-lens-example.xlsx`);
+      if (!res.ok || /text\/html/i.test(res.headers.get('content-type') ?? '')) throw new Error('example not available');
+      await onFile(new File([await res.blob()], 'openpm-lens-example.xlsx'));
+    } catch {
+      reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV });
+    }
+  }
+  useEffect(() => { if (exampleTick > 0) void loadExample(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exampleTick]);
   async function onFile(f: File) {
     try {
       if (/\.xlsx$/i.test(f.name)) {
@@ -253,8 +265,8 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
             }}
           />
         </label>
-        <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV })} />
-        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setTpl(null); setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
+        <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)' && fileName !== 'openpm-lens-example.xlsx'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => { void loadExample(); }} />
+        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)' && fileName !== 'openpm-lens-example.xlsx'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setTpl(null); setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}
@@ -334,6 +346,14 @@ export function ImportScreen({ onShare }: { onShare: (d: SharedData | null) => v
                 <option value="days">days</option>
                 <option value="minutes">minutes</option>
                 <option value="weeks">weeks</option>
+              </select>
+            </label>
+            <label>
+              Numbers in my file are written as
+              <select value={decimal} onChange={(e) => setDecimal(e.target.value as DecimalStyle)}>
+                <option value="auto">Not sure: read only clear ones</option>
+                <option value="point">1,234.5 (decimal point)</option>
+                <option value="comma">1.234,5 (decimal comma)</option>
               </select>
             </label>
             <label>

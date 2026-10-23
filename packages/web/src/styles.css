@@ -9,6 +9,18 @@
 }
 :root[data-theme='dark'] { --bg: #0d1822; --fg: #e8eef3; --muted: #a3b2c0; --card: #15222f; --field: #0d1822; --border: #2b3b4a; --accent: #5fd0d6; --accent-fg: #06262a; --side-bg: #08111a; color-scheme: dark; }
 :root[data-theme='light'] { color-scheme: light; }
+/* Accent colours chosen in the sidebar. Each passes 4.5:1 text contrast on the page and card, and its button text passes 4.5:1 on it, in light and dark. */
+:root[data-accent='blue'] { --accent: #1f5fbf; --side-active: #8ab8ff; }
+:root[data-accent='violet'] { --accent: #6b3fb5; --side-active: #bda6ff; }
+:root[data-accent='orange'] { --accent: #a8440b; --side-active: #ffa467; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='blue'] { --accent: #8ab8ff; --accent-fg: #06141f; }
+  :root:not([data-theme='light'])[data-accent='violet'] { --accent: #bda6ff; --accent-fg: #06141f; }
+  :root:not([data-theme='light'])[data-accent='orange'] { --accent: #ffa467; --accent-fg: #06141f; }
+}
+:root[data-theme='dark'][data-accent='blue'] { --accent: #8ab8ff; --accent-fg: #06141f; }
+:root[data-theme='dark'][data-accent='violet'] { --accent: #bda6ff; --accent-fg: #06141f; }
+:root[data-theme='dark'][data-accent='orange'] { --accent: #ffa467; --accent-fg: #06141f; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 1rem/1.55 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif; }
 main, footer { max-width: 70rem; margin: 0 auto; padding: 1.5rem; }
@@ -210,3 +222,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .report h4 { margin: 14px 0 4px; }
 .report .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .form textarea { width: 100%; font: inherit; }
+
+/* Status strip, progress bars, first-run steps */
+.theme + .theme { margin-top: 0; }
+.strip { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: center; padding: .5rem 1rem; border-bottom: 1px solid var(--border); border-left: 6px solid var(--border); background: var(--card); font-size: .9rem; }
+.strip-file { font-weight: 600; overflow-wrap: anywhere; }
+.strip-green { border-left-color: var(--st-good); } .strip-amber { border-left-color: var(--st-warn); } .strip-red { border-left-color: var(--st-bad); }
+.bars li { margin: .6rem 0; }
+.bars progress { display: block; width: min(28rem, 100%); height: .7rem; margin-top: .25rem; accent-color: var(--accent); }
+.firstrun { padding-left: 1.2rem; } .firstrun li { margin: .6rem 0; } .firstrun button { margin-left: .5rem; }

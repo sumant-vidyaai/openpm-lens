@@ -70,3 +70,27 @@ describe('validateCard', () => {
     expect(validateCard({ required: [] }).join(' ')).toContain('at least one input');
   });
 });
+
+// Trust check: what the Learn tab teaches must say the same as the metric cards and the numbers the app uses.
+import { DEFAULT_THRESHOLDS } from '@openpm-lens/core';
+import { TERMS } from '../../web/src/learnContent';
+
+const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+import { EAC_METHODS } from '@openpm-lens/core';
+describe('Learn tab agrees with the metric cards', () => {
+  it.each(EAC_METHODS.map((m) => [m.value, m.formula] as const))('the %s forecast method is taught with the formula the app uses', (_v, formula) => {
+    expect(TERMS.map((t) => norm(t.formula ?? ''))).toContain(norm(formula));
+  });
+  it.each(cards.map((c) => [c.card.id, c.card] as const))('%s has a Learn entry with the same formula', (_id, card) => {
+    const learn = TERMS.filter((t) => t.formula !== undefined).map((t) => norm(t.formula as string));
+    expect(learn).toContain(norm(card.formula));
+  });
+  it('the starting health limits on the CPI and SPI cards equal the limits the app uses', () => {
+    for (const id of ['evm.cpi', 'evm.spi']) {
+      const card = cards.find((c) => c.card.id === id)!.card;
+      const rules = card.interpretation.bands.map((b) => b.rule).join(' | ');
+      expect(rules).toContain(String(DEFAULT_THRESHOLDS.greenMin));
+      expect(rules).toContain(String(DEFAULT_THRESHOLDS.amberMin));
+    }
+  });
+});

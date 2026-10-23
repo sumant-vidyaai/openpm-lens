@@ -7,7 +7,7 @@ import type { SharedData } from './shared';
 
 const MY_BOXES = ['Highlights to add', 'Concerns to add', 'Decisions needed', 'Next steps'] as const;
 
-function buildFacts(shared: SharedData): ReportFacts {
+export function buildFacts(shared: SharedData): ReportFacts {
   const sm = shared.summary, ts = shared.template?.settings;
   const th = ts != null && ts.greenMin !== null && ts.amberMin !== null ? { ...DEFAULT_THRESHOLDS, greenMin: ts.greenMin as number, amberMin: ts.amberMin as number } : DEFAULT_THRESHOLDS;
   const h = assessHealth({ ev: sm.ev, ac: sm.ac, costTasks: sm.costTasks, evSchedule: sm.evSchedule, pv: sm.pv, scheduleTasks: sm.scheduleTasks }, th);
