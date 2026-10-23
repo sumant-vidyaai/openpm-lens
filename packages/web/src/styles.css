@@ -159,7 +159,7 @@ button.primary { background: var(--accent); color: var(--accent-fg); border-colo
 @media (max-width: 40rem) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero h2 { font-size: 1.75rem; } .band-main { font-size: 1.5rem; } }
 .panel { --text-muted: var(--muted); --text-secondary: var(--fg); --surface-1: var(--card); }
 @media (max-width: 40rem) { .ruler .viz-tick { font-size: 22px; } .ruler .viz-label { font-size: 24px; } }
-@media print { .shell { display: block; } .band, .panel, .facts { break-inside: avoid; } }
+@media print { .shell { display: block; min-height: 0; } .band, .panel, .facts { break-inside: avoid; } }
 
 /* Template tab and readiness list */
 .downloads { list-style: none; padding: 0; display: grid; gap: .6rem; }
@@ -204,3 +204,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   }
   body { background: #fff !important; color: #000 !important; }
 }
+
+/* Status report */
+.report { border: 1px solid var(--border, currentColor); border-radius: 8px; padding: 16px; max-width: 46rem; }
+.report h4 { margin: 14px 0 4px; }
+.report .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.form textarea { width: 100%; font: inherit; }

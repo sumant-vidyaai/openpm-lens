@@ -2,7 +2,7 @@
 
 Status: proposed 2026-10-16, replaces the earlier Batch B to F list. Detail of each area is in `lifecycle-map.md`.
 
-**Progress:** Batch 1 (v0.19), Batch 2 (v0.20) and Batch 3 (v0.21, snapshots and trends) are built. Batch 1 shipped without the milestone forecast (moved to Batch 4) and with holidays as a Holidays sheet; Batch 2 shipped as the Risks, Issues and Changes sheets plus a tab and Overview panel.
+**Progress:** Batch 1 (v0.19), Batch 2 (v0.20) and Batch 3 (v0.21, snapshots and trends) and Batch 4 (v0.22, finish-date forecast and status report) are built. Batch 1 shipped without the milestone forecast (moved to Batch 4) and with holidays as a Holidays sheet; Batch 2 shipped as the Risks, Issues and Changes sheets plus a tab and Overview panel.
 
 ## How every batch is run (same each time)
 1. Build the feature; add tests with hand-worked numbers.

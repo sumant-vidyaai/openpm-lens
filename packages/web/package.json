@@ -1,6 +1,6 @@
 {
   "name": "@openpm-lens/web",
-  "version": "0.21.2",
+  "version": "0.22.0",
   "description": "The browser app. Runs entirely on the user's device.",
   "license": "Apache-2.0",
   "private": true,
@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@openpm-lens/core": "0.21.2",
+    "@openpm-lens/core": "0.22.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "read-excel-file": "^9.3.12",

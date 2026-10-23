@@ -25,6 +25,8 @@ openpm-lens turns an export from your project tool into standard project numbers
 | Cost in money | Cost in money and forecast, monthly cash flow (planned vs actual) | Hours plus hourly rates you type in |
 | Resources | Weekly load and utilisation per person | Planned hours, dates and an assignee |
 | Risks, issues, changes | Which risks matter most, which problems are open and how old, how much has been added to the plan | The Risks, Issues and Changes sheets of the template workbook (all optional) |
+| Forecast | When will the open work be finished? What is the chance of hitting the planned date? | Actual finish dates, a status date; at least 4 full weeks of finished items |
+| Status report | Can I hand my manager one page? | A status date; the other tabs add detail when their data is present |
 | Snapshots and trends | Am I getting better or worse? What changed since the plan was approved? | Save a snapshot each time you update (needs a status date); at least two for trends |
 | Quality | Defects: counts, age, resolution time, severity, removal efficiency | Item type, created and resolved dates |
 | Learn | What a term means; which metric answers which question | Nothing |
@@ -90,5 +92,9 @@ Holidays and leave: list dates on the **Holidays** sheet and each person's days 
 Risks, issues and changes: fill in the optional **Risks**, **Issues** and **Changes** sheets. Risk score = probability x impact (each 1 to 5); the Low, Medium and High limits (7 and 13) are starting values you can change on Settings. Scope growth needs "Original budget (h)" on Settings. Blank cells are "not known", never 0.
 
 Snapshots and trends: after loading a file and choosing the status date, open **Snapshots and trends** and press **Save snapshot**. Do this at each update. A snapshot holds totals only (no task names). Mark one snapshot per project as the **baseline** (the plan to compare against). With two or more you get a comparison table and trend charts. Snapshots are kept in this browser on this device; use **Download all snapshots** to keep a copy, and **Add snapshot files** to bring them back or to load a colleague's.
+
+Forecast: open **Forecast** after choosing the status date. It shows the items finished in each of the last 12 weeks (change the number of weeks if you wish) and the dates by which 50%, 85% and 95% of simulated futures finish. Use 85% to commit. Add **Extra items still to come** if scope will grow. Milestones are forecast too, on the stated assumption that the work behind a milestone is the open items planned to finish before it.
+
+Status report: open **Status report**, add your own reasons, decisions needed and next steps in the boxes, then press **Download report (PDF)** and choose Save as PDF in the print window. What you type is not saved.
 
 Report as PDF: on Snapshots and trends press **Download report (PDF, with charts)**. Your browser's print window opens; choose **Save as PDF** as the printer and save. The report holds the summary, the comparison table and all charts. For the numbers in Excel use **Download as spreadsheet (CSV)**.

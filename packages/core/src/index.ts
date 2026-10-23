@@ -32,3 +32,5 @@ export * from './milestones';
 export * from './raid';
 export * from './snapshots';
 export * from './phasing';
+export * from './finish';
+export * from './commentary';
