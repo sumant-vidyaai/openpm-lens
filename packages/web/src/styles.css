@@ -189,3 +189,18 @@ table.heat td { position: relative; }
 .snap-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
 .snap-form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-end; margin: .5rem 0; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media print {
+  .viz-root { --surface-1: #fff !important; --text-secondary: #333 !important; --text-muted: #555 !important; --grid: #ccc !important; --axis: #888 !important; --series-1: #2a78d6 !important; --series-2: #eb6834 !important; --series-3: #1baf7a !important; color-scheme: light; }
+  .viz-table { display: none; }
+  .viz-root, section[aria-labelledby='cmp-h'] { break-inside: avoid; }
+  .content, main { padding: 0; }
+}
+/* Printing always uses a white page with dark text, whatever the screen theme (the earlier rule lost to the dark theme). */
+@media print {
+  :root, :root[data-theme='dark'], :root:not([data-theme='light']) {
+    --bg: #fff !important; --fg: #000 !important; --muted: #333 !important; --card: #fff !important; --field: #fff !important; --border: #888 !important;
+    --accent: #000 !important; --accent-fg: #fff !important; color-scheme: light !important;
+  }
+  body { background: #fff !important; color: #000 !important; }
+}

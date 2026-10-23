@@ -137,12 +137,32 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
   }
   const sorted = [...list].sort((a, b) => a.label.localeCompare(b.label) || a.statusDate.localeCompare(b.statusDate));
 
+  /** Opens the browser's print window with the report; the person chooses "Save as PDF". The file name suggestion is set through the page title. */
+  function printReport() {
+    const oldTitle = document.title;
+    document.title = `openpm-lens report - ${active ?? 'snapshots'} - ${latest?.statusDate ?? ''}`.trim();
+    const restore = () => { document.title = oldTitle; window.removeEventListener('afterprint', restore); };
+    window.addEventListener('afterprint', restore);
+    window.print();
+  }
   return (
     <section aria-labelledby="tr-h">
       <h2 id="tr-h">Snapshots and trends</h2>
-      <p className="lead">A snapshot is a dated copy of the headline numbers. Save one each time you update the project, then compare dates and watch the trend. A snapshot holds totals only (hours and counts), never task names.</p>
+      <p className="lead noprint">A snapshot is a dated copy of the headline numbers. Save one each time you update the project, then compare dates and watch the trend. A snapshot holds totals only (hours and counts), never task names.</p>
 
-      <div className="panel">
+      {active !== null && latest && (
+        <div className="printonly">
+          <h3>Snapshot report: {active}</h3>
+          <p>
+            Prepared on {today()} on this device. {plural(series.length, 'snapshot')}, status dates {series[0]?.statusDate} to {latest.statusDate}.
+            {baseline ? ` Baseline: ${baseline.statusDate}.` : ' No baseline chosen.'}
+            {cpiOf(latest) !== null ? ` Latest CPI ${roundHalfUp(cpiOf(latest) as number, 2)}` : ''}{spiOf(latest) !== null ? `, SPI ${roundHalfUp(spiOf(latest) as number, 2)}` : ''}{cpiOf(latest) !== null || spiOf(latest) !== null ? '.' : ''}
+          </p>
+          <p>Hours and counts come from the file loaded when each snapshot was saved. The limits for good and bad are starting values, not a standard. Your data stayed on your device.</p>
+        </div>
+      )}
+
+      <div className="panel noprint">
         <h3>Save a snapshot</h3>
         {!shared && <NeedsImport onGo={onGoImport} />}
         {shared && (
@@ -158,15 +178,17 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
         <div className="snap-actions">
           <label className="btn">Add snapshot files <input type="file" accept=".json,application/json" multiple onChange={(e) => { void upload(e.target.files); e.target.value = ''; }} /></label>
           {list.length > 0 && <button type="button" onClick={() => download('openpm-lens-snapshots.json', JSON.stringify(list, null, 2))}>Download all snapshots</button>}
+          {series.length >= 1 && <button type="button" onClick={printReport}>Download report (PDF, with charts)</button>}
           {list.length > 0 && <button type="button" onClick={() => saveCsv('openpm-lens-snapshots.csv', snapshotRows(list))}>Download as spreadsheet (CSV, opens in Excel)</button>}
         </div>
         <p role="status" aria-live="polite">{msg}</p>
+        <p className="note">The PDF button opens your browser's print window: choose "Save as PDF" as the printer. Charts and the comparison table are included.</p>
         {!stored && <p className="warn">This browser would not keep the snapshots on this device (a private window or blocked storage). They are kept until you close the tab: download them to keep them.</p>}
         <p className="note">Snapshots are kept in this browser on this device only. Clearing site data removes them, so download a copy now and then.</p>
       </div>
 
       {list.length > 0 && (
-        <>
+        <div className="noprint">
           <h3>Saved snapshots</h3>
           <div className="scroll" tabIndex={0}>
             <table>
@@ -200,11 +222,11 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
             ) : <button type="button" onClick={() => setConfirmAll(true)}>Delete all snapshots</button>}
           </p>
           <p className="note">The baseline is the snapshot you treat as the plan to compare against (usually the first one after approval). Each label has at most one.</p>
-        </>
+        </div>
       )}
 
       {labels.length > 1 && (
-        <p><label>Show trends for <select value={active ?? ''} onChange={(e) => { setPickLabel(e.target.value); setPickA(null); setPickB(null); }}>{labels.map((l) => <option key={l}>{l}</option>)}</select></label></p>
+        <p className="noprint"><label>Show trends for <select value={active ?? ''} onChange={(e) => { setPickLabel(e.target.value); setPickA(null); setPickB(null); }}>{labels.map((l) => <option key={l}>{l}</option>)}</select></label></p>
       )}
 
       {active !== null && latest && (
@@ -216,7 +238,7 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
       {cmp && snapA && snapB && series.length >= 2 && (
         <section aria-labelledby="cmp-h">
           <h3 id="cmp-h">Compare two dates</h3>
-          <div className="form">
+          <div className="form noprint">
             <label>From <select value={idA ?? ''} onChange={(e) => setPickA(e.target.value)}>{series.map((s) => <option key={snapshotId(s)} value={snapshotId(s)}>{s.statusDate}{s.baseline ? ' (baseline)' : ''}</option>)}</select></label>
             <label>To <select value={idB ?? ''} onChange={(e) => setPickB(e.target.value)}>{series.map((s) => <option key={snapshotId(s)} value={snapshotId(s)}>{s.statusDate}{s.baseline ? ' (baseline)' : ''}</option>)}</select></label>
           </div>
