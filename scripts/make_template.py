@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the openpm-lens fill-in template (Excel + CSV) and a made-up example.
+"""Builds the Spashta fill-in template (Excel + CSV) and a made-up example.
 
 Run:  python3 scripts/make_template.py
 Output: packages/web/public/templates/
@@ -14,7 +14,8 @@ from openpyxl.utils import get_column_letter
 OUT = os.path.join(os.path.dirname(__file__), '..', 'packages', 'web', 'public', 'templates')
 COLUMNS = ['Project', 'Programme', 'Team', 'ID', 'Task', 'Type', 'Status', 'Assignee',
            'Planned start', 'Planned finish', 'Actual start', 'Actual finish',
-           'Estimate (h)', 'Actual (h)', '% complete', 'Created', 'Severity', 'Found in']
+           'Estimate (h)', 'Actual (h)', '% complete', 'Created', 'Severity', 'Found in',
+           'Optimistic (h)', 'Pessimistic (h)', 'Depends on']
 DATE_COLS = ['Planned start', 'Planned finish', 'Actual start', 'Actual finish', 'Created']
 STATUSES = ['Not started', 'In progress', 'Done', 'Cancelled']
 TYPES = ['Task', 'Bug', 'Story', 'Milestone', 'Risk', 'Change']
@@ -41,30 +42,35 @@ HELP = {
     'Created': ('For quality', 'The day the item was raised. Year-month-day.'),
     'Severity': ('Optional', 'For bugs: Critical, High, Medium or Low.'),
     'Found in': ('Optional', 'Where a bug was found, such as Testing or Production. Lets the Quality tab count problems found after release.'),
+    'Optimistic (h)': ('For Planning', 'Best-case effort in HOURS if things go well. Used with Estimate (h) as the most likely value and Pessimistic (h). Leave blank if unknown.'),
+    'Pessimistic (h)': ('For Planning', 'Worst-case effort in HOURS if things go badly. Must be at least the Estimate (h). Leave blank if unknown.'),
+    'Depends on': ('For Planning', 'IDs of tasks that must FINISH before this one starts, separated by a comma, for example W-1, W-2. Finish-to-start only; no lags.'),
 }
 
 # A made-up example. Every number is invented.
 EXAMPLE = [
-    # Project, Programme, Team, ID, Task, Type, Status, Assignee, PS, PF, AS, AF, Est, Act, Pct, Created, Sev, Found
-    ['Website relaunch', 'Digital', 'Web', 'W-1', 'Requirements', 'Task', 'Done', 'Asha', '2026-03-02', '2026-03-06', '2026-03-02', '2026-03-06', 40, 44, 100, '', '', ''],
-    ['Website relaunch', 'Digital', 'Web', 'W-2', 'Design mock-ups', 'Task', 'Done', 'Ravi', '2026-03-09', '2026-03-13', '2026-03-09', '2026-03-16', 40, 52, 100, '', '', ''],
-    ['Website relaunch', 'Digital', 'Web', 'W-3', 'Build pages', 'Story', 'In progress', 'Asha', '2026-03-16', '2026-04-03', '2026-03-17', '', 80, 56, 60, '', '', ''],
-    ['Website relaunch', 'Digital', 'Web', 'W-4', 'Build search', 'Story', 'In progress', 'Meena', '2026-03-16', '2026-03-27', '2026-03-18', '', 48, 30, 50, '', '', ''],
-    ['Website relaunch', 'Digital', 'Web', 'W-5', 'Content migration', 'Task', 'Not started', 'Ravi', '2026-04-06', '2026-04-17', '', '', 60, 0, 0, '', '', ''],
-    ['Website relaunch', 'Digital', 'Web', 'W-6', 'Broken contact form', 'Bug', 'Done', 'Meena', '', '', '2026-03-10', '2026-03-12', 8, 6, 100, '2026-03-09', 'High', 'Testing'],
-    ['Website relaunch', 'Digital', 'Web', 'W-7', 'Logo blurry on phones', 'Bug', 'In progress', 'Asha', '', '', '2026-03-24', '', 4, 2, 50, '2026-03-23', 'Low', 'Production'],
-    ['Website relaunch', 'Digital', 'Web', 'W-8', 'Launch', 'Milestone', 'Not started', 'Asha', '2026-04-20', '2026-04-20', '', '', 8, 0, 0, '', '', ''],
-    ['Mobile app', 'Digital', 'Apps', 'M-1', 'Login screen', 'Story', 'Done', 'Dev', '2026-03-02', '2026-03-13', '2026-03-02', '2026-03-12', 60, 54, 100, '', '', ''],
-    ['Mobile app', 'Digital', 'Apps', 'M-2', 'Profile screen', 'Story', 'Done', 'Dev', '2026-03-09', '2026-03-20', '2026-03-13', '2026-03-24', 50, 62, 100, '', '', ''],
-    ['Mobile app', 'Digital', 'Apps', 'M-3', 'Payments', 'Story', 'In progress', 'Kiran', '2026-03-16', '2026-04-10', '2026-03-16', '', 120, 70, 40, '', '', ''],
-    ['Mobile app', 'Digital', 'Apps', 'M-4', 'Crash on start', 'Bug', 'Done', 'Kiran', '', '', '2026-03-20', '2026-03-21', 6, 9, 100, '2026-03-19', 'Critical', 'Production'],
-    ['Mobile app', 'Digital', 'Apps', 'M-5', 'Notifications', 'Story', 'Not started', 'Dev', '2026-04-06', '2026-04-24', '', '', 70, 0, 0, '', '', ''],
-    ['Mobile app', 'Digital', 'Apps', 'M-6', 'Store listing', 'Task', 'Cancelled', 'Kiran', '2026-03-30', '2026-04-03', '', '', 16, 0, 0, '', '', ''],
+    # Project, Programme, Team, ID, Task, Type, Status, Assignee, PS, PF, AS, AF, Est, Act, Pct, Created, Sev, Found, Opt, Pess, Depends
+    ['Website relaunch', 'Digital', 'Web', 'W-1', 'Requirements', 'Task', 'Done', 'Asha', '2026-03-02', '2026-03-06', '2026-03-02', '2026-03-06', 40, 44, 100, '', '', '', 32, 56, ''],
+    ['Website relaunch', 'Digital', 'Web', 'W-2', 'Design mock-ups', 'Task', 'Done', 'Ravi', '2026-03-09', '2026-03-13', '2026-03-09', '2026-03-16', 40, 52, 100, '', '', '', 32, 64, 'W-1'],
+    ['Website relaunch', 'Digital', 'Web', 'W-3', 'Build pages', 'Story', 'In progress', 'Asha', '2026-03-16', '2026-04-03', '2026-03-17', '', 80, 56, 60, '', '', '', 64, 120, 'W-2'],
+    ['Website relaunch', 'Digital', 'Web', 'W-4', 'Build search', 'Story', 'In progress', 'Meena', '2026-03-16', '2026-03-27', '2026-03-18', '', 48, 30, 50, '', '', '', 36, 72, 'W-2'],
+    ['Website relaunch', 'Digital', 'Web', 'W-5', 'Content migration', 'Task', 'Not started', 'Ravi', '2026-04-06', '2026-04-17', '', '', 60, 0, 0, '', '', '', 48, 96, 'W-3, W-4'],
+    ['Website relaunch', 'Digital', 'Web', 'W-6', 'Broken contact form', 'Bug', 'Done', 'Meena', '', '', '2026-03-10', '2026-03-12', 8, 6, 100, '2026-03-09', 'High', 'Testing', '', '', ''],
+    ['Website relaunch', 'Digital', 'Web', 'W-7', 'Logo blurry on phones', 'Bug', 'In progress', 'Asha', '', '', '2026-03-24', '', 4, 2, 50, '2026-03-23', 'Low', 'Production', '', '', ''],
+    ['Website relaunch', 'Digital', 'Web', 'W-8', 'Launch', 'Milestone', 'Not started', 'Asha', '2026-04-20', '2026-04-20', '', '', 8, 0, 0, '', '', '', '', '', 'W-5'],
+    ['Mobile app', 'Digital', 'Apps', 'M-1', 'Login screen', 'Story', 'Done', 'Dev', '2026-03-02', '2026-03-13', '2026-03-02', '2026-03-12', 60, 54, 100, '', '', '', 48, 84, ''],
+    ['Mobile app', 'Digital', 'Apps', 'M-2', 'Profile screen', 'Story', 'Done', 'Dev', '2026-03-09', '2026-03-20', '2026-03-13', '2026-03-24', 50, 62, 100, '', '', '', 40, 80, ''],
+    ['Mobile app', 'Digital', 'Apps', 'M-3', 'Payments', 'Story', 'In progress', 'Kiran', '2026-03-16', '2026-04-10', '2026-03-16', '', 120, 70, 40, '', '', '', 90, 180, 'M-2'],
+    ['Mobile app', 'Digital', 'Apps', 'M-4', 'Crash on start', 'Bug', 'Done', 'Kiran', '', '', '2026-03-20', '2026-03-21', 6, 9, 100, '2026-03-19', 'Critical', 'Production', '', '', ''],
+    ['Mobile app', 'Digital', 'Apps', 'M-5', 'Notifications', 'Story', 'Not started', 'Dev', '2026-04-06', '2026-04-24', '', '', 70, 0, 0, '', '', '', 56, 110, 'M-2'],
+    ['Mobile app', 'Digital', 'Apps', 'M-6', 'Store listing', 'Task', 'Cancelled', 'Kiran', '2026-03-30', '2026-04-03', '', '', 16, 0, 0, '', '', '', '', '', ''],
 ]
 EXAMPLE_SETTINGS = {'Status date': '2026-03-31', 'Currency': 'INR', 'Default hourly rate': 40}
 EXAMPLE_HOLIDAYS = [('2026-03-25', 'Festival day (made up)')]
 EXAMPLE_LEAVE = [('Kiran', '2026-03-30', '2026-04-03')]
 EXAMPLE_SETTINGS['Original budget (h)'] = 540
+EXAMPLE_SETTINGS['Contingency reserve (h)'] = 60
+EXAMPLE_SETTINGS['Management reserve (h)'] = 40
 RISK_HEAD = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done']
 ISSUE_HEAD = ['ID', 'Issue', 'Priority', 'Owner', 'Status', 'Raised', 'Due', 'Resolved']
 CHANGE_HEAD = ['ID', 'Change', 'Requested by', 'Decision', 'Requested', 'Decided', 'Cost impact (h)', 'Schedule impact (days)']
@@ -104,8 +110,8 @@ def build(path, example):
     s = wb.active
     s.title = 'Start here'
     lines = [
-        ('openpm-lens template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets, then upload this file to openpm-lens (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Spashta template', 'title'),
+        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -167,7 +173,7 @@ def build(path, example):
         for j, h in enumerate(COLUMNS, start=1):
             c = t.cell(row=i, column=j)
             c.fill = INPUT_FILL
-            if h in DATE_COLS or h in ('Project', 'Programme', 'Team', 'ID', 'Task', 'Assignee', 'Found in'):
+            if h in DATE_COLS or h in ('Project', 'Programme', 'Team', 'ID', 'Task', 'Assignee', 'Found in', 'Depends on'):
                 c.number_format = '@'
     L = lambda h: get_column_letter(COLUMNS.index(h) + 1)
 
@@ -188,7 +194,7 @@ def build(path, example):
                             error='Write the date as year-month-day, for example 2026-03-31.')
         t.add_data_validation(dv)
         dv.add(f'{col}2:{col}{MAXR}')
-    for h in ('Estimate (h)', 'Actual (h)'):
+    for h in ('Estimate (h)', 'Actual (h)', 'Optimistic (h)', 'Pessimistic (h)'):
         dv = DataValidation(type='decimal', operator='greaterThanOrEqual', formula1='0', allow_blank=True,
                             showErrorMessage=True, errorTitle='Hours', error='Enter hours as a plain number, 0 or more.')
         t.add_data_validation(dv)
@@ -217,6 +223,8 @@ def build(path, example):
         ('Original budget (h)', '', 'Hours in the plan before any approved change. Only used to show scope growth on the RAID tab. Optional.'),
         ('Risk medium from', 7, 'A risk score (probability x impact, 1 to 25) at or above this is Medium. A starting value, not a standard.'),
         ('Risk high from', 13, 'A risk score at or above this is High. A starting value, not a standard.'),
+        ('Contingency reserve (h)', '', 'Hours held INSIDE the cost baseline for known risks (the project manager controls it). Enter your own figure; 0 is allowed. Optional, for the Planning tab.'),
+        ('Management reserve (h)', '', 'Hours held ABOVE the cost baseline for unknown risks (the sponsor controls it). Enter your own figure; 0 is allowed. Optional, for the Planning tab.'),
     ]
     for i, (k, v, d) in enumerate(settings, start=2):
         if example and k in EXAMPLE_SETTINGS:
@@ -349,8 +357,8 @@ def write_csv(path, example):
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    build(os.path.join(OUT, 'openpm-lens-template.xlsx'), False)
-    build(os.path.join(OUT, 'openpm-lens-example.xlsx'), True)
-    write_csv(os.path.join(OUT, 'openpm-lens-template.csv'), False)
-    write_csv(os.path.join(OUT, 'openpm-lens-example.csv'), True)
+    build(os.path.join(OUT, 'spashta-template.xlsx'), False)
+    build(os.path.join(OUT, 'spashta-example.xlsx'), True)
+    write_csv(os.path.join(OUT, 'spashta-template.csv'), False)
+    write_csv(os.path.join(OUT, 'spashta-example.csv'), True)
     print('written to', os.path.normpath(OUT))

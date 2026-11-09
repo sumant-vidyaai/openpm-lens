@@ -40,7 +40,12 @@ const UNIT_ALIASES: Record<string, Unit> = {
   sp: 'points',
 };
 
+/** How numbers are written in the file. 'auto' reads only unambiguous ones; 'point' is 1,234.5; 'comma' is 1.234,5. */
+export type DecimalStyle = 'auto' | 'point' | 'comma';
+
 export interface ParseQuantityOptions {
+  /** Decimal style the person chose for this file. Defaults to 'auto'. */
+  decimal?: DecimalStyle;
   /** Used only when the text has a number but no unit. Must be passed explicitly. */
   defaultUnit?: Unit;
   /** Canonical field name recorded on any issues. */
@@ -52,8 +57,20 @@ interface NumberParse {
   issue: { code: DataIssue['code']; message: string } | null;
 }
 
-function parseNumber(text: string): NumberParse {
+function parseNumber(text: string, decimal: DecimalStyle = 'auto'): NumberParse {
   const s = text.trim();
+
+  // The person said how numbers are written, so nothing is ambiguous: read strictly in that style or refuse.
+  if (decimal === 'comma') {
+    if (/^-?\d+(,\d+)?$/.test(s)) return { value: Number(s.replace(',', '.')), issue: null };
+    if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) return { value: Number(s.replace(/\./g, '').replace(',', '.')), issue: null };
+    return { value: null, issue: { code: 'unparseable', message: `"${s}" is not a number written with a decimal comma (like 1.234,5).` } };
+  }
+  if (decimal === 'point') {
+    if (/^-?\d+(\.\d+)?$/.test(s) || /^-?\.\d+$/.test(s)) return { value: Number(s), issue: null };
+    if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) return { value: Number(s.replace(/,/g, '')), issue: null };
+    return { value: null, issue: { code: 'unparseable', message: `"${s}" is not a number written with a decimal point (like 1,234.5).` } };
+  }
 
   // Plain: 12, -3.5, .5
   if (/^-?\d+(\.\d+)?$/.test(s) || /^-?\.\d+$/.test(s)) {
@@ -152,7 +169,7 @@ export function parseQuantity(
   const numberText = match[1] ?? '';
   const unitText = (match[2] ?? '').toLowerCase();
 
-  const parsed = parseNumber(numberText);
+  const parsed = parseNumber(numberText, options.decimal ?? 'auto');
   if (parsed.value === null) {
     const issue = parsed.issue ?? { code: 'unparseable' as const, message: 'Not a number.' };
     return { raw, value: null, unit: null, issues: [{ ...issue, field }] };

@@ -1,6 +1,6 @@
-# openpm-lens user guide
+# Spashta user guide
 
-openpm-lens turns an export from your project tool into standard project numbers, with every number explained. It runs in your browser. Your file is read on your device and is never uploaded. There is no tracking.
+Spashta turns an export from your project tool into standard project numbers, with every number explained. It runs in your browser. Your file is read on your device and is never uploaded. There is no tracking.
 
 ## 1. Quick start
 
@@ -21,6 +21,7 @@ openpm-lens turns an export from your project tool into standard project numbers
 | Template | No project tool, or one the app cannot read yet? Download the Excel or CSV template (or the filled example), fill it in and upload it. The app sets itself up | Nothing: it is a download and instructions page |
 | Portfolio | Which projects need attention? | One file per project (or one template file with a Project column); roll up by project, programme, team or all |
 | Flow metrics | Throughput, cycle time, WIP, work item age | Dates work started and finished |
+| Planning | Three-point (PERT) estimates with a range, the critical path and float from task dependencies, and whether contingency and management reserve cover the expected overrun | Optimistic (h), Pessimistic (h) and Depends on columns (template, or links in a Microsoft Project XML file); Contingency and Management reserve on the Settings sheet |
 | Schedule | On-time rate, finish variance, overdue tasks, milestones (done, late, overdue, due soon) | Planned finish and actual finish dates |
 | Cost in money | Cost in money and forecast, monthly cash flow (planned vs actual) | Hours plus hourly rates you type in |
 | Resources | Weekly load and utilisation per person | Planned hours, dates and an assignee |
@@ -37,7 +38,7 @@ Your Import choices (file, columns, status date) are shared with Schedule, Cost,
 
 ## 3. Reading a Microsoft Project XML file
 
-In Microsoft Project, save the plan as XML. The app reads it in your browser. Summary tasks are left out because their hours repeat their sub-tasks'. Planned work and dates come from baseline number 0; the app tells you so, because Microsoft's reference does not say what the baseline number means. Check this against your plan.
+In Microsoft Project, save the plan as XML. The app reads it in your browser. Summary tasks are left out because their hours repeat their sub-tasks'. Finish-to-start links with no lag are also read into a Depends on column (other link types, lags and links to left-out tasks are counted in the notes, not read). Planned work and dates come from baseline number 0; the app tells you so, because Microsoft's reference does not say what the baseline number means. Check this against your plan.
 
 ## 4. Rules the app follows
 
@@ -68,6 +69,9 @@ CSV downloads open in Excel. Text that starts with `=`, `+`, `-` or `@` is saved
 - Checked with the axe automated tool on every tab in both themes (no problems found) and at a 360 px phone width. Automated tools find only part of the problems; an independent review with real assistive technology is still advisable.
 
 ## 8. Known limits
+
+- Planning: only finish-to-start links with no lag are used; dependencies are never guessed from dates; critical-path task length is the planned start-to-finish span in counted days (not effort); the total range of a three-point estimate assumes independent tasks.
+- Baseline lock protects against accidents in this browser; it is not a security control.
 
 - Percent complete is a judgement; if it is optimistic, every earned-value number is too.
 - Jira's standard CSV has no "work started" date, so cycle time needs a date column you supply.

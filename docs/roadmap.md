@@ -2,7 +2,7 @@
 
 Status: proposed 2026-10-16, replaces the earlier Batch B to F list. Detail of each area is in `lifecycle-map.md`.
 
-**Progress:** Batch 1 (v0.19), Batch 2 (v0.20) and Batch 3 (v0.21, snapshots and trends) Batch 4 (v0.22, finish-date forecast and status report) and Batch 5 (v0.23, look, dashboard and trust) are built. Batch 1 shipped without the milestone forecast (moved to Batch 4) and with holidays as a Holidays sheet; Batch 2 shipped as the Risks, Issues and Changes sheets plus a tab and Overview panel.
+**Progress:** Batch 1 (v0.19), Batch 2 (v0.20) and Batch 3 (v0.21, snapshots and trends) Batch 4 (v0.22, finish-date forecast and status report) Batch 5 (v0.23, look, dashboard and trust) and Batch 6 (v1.1, planning) are built. Batch 1 shipped without the milestone forecast (moved to Batch 4) and with holidays as a Holidays sheet; Batch 2 shipped as the Risks, Issues and Changes sheets plus a tab and Overview panel.
 
 ## How every batch is run (same each time)
 1. Build the feature; add tests with hand-worked numbers.
@@ -31,7 +31,7 @@ CI check on GitHub, trademark search for the name, confirm that Vidyaai owns the
 
 | Batch | Version | Name | Contents | New template parts |
 |---|---|---|---|---|
-| 6 | v1.1 | Planning | Three-point estimates; task dependencies, critical path and float (from Project XML links, or a "Depends on" column); contingency and management reserve; baseline lock | Tasks: Optimistic (h), Pessimistic (h), Depends on; Settings: reserve |
+| 6 | v1.1 | Planning (BUILT) | Three-point estimates; task dependencies, critical path and float (from Project XML links, or a "Depends on" column); contingency and management reserve; baseline lock | Tasks: Optimistic (h), Pessimistic (h), Depends on; Settings: reserve |
 | 7 | v1.2 | Initiate: RFI, RFP, business case | RFI / RFP / RFQ tracker; vendor weighted scoring with a weights-sensitivity check; payback, ROI, benefit-cost ratio and net present value (discount rate entered by the user); stakeholder power / interest grid; go / no-go checklist | Sheets: Vendors, Business case, Stakeholders |
 | 8 | v1.3 | Close, benefits, practice | Reusable checklist view (go-live, acceptance, contract closure); lessons-learned register; one-page closure report; benefits promised vs realised; export everything as one archive file; **Learn practice mode** (quizzes, a worked case study) | Sheets: Lessons, Benefits |
 | 9 | v1.4 | Portfolio and PMO | Projects by phase (stage-gate view); demand vs capacity across projects; prioritisation scoring set by the PMO; risk heat map across projects; reporting discipline (who has not updated); portfolio data-quality view | Tasks / Projects: Phase column |

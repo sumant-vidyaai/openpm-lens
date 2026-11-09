@@ -3,14 +3,14 @@ import json, os, subprocess, sys
 
 out_path = sys.argv[1] if len(sys.argv) > 1 else 'THIRD_PARTY_NOTICES.txt'
 tree = json.loads(subprocess.run(['npm', 'ls', '--omit=dev', '--all', '--json'], capture_output=True, text=True).stdout)
-own = {'@openpm-lens/core', '@openpm-lens/registry', '@openpm-lens/web'}
+own = {'@spashta/core', '@spashta/registry', '@spashta/web'}
 found = {}
 def walk(node):
     for name, dep in (node.get('dependencies') or {}).items():
         found[name] = dep.get('version')
         walk(dep)
 walk(tree)
-parts = ['Third-party software included in openpm-lens\n', 'Each package below is used under its own licence, reproduced here.\n']
+parts = ['Third-party software included in Spashta\n', 'Each package below is used under its own licence, reproduced here.\n']
 for name in sorted(found):
     if name in own: continue
     d = os.path.join('node_modules', name)

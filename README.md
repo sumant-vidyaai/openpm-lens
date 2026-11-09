@@ -1,12 +1,12 @@
-# openpm-lens
+# Spashta
 
 An open-source, tool-agnostic project management analytics app. Bring an export from the
 tool you already use and get standard project metrics, health scores and dashboards for waterfall,
 Agile, Kanban and hybrid work, with every number explained step by step.
 
-**Status: v0.23 (pre-1.0).** Import (CSV, Excel, Microsoft Project XML), cost and schedule
+**Status: v1.1.1 (renamed to Spashta; planning added).** Import (CSV, Excel, Microsoft Project XML), cost and schedule
 metrics with forecasts and earned schedule, portfolio roll-up with health status, flow metrics,
-schedule, cost in money, resources, quality (defects), charts, a Learn section and an Overview home screen, a fill-in Excel/CSV template, holidays and leave, "why is it red", milestones, cash flow, a risks, issues and changes log, and dated snapshots with trend charts. See
+schedule, cost in money, resources, quality (defects), charts, a Learn section and an Overview home screen, a fill-in Excel/CSV template, holidays and leave, "why is it red", milestones, cash flow, a risks, issues and changes log, dated snapshots with trend charts, and a Planning tab (three-point estimates, critical path and float, contingency and management reserve, locked baseline). See
 `docs/user-guide.md` for how to use it and `docs/decisions.md` for every design decision.
 
 ## Principles

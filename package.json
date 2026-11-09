@@ -1,6 +1,6 @@
 {
-  "name": "openpm-lens",
-  "version": "0.23.0",
+  "name": "spashta",
+  "version": "1.1.1",
   "private": true,
   "description": "Open-source, tool-agnostic project management analytics: standard metrics, health scores and dashboards that run in the browser.",
   "license": "Apache-2.0",
@@ -11,8 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json",
-    "dev": "npm run dev -w @openpm-lens/web",
-    "build": "npm run build -w @openpm-lens/web"
+    "dev": "npm run dev -w @spashta/web",
+    "build": "npm run build -w @spashta/web"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

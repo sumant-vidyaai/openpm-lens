@@ -1,5 +1,5 @@
 import type { DataIssue, StatusCategory, Unit, WorkItem } from './model';
-import { parseQuantity, convertToHours, type WorkCalendar } from './units';
+import { parseQuantity, convertToHours, type DecimalStyle, type WorkCalendar } from './units';
 import { parseDateText, type DateOrder } from './dates';
 import type { ScheduleTask } from './schedule';
 import { percentComplete, type PercentRule, type StatusBasedConfig } from './percentComplete';
@@ -77,6 +77,8 @@ export interface ImportOptions {
   statusMap: StatusMap;
   /** How day/month/year is written in date columns. Defaults to 'auto' (unclear dates are refused). */
   dateOrder?: DateOrder;
+  /** How numbers are written in the file. Defaults to 'auto' (unclear ones are refused). */
+  decimal?: DecimalStyle;
 }
 
 function emptyItem(id: string, name: string): WorkItem {
@@ -93,11 +95,11 @@ function emptyItem(id: string, name: string): WorkItem {
   };
 }
 
-function parsePercent(text: string, scale: '0-100' | '0-1', field: string): { value: number | null; issues: DataIssue[] } {
+function parsePercent(text: string, scale: '0-100' | '0-1', field: string, decimal: DecimalStyle = 'auto'): { value: number | null; issues: DataIssue[] } {
   const s = text.trim();
   if (s === '') return { value: null, issues: [] };
   const hasSign = s.endsWith('%');
-  const q = parseQuantity(hasSign ? s.slice(0, -1) : s, { field });
+  const q = parseQuantity(hasSign ? s.slice(0, -1) : s, { field, decimal });
   if (q.value === null) return { value: null, issues: q.issues };
   const value = !hasSign && scale === '0-1' ? q.value * 100 : q.value;
   if (value < 0 || value > 100) {
@@ -123,10 +125,10 @@ export function buildWorkItems(
   return rows.map((r, n) => {
     const name = cell(r, iName) || `(row ${n + 2} has no name)`;
     const item = emptyItem(cell(r, iId) || `row-${n + 2}`, name);
-    if (cell(r, iPlan) !== '') item.estimate = parseQuantity(cell(r, iPlan), { defaultUnit: options.defaultUnit, field: 'estimate' });
-    if (cell(r, iAct) !== '') item.actual = parseQuantity(cell(r, iAct), { defaultUnit: options.defaultUnit, field: 'actual' });
+    if (cell(r, iPlan) !== '') item.estimate = parseQuantity(cell(r, iPlan), { defaultUnit: options.defaultUnit, field: 'estimate', decimal: options.decimal });
+    if (cell(r, iAct) !== '') item.actual = parseQuantity(cell(r, iAct), { defaultUnit: options.defaultUnit, field: 'actual', decimal: options.decimal });
     if (iPct >= 0) {
-      const p = parsePercent(cell(r, iPct), options.percentScale, 'percentComplete');
+      const p = parsePercent(cell(r, iPct), options.percentScale, 'percentComplete', options.decimal);
       item.percentCompleteReported = p.value;
       item.issues.push(...p.issues);
     }

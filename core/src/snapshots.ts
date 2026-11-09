@@ -3,7 +3,9 @@
  * A snapshot holds totals only (hours, counts), never task names, so a saved file shows no project detail.
  * Nothing is estimated: a number that was not available when the snapshot was taken stays null.
  */
-export const SNAPSHOT_FORMAT = 'openpm-lens-snapshot';
+export const SNAPSHOT_FORMAT = 'spashta-snapshot';
+/** Files saved before the app was renamed. Still accepted; they are re-saved under the new format name. */
+export const LEGACY_SNAPSHOT_FORMATS = ['openpm-lens-snapshot'] as const;
 
 export interface SnapshotCounts { total: number; notStarted: number; inProgress: number; done: number; cancelled: number }
 export interface SnapshotRaid {
@@ -21,6 +23,10 @@ export interface Snapshot {
   source: string;
   /** At most one snapshot per label is the baseline (the plan to compare against). */
   baseline: boolean;
+  /** Optional (format stays version 1): when and why this became the baseline, and the status date of the baseline it replaced. */
+  baselineSetAt?: string;
+  baselineNote?: string;
+  baselineReplaces?: string;
   ev: number | null; ac: number | null; bac: number | null; pv: number | null; evSchedule: number | null;
   costTasks: number; scheduleTasks: number;
   counts: SnapshotCounts;
@@ -38,7 +44,7 @@ export function validateSnapshot(x: unknown): { snapshot: Snapshot | null; probl
   const bad = (p: string) => ({ snapshot: null, problem: p });
   if (typeof x !== 'object' || x === null || Array.isArray(x)) return bad('This is not a snapshot (it is not an object).');
   const o = x as Record<string, unknown>;
-  if (o['format'] !== SNAPSHOT_FORMAT) return bad('This is not an openpm-lens snapshot file.');
+  if (o['format'] !== SNAPSHOT_FORMAT && !(LEGACY_SNAPSHOT_FORMATS as readonly unknown[]).includes(o['format'])) return bad('This is not a Spashta snapshot file.');
   if (o['version'] !== 1) return bad('This snapshot was made by a different version of the app and cannot be read.');
   const label = o['label'], statusDate = o['statusDate'], savedAt = o['savedAt'], source = o['source'];
   if (typeof label !== 'string' || label.trim() === '' || label.length > 120) return bad('The snapshot has no usable label.');
@@ -73,6 +79,9 @@ export function validateSnapshot(x: unknown): { snapshot: Snapshot | null; probl
     snapshot: {
       format: SNAPSHOT_FORMAT, version: 1, savedAt, label: label.trim(), statusDate, source: typeof source === 'string' ? source.slice(0, 200) : '',
       baseline: o['baseline'] === true,
+      ...(o['baseline'] === true && typeof o['baselineSetAt'] === 'string' ? { baselineSetAt: o['baselineSetAt'].slice(0, 40) } : {}),
+      ...(o['baseline'] === true && typeof o['baselineNote'] === 'string' ? { baselineNote: o['baselineNote'].slice(0, 300) } : {}),
+      ...(o['baseline'] === true && typeof o['baselineReplaces'] === 'string' && realDate(o['baselineReplaces']) ? { baselineReplaces: o['baselineReplaces'] } : {}),
       ev: n['ev'] ?? null, ac: n['ac'] ?? null, bac: n['bac'] ?? null, pv: n['pv'] ?? null, evSchedule: n['evSchedule'] ?? null,
       costTasks, scheduleTasks, counts: counts as SnapshotCounts, openDefects: n['openDefects'] ?? null, raid,
     },
@@ -81,13 +90,53 @@ export function validateSnapshot(x: unknown): { snapshot: Snapshot | null; probl
 
 export const snapshotId = (s: Pick<Snapshot, 'label' | 'statusDate'>) => `${s.label}\u0001${s.statusDate}`;
 
-/** Adds a snapshot. The same label and status date replaces the older one (so saving twice does not double count). */
-export function addSnapshot(list: Snapshot[], s: Snapshot): { list: Snapshot[]; replaced: boolean } {
+/**
+ * Adds a snapshot. The same label and status date replaces the older one (so saving twice does not double count).
+ * The baseline is locked: a snapshot that is the baseline is never replaced here (blocked = true), and a snapshot
+ * arriving with baseline = true does not take the baseline from an existing one (it is kept as an ordinary snapshot).
+ */
+export function addSnapshot(list: Snapshot[], s: Snapshot): { list: Snapshot[]; replaced: boolean; blocked: boolean; baselineKept: boolean } {
   const id = snapshotId(s);
-  const replaced = list.some((x) => snapshotId(x) === id);
-  let next = [...list.filter((x) => snapshotId(x) !== id), s];
-  if (s.baseline) next = next.map((x) => (x.label === s.label && snapshotId(x) !== id ? { ...x, baseline: false } : x));
-  return { list: next, replaced };
+  const existing = list.find((x) => snapshotId(x) === id);
+  if (existing?.baseline) return { list, replaced: false, blocked: true, baselineKept: false };
+  const hasBaseline = list.some((x) => x.label === s.label && x.baseline);
+  const demote = s.baseline && hasBaseline;
+  const incoming: Snapshot = demote ? stripBaseline(s) : s;
+  return { list: [...list.filter((x) => snapshotId(x) !== id), incoming], replaced: existing !== undefined, blocked: false, baselineKept: demote };
+}
+
+function stripBaseline(s: Snapshot): Snapshot {
+  const { baselineSetAt: _a, baselineNote: _n, baselineReplaces: _r, ...rest } = s;
+  void _a; void _n; void _r;
+  return { ...rest, baseline: false };
+}
+
+/** Sets the first baseline of a label. Refused if the label already has one: changing it needs a reason (rebaseline). */
+export function lockBaseline(list: Snapshot[], id: string, now: string): { list: Snapshot[]; problem: string | null } {
+  const target = list.find((x) => snapshotId(x) === id);
+  if (!target) return { list, problem: 'That snapshot was not found.' };
+  if (list.some((x) => x.label === target.label && x.baseline)) return { list, problem: 'This project already has a baseline. Changing it needs a written reason.' };
+  return { list: list.map((x) => (x === target ? { ...x, baseline: true, baselineSetAt: now } : x)), problem: null };
+}
+
+export const REBASELINE_REASON_MIN = 10;
+/** Moves the baseline to another snapshot of the same label. A written reason is required and kept with the new baseline. */
+export function rebaseline(list: Snapshot[], id: string, reason: string, now: string): { list: Snapshot[]; problem: string | null } {
+  const target = list.find((x) => snapshotId(x) === id);
+  if (!target) return { list, problem: 'That snapshot was not found.' };
+  const old = list.find((x) => x.label === target.label && x.baseline);
+  if (!old) return { list, problem: 'There is no baseline to change yet. Set one first.' };
+  if (old === target) return { list, problem: 'That snapshot is already the baseline.' };
+  const why = reason.trim();
+  if (why.length < REBASELINE_REASON_MIN) return { list, problem: `Write the reason for changing the baseline (at least ${REBASELINE_REASON_MIN} characters), for example the approved change that justifies it.` };
+  return {
+    list: list.map((x) => {
+      if (x === old) return stripBaseline(x);
+      if (x === target) return { ...x, baseline: true, baselineSetAt: now, baselineNote: why.slice(0, 300), baselineReplaces: old.statusDate };
+      return x;
+    }),
+    problem: null,
+  };
 }
 
 /** Marks one snapshot as the baseline of its label (turning it off if it already was). Only one per label. */
