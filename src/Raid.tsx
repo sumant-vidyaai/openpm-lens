@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import {
   analyseChanges, analyseIssues, analyseRisks, bandOf, DEFAULT_RISK_BANDS, RISK_BAND_LABEL, roundHalfUp,
   type CsvCell, type RiskBand,
-} from '@openpm-lens/core';
+} from '@spashta/core';
 import { NeedsImport, saveCsv } from './common';
 import type { SharedData } from './shared';
 
@@ -190,7 +190,7 @@ export function RaidScreen({ shared, onGoImport, onGoTemplate }: { shared: Share
     raid.risks?.rows.forEach((x) => rows.push(['Risk', x.id, x.title, x.score === null ? 'not scored' : `${x.score} (${x.probability} x ${x.impact})`, x.owner, x.status ?? 'not known', x.actionDue ?? '', x.actionOverdueDays === null ? '' : `action ${x.actionOverdueDays} days overdue`]));
     raid.issues?.rows.forEach((x) => rows.push(['Issue', x.id, x.title, x.priority ?? 'not set', x.owner, x.status ?? 'not known', `${x.raised ?? ''} ${x.resolved ?? ''}`.trim(), x.days === null ? '' : `${x.days} days`]));
     raid.changes?.rows.forEach((x) => rows.push(['Change', x.id, x.title, `${x.costHours ?? 'not stated'} h; ${x.scheduleDays ?? 'not stated'} days`, x.requestedBy, x.decision ?? 'not known', `${x.requested ?? ''} ${x.decided ?? ''}`.trim(), x.decision === 'approved' ? `running ${x.runningHours ?? 'n/a'} h, ${x.runningDays ?? 'n/a'} days` : '']));
-    saveCsv('openpm-lens-raid.csv', rows);
+    saveCsv('spashta-raid.csv', rows);
   }
 
   return (
@@ -200,7 +200,7 @@ export function RaidScreen({ shared, onGoImport, onGoTemplate }: { shared: Share
       {!shared && <NeedsImport onGo={onGoImport} />}
       {shared && !raid && (
         <div className="card" role="note">
-          <p>This tab reads the Risks, Issues and Changes sheets of the openpm-lens Excel template. The file loaded ({shared.fileName}) is not a template workbook, so there is nothing to show. A CSV file has no extra sheets.</p>
+          <p>This tab reads the Risks, Issues and Changes sheets of the Spashta Excel template. The file loaded ({shared.fileName}) is not a template workbook, so there is nothing to show. A CSV file has no extra sheets.</p>
           <button type="button" onClick={onGoTemplate}>Get the template</button>
         </div>
       )}

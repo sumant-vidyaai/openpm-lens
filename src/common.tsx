@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { parseDateText, suggestFlowColumns, type DateOrder } from '@openpm-lens/core';
-import { toCsv, type CsvCell } from '@openpm-lens/core';
+import { parseDateText, suggestFlowColumns, type DateOrder } from '@spashta/core';
+import { toCsv, type CsvCell } from '@spashta/core';
 
 export function NeedsImport({ onGo }: { onGo: () => void }) {
   return (

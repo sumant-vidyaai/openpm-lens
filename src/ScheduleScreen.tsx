@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { analyseFinish, MIN_FLOW_SAMPLE, parseDateText, roundHalfUp, suggestFlowColumns, type CsvCell, type FinishItem } from '@openpm-lens/core';
+import { analyseFinish, MIN_FLOW_SAMPLE, parseDateText, roundHalfUp, suggestFlowColumns, type CsvCell, type FinishItem } from '@spashta/core';
 import { ColumnSelect, NeedsImport, saveCsv } from './common';
 import { StepsPanel } from './Explain';
 import { MilestoneSection } from './Milestones';
@@ -52,7 +52,7 @@ export function ScheduleScreen({ shared, onGoImport }: { shared: SharedData | nu
     result.overdue.forEach((r) => add('Overdue', `${r.id} ${r.name}`, r.days, 'days overdue', `Planned finish ${r.plannedFinish}`));
     result.excluded.forEach((e) => add('Left out', `${e.id} ${e.name}`, e.reason));
     result.caveats.forEach((c) => add('Caveat', 'Note', c));
-    saveCsv(`openpm-lens-finish-${shared.statusDate}.csv`, rows);
+    saveCsv(`spashta-finish-${shared.statusDate}.csv`, rows);
   }
 
   return (

@@ -1,11 +1,11 @@
-import { TEMPLATE_COLUMNS, type TemplateColumn, type TemplateReadiness } from '@openpm-lens/core';
+import { TEMPLATE_COLUMNS, type TemplateColumn, type TemplateReadiness } from '@spashta/core';
 
 const BASE = import.meta.env.BASE_URL;
 const FILES = [
-  { href: `${BASE}templates/openpm-lens-template.xlsx`, label: 'Excel template (recommended)', note: 'Dropdowns, instructions, Settings and Rates sheets.' },
-  { href: `${BASE}templates/openpm-lens-template.csv`, label: 'CSV template', note: 'Just the column headings, for any spreadsheet or tool.' },
-  { href: `${BASE}templates/openpm-lens-example.xlsx`, label: 'Filled example (Excel)', note: 'Two made-up projects. Upload it to see every screen working.' },
-  { href: `${BASE}templates/openpm-lens-example.csv`, label: 'Filled example (CSV)', note: 'The same made-up data as a plain CSV.' },
+  { href: `${BASE}templates/spashta-template.xlsx`, label: 'Excel template (recommended)', note: 'Dropdowns, instructions, Settings and Rates sheets.' },
+  { href: `${BASE}templates/spashta-template.csv`, label: 'CSV template', note: 'Just the column headings, for any spreadsheet or tool.' },
+  { href: `${BASE}templates/spashta-example.xlsx`, label: 'Filled example (Excel)', note: 'Two made-up projects. Upload it to see every screen working.' },
+  { href: `${BASE}templates/spashta-example.csv`, label: 'Filled example (CSV)', note: 'The same made-up data as a plain CSV.' },
 ];
 
 const HELP: Record<TemplateColumn, [string, string]> = {
@@ -27,6 +27,9 @@ const HELP: Record<TemplateColumn, [string, string]> = {
   Created: ['Quality', 'The day an item was raised. Year-month-day.'],
   Severity: ['Quality', 'Critical, High, Medium or Low.'],
   'Found in': ['Quality', 'Where a bug was found, such as Testing or Production.'],
+  'Optimistic (h)': ['Planning', 'Best-case effort in hours. Blank if unknown.'],
+  'Pessimistic (h)': ['Planning', 'Worst-case effort in hours; at least the Estimate (h). Blank if unknown.'],
+  'Depends on': ['Planning', 'IDs of tasks that must finish first, separated by commas, such as W-1, W-2. Finish-to-start only.'],
 };
 
 /** How many tasks have what each part of the app needs. */

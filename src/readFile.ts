@@ -1,7 +1,7 @@
 // The "universal" build parses on the main thread. The "browser" build starts a blob web worker, which this
 // app's Content-Security-Policy (script-src 'self') correctly forbids.
 import readXlsxFile from 'read-excel-file/universal';
-import { extractTemplate, parseCsv, parseMspdi, tableFromGrid, type CsvResult, type GridCell, type TemplateParts } from '@openpm-lens/core';
+import { extractTemplate, parseCsv, parseMspdi, tableFromGrid, type CsvResult, type GridCell, type TemplateParts } from '@spashta/core';
 
 export const MAX_XML_BYTES = 25 * 1024 * 1024;
 /** fflate unpacks a sheet larger than about 512 KB (unpacked) in a web worker, which the app's security policy blocks. */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { analyseResources, roundHalfUp, type CsvCell, type ResourceTask } from '@openpm-lens/core';
+import { analyseResources, roundHalfUp, type CsvCell, type ResourceTask } from '@spashta/core';
 import { ColumnSelect, NeedsImport, saveCsv, suggestAssignee } from './common';
 import { StepsPanel } from './Explain';
 import type { SharedData } from './shared';
@@ -57,7 +57,7 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
     assumptions.forEach((a) => rows.push(['Assumption', a]));
     result.excluded.forEach((e) => rows.push(['Left out', e.id, e.reason]));
     rows.push(['Report made on', new Date().toLocaleDateString('en-CA'), 'Values rounded to 4 decimal places.']);
-    saveCsv(`openpm-lens-resources-${new Date().toLocaleDateString('en-CA')}.csv`, rows);
+    saveCsv(`spashta-resources-${new Date().toLocaleDateString('en-CA')}.csv`, rows);
   }
 
   return (

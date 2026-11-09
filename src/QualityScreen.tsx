@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { analyseDefects, MIN_FLOW_SAMPLE, parseDateText, roundHalfUp, suggestFlowColumns, type CsvCell, type DefectItem } from '@openpm-lens/core';
+import { analyseDefects, MIN_FLOW_SAMPLE, parseDateText, roundHalfUp, suggestFlowColumns, type CsvCell, type DefectItem } from '@spashta/core';
 import { ColumnSelect, NeedsImport, saveCsv } from './common';
 import { StepsPanel } from './Explain';
 import type { SharedData } from './shared';
@@ -94,7 +94,7 @@ export function QualityScreen({ shared, onGoImport }: { shared: SharedData | nul
     result.openList.forEach((o) => add('Open defect', `${o.id} ${o.name}`, o.age, 'days', `${o.severity}; created ${o.created ?? 'unknown'}`));
     result.excluded.forEach((e) => add('Left out', `${e.id} ${e.name}`, e.reason));
     result.caveats.forEach((c) => add('Caveat', 'Note', c));
-    saveCsv(`openpm-lens-quality-${shared.statusDate}.csv`, rows);
+    saveCsv(`spashta-quality-${shared.statusDate}.csv`, rows);
   }
 
   const pick = (k: keyof Picks) => (v: string | null) => setPicks((p) => ({ ...p, [k]: v }));

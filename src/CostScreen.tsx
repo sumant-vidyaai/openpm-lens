@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { analyseMoney, EAC_METHODS, forecastMoney, roundHalfUp, splitPeople, type CsvCell, type EacMethod, type MoneyTask } from '@openpm-lens/core';
+import { analyseMoney, EAC_METHODS, forecastMoney, roundHalfUp, splitPeople, type CsvCell, type EacMethod, type MoneyTask } from '@spashta/core';
 import { ColumnSelect, NeedsImport, saveCsv, suggestAssignee } from './common';
 import { StepsPanel } from './Explain';
 import { CashFlow } from './CashFlow';
@@ -72,7 +72,7 @@ export function CostScreen({ shared, onGoImport }: { shared: SharedData | null; 
     }
     money.rows.forEach((r) => add('Task', r.id, r4(r.ev), cur, `Rate ${r.rate ?? '-'}; AC ${r4(r.ac) ?? '-'}; BAC ${r4(r.bac) ?? '-'}; ${r.note}`));
     money.caveats.forEach((c) => add('Caveat', 'Note', c));
-    saveCsv(`openpm-lens-cost-money-${new Date().toLocaleDateString('en-CA')}.csv`, rows);
+    saveCsv(`spashta-cost-money-${new Date().toLocaleDateString('en-CA')}.csv`, rows);
   }
 
   return (

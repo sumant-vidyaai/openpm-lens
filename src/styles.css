@@ -9,6 +9,18 @@
 }
 :root[data-theme='dark'] { --bg: #0d1822; --fg: #e8eef3; --muted: #a3b2c0; --card: #15222f; --field: #0d1822; --border: #2b3b4a; --accent: #5fd0d6; --accent-fg: #06262a; --side-bg: #08111a; color-scheme: dark; }
 :root[data-theme='light'] { color-scheme: light; }
+/* Accent colours chosen in the sidebar. Each passes 4.5:1 text contrast on the page and card, and its button text passes 4.5:1 on it, in light and dark. */
+:root[data-accent='blue'] { --accent: #1f5fbf; --side-active: #8ab8ff; }
+:root[data-accent='violet'] { --accent: #6b3fb5; --side-active: #bda6ff; }
+:root[data-accent='orange'] { --accent: #a8440b; --side-active: #ffa467; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='blue'] { --accent: #8ab8ff; --accent-fg: #06141f; }
+  :root:not([data-theme='light'])[data-accent='violet'] { --accent: #bda6ff; --accent-fg: #06141f; }
+  :root:not([data-theme='light'])[data-accent='orange'] { --accent: #ffa467; --accent-fg: #06141f; }
+}
+:root[data-theme='dark'][data-accent='blue'] { --accent: #8ab8ff; --accent-fg: #06141f; }
+:root[data-theme='dark'][data-accent='violet'] { --accent: #bda6ff; --accent-fg: #06141f; }
+:root[data-theme='dark'][data-accent='orange'] { --accent: #ffa467; --accent-fg: #06141f; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 1rem/1.55 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif; }
 main, footer { max-width: 70rem; margin: 0 auto; padding: 1.5rem; }
@@ -159,7 +171,7 @@ button.primary { background: var(--accent); color: var(--accent-fg); border-colo
 @media (max-width: 40rem) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero h2 { font-size: 1.75rem; } .band-main { font-size: 1.5rem; } }
 .panel { --text-muted: var(--muted); --text-secondary: var(--fg); --surface-1: var(--card); }
 @media (max-width: 40rem) { .ruler .viz-tick { font-size: 22px; } .ruler .viz-label { font-size: 24px; } }
-@media print { .shell { display: block; } .band, .panel, .facts { break-inside: avoid; } }
+@media print { .shell { display: block; min-height: 0; } .band, .panel, .facts { break-inside: avoid; } }
 
 /* Template tab and readiness list */
 .downloads { list-style: none; padding: 0; display: grid; gap: .6rem; }
@@ -189,3 +201,33 @@ table.heat td { position: relative; }
 .snap-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
 .snap-form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-end; margin: .5rem 0; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media print {
+  .viz-root { --surface-1: #fff !important; --text-secondary: #333 !important; --text-muted: #555 !important; --grid: #ccc !important; --axis: #888 !important; --series-1: #2a78d6 !important; --series-2: #eb6834 !important; --series-3: #1baf7a !important; color-scheme: light; }
+  .viz-table { display: none; }
+  .viz-root, section[aria-labelledby='cmp-h'] { break-inside: avoid; }
+  .content, main { padding: 0; }
+}
+/* Printing always uses a white page with dark text, whatever the screen theme (the earlier rule lost to the dark theme). */
+@media print {
+  :root, :root[data-theme='dark'], :root:not([data-theme='light']) {
+    --bg: #fff !important; --fg: #000 !important; --muted: #333 !important; --card: #fff !important; --field: #fff !important; --border: #888 !important;
+    --accent: #000 !important; --accent-fg: #fff !important; color-scheme: light !important;
+  }
+  body { background: #fff !important; color: #000 !important; }
+}
+
+/* Status report */
+.report { border: 1px solid var(--border, currentColor); border-radius: 8px; padding: 16px; max-width: 46rem; }
+.report h4 { margin: 14px 0 4px; }
+.report .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.form textarea { width: 100%; font: inherit; }
+
+/* Status strip, progress bars, first-run steps */
+.theme + .theme { margin-top: 0; }
+.strip { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: center; padding: .5rem 1rem; border-bottom: 1px solid var(--border); border-left: 6px solid var(--border); background: var(--card); font-size: .9rem; }
+.strip-file { font-weight: 600; overflow-wrap: anywhere; }
+.strip-green { border-left-color: var(--st-good); } .strip-amber { border-left-color: var(--st-warn); } .strip-red { border-left-color: var(--st-bad); }
+.bars li { margin: .6rem 0; }
+.bars progress { display: block; width: min(28rem, 100%); height: .7rem; margin-top: .25rem; accent-color: var(--accent); }
+.firstrun { padding-left: 1.2rem; } .firstrun li { margin: .6rem 0; } .firstrun button { margin-left: .5rem; }

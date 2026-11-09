@@ -3,7 +3,7 @@ import {
   ALL_PROJECTS, analyseTable, isTemplateTable, parseHolidayText, splitTemplateProjects, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
   toCsv, validateThresholds, type AnalyseSettings, type CsvCell, type CsvResult, type DateOrder, type DayCount,
   type Health, type PercentRule, type PortfolioProject, type RollupBy, type Unit,
-} from '@openpm-lens/core';
+} from '@spashta/core';
 import { readTable } from './readFile';
 import { SAMPLE_PORTFOLIO } from './sample';
 
@@ -140,7 +140,7 @@ export function PortfolioScreen() {
     const url = URL.createObjectURL(new Blob(['﻿' + toCsv(csvRows)], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `openpm-lens-portfolio-${by}-${statusDate || new Date().toLocaleDateString('en-CA')}.csv`;
+    a.download = `spashta-portfolio-${by}-${statusDate || new Date().toLocaleDateString('en-CA')}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

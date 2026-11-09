@@ -1,4 +1,4 @@
-import { TABLE_ADAPTERS, coverageMatrix, type CoverageCell } from '@openpm-lens/core';
+import { TABLE_ADAPTERS, coverageMatrix, type CoverageCell } from '@spashta/core';
 
 const SYMBOL: Record<CoverageCell, { mark: string; text: string }> = {
   yes: { mark: '✓', text: 'Yes' },
