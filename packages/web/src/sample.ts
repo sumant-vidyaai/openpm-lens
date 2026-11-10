@@ -1,3 +1,4 @@
+import type { Criterion, OptionScores, RiskInput } from '@spashta/core';
 // Synthetic example only. Not real project data.
 export const SAMPLE_CSV = [
   'Task,Status,Estimate (h),Actual (h),% Complete',
@@ -10,34 +11,34 @@ export const SAMPLE_CSV = [
 ].join('\n');
 
 // Three made-up projects for the portfolio view. Not real project data.
-const HEAD = 'Task,Status,Estimate (h),Actual (h),% Complete,Start,Finish';
+const HEAD = 'Task,Status,Estimate (h),Actual (h),% Complete,Start,Finish,Assigned to';
 export const SAMPLE_PORTFOLIO: { name: string; programme: string; team: string; csv: string }[] = [
   {
     name: 'Website redesign', programme: 'Digital', team: 'Web team',
     csv: [HEAD,
-      'Design,Done,40,44,100,2026-01-05,2026-01-09',
-      'Build,In Progress,80,30,50,2026-01-12,2026-01-23',
-      'Content,In Progress,30,10,40,2026-01-12,2026-01-16',
-      'Testing,To Do,24,0,0,2026-01-26,2026-01-30',
-      'Launch,To Do,16,0,0,2026-02-02,2026-02-03',
-      'Training,Done,10,12,100,2026-01-05,2026-01-07'].join('\n'),
+      'Design,Done,40,44,100,2026-01-05,2026-01-09,Meera',
+      'Build,In Progress,80,30,50,2026-01-12,2026-01-23,Asha',
+      'Content,In Progress,30,10,40,2026-01-12,2026-01-16,Kiran',
+      'Testing,To Do,24,0,0,2026-01-26,2026-01-30,Kiran',
+      'Launch,To Do,16,0,0,2026-02-02,2026-02-03,Meera',
+      'Training,Done,10,12,100,2026-01-05,2026-01-07,Kiran'].join('\n'),
   },
   {
     name: 'Mobile app', programme: 'Digital', team: 'App team',
     csv: [HEAD,
-      'Spec,Done,20,20,100,2026-01-05,2026-01-08',
-      'API,In Progress,60,40,70,2026-01-12,2026-01-23',
-      'UI,In Progress,50,25,50,2026-01-12,2026-01-30',
-      'QA,To Do,20,0,0,2026-02-02,2026-02-06',
-      'Docs,In Progress,10,5,50,2026-01-19,2026-01-23',
-      'Setup,Done,8,8,100,2026-01-05,2026-01-06'].join('\n'),
+      'Spec,Done,20,20,100,2026-01-05,2026-01-08,Ravi',
+      'API,In Progress,60,40,70,2026-01-12,2026-01-23,Asha',
+      'UI,In Progress,50,25,50,2026-01-12,2026-01-30,Ravi',
+      'QA,To Do,20,0,0,2026-02-02,2026-02-06,Kiran',
+      'Docs,In Progress,10,5,50,2026-01-19,2026-01-23,Dev',
+      'Setup,Done,8,8,100,2026-01-05,2026-01-06,Dev'].join('\n'),
   },
   {
     name: 'Data platform', programme: 'Data', team: 'Data team',
     csv: [HEAD,
-      'Model,Done,40,50,100,2026-01-05,2026-01-09',
-      'Pipeline,In Progress,60,40,50,2026-01-12,2026-01-23',
-      'Report,To Do,20,0,0,2026-01-26,2026-01-30'].join('\n'),
+      'Model,Done,40,50,100,2026-01-05,2026-01-09,Dev',
+      'Pipeline,In Progress,60,40,50,2026-01-12,2026-01-23,Ravi',
+      'Report,To Do,20,0,0,2026-01-26,2026-01-30,Meera'].join('\n'),
   },
 ];
 
@@ -67,3 +68,22 @@ export const SAMPLE_REGISTER: { project: string; phase: string; manager: string;
 ];
 export const SAMPLE_PHASE_ORDER = 'Idea, Plan, Build, Test, Launch';
 export const SAMPLE_UPDATE_DUE = '14';
+
+// Made-up risks, priorities and weekly hours for the portfolio example. Not real project data.
+export const SAMPLE_CAPACITY = '40';
+export const SAMPLE_RISKS: RiskInput[] = [
+  { id: 'W1', title: 'Content arrives late', owner: 'Meera', response: 'Agree dates with the content owner', action: 'Confirm dates', probability: 4, impact: 3, status: 'open', actionDue: '2026-01-23', actionDone: null, project: 'Website redesign' },
+  { id: 'W2', title: 'Hosting outage at launch', owner: 'Kiran', response: 'Book a standby window', action: '', probability: 2, impact: 4, status: 'open', actionDue: null, actionDone: null, project: 'Website redesign' },
+  { id: 'M1', title: 'Key developer leaves', owner: 'Dev', response: 'Cross-train a second developer', action: 'Start cross-training', probability: 3, impact: 5, status: 'open', actionDue: '2026-01-14', actionDone: null, project: 'Mobile app' },
+  { id: 'M2', title: 'App store rejects the first build', owner: 'Ravi', response: 'Pre-check the store rules', action: '', probability: 2, impact: 3, status: 'open', actionDue: null, actionDone: null, project: 'Mobile app' },
+  { id: 'D1', title: 'Source data is not clean', owner: 'Meera', response: 'Add checks at load', action: 'Draft the checks', probability: 4, impact: 4, status: 'open', actionDue: '2026-01-30', actionDone: null, project: 'Data platform' },
+  { id: 'D2', title: 'Licence cost rises', owner: 'Dev', response: 'Accept', action: '', probability: 3, impact: 2, status: 'closed', actionDue: null, actionDone: null, project: 'Data platform' },
+];
+export const SAMPLE_PRIORITY: { criteria: Criterion[]; options: OptionScores[] } = {
+  criteria: [{ name: 'Strategic fit', weight: 5 }, { name: 'Value', weight: 3 }, { name: 'Ease', weight: 2 }],
+  options: [
+    { option: 'Website redesign', scores: { 'Strategic fit': 3, Value: 4, Ease: 4 } },
+    { option: 'Mobile app', scores: { 'Strategic fit': 5, Value: 4, Ease: 2 } },
+    { option: 'Data platform', scores: { 'Strategic fit': 4, Value: 5, Ease: 2 } },
+  ],
+};

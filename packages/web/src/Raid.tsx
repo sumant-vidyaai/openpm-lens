@@ -35,7 +35,7 @@ export function useRaid(shared: SharedData | null) {
 }
 type Raid = NonNullable<ReturnType<typeof useRaid>>;
 
-function HeatMap({ heat, bands }: { heat: number[][]; bands: { mediumMin: number; highMin: number } }) {
+export function HeatMap({ heat, bands }: { heat: number[][]; bands: { mediumMin: number; highMin: number } }) {
   return (
     <div className="scroll" tabIndex={0}>
       <table className="heat">

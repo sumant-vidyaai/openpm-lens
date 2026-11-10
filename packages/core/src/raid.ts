@@ -44,6 +44,8 @@ export interface RiskInput {
   id: string; title: string; owner: string; response: string; action: string;
   probability: number | null; impact: number | null; status: RiskStatus | null;
   actionDue: string | null; actionDone: string | null;
+  /** Optional "Project" column, used only by the Portfolio screen; blank when not given. */
+  project?: string;
 }
 export interface RiskParse { risks: RiskInput[]; problems: string[]; present: boolean }
 export const RISK_COLUMNS = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done'] as const;
@@ -53,6 +55,7 @@ const scale = (s: string): number | null => (/^[1-5]$/.test(s) ? Number(s) : /^[
 export function parseRisks(grid: GridCell[][] | undefined): RiskParse {
   if (grid === undefined) return { risks: [], problems: [], present: false };
   const { idx, missing } = columns(grid, [...RISK_COLUMNS]);
+  const projCol = columns(grid, ['Project']).idx['Project'];
   const problems: string[] = [];
   if (idx['Risk'] === undefined) return { risks: [], problems: ['Risks: no "Risk" column was found, so the sheet was ignored.'], present: true };
   if (missing.length > 0) problems.push(`Risks: column${missing.length > 1 ? 's' : ''} not found: ${missing.join(', ')}. Those values are treated as not known.`);
@@ -76,6 +79,7 @@ export function parseRisks(grid: GridCell[][] | undefined): RiskParse {
     risks.push({
       id: cell(r, idx, 'ID') || `R${row - 1}`, title, owner: cell(r, idx, 'Owner'), response: cell(r, idx, 'Response'), action: cell(r, idx, 'Action'),
       probability, impact, status, actionDue: due.iso, actionDone: done.iso,
+      ...(projCol !== undefined ? { project: txt(r[projCol]) } : {}),
     });
   });
   return { risks, problems, present: true };

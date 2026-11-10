@@ -341,6 +341,8 @@ export interface TemplateParts {
   lessons: LessonParse;
   /** The optional Projects register sheet (phase, manager, last update, next gate). */
   register: RegisterParse;
+  /** The optional "Priority" sheet: the PMO's criteria, weights and each project's scores (same layout as Scoring). */
+  priority: ScoringParse;
   /** True when a Settings sheet was present at all. */
   hasSettings: boolean;
 }
@@ -354,6 +356,7 @@ export interface LifecycleSheets {
   benefits: BenefitParse; checklist: ChecklistParse; lessons: LessonParse;
   /** The optional "Projects" register sheet (phase, manager, last update, next gate). */
   register: RegisterParse;
+  priority: ScoringParse;
   /** True when at least one of the Initiate or Close sheets is in the file. */
   hasInitiateOrClose: boolean;
 }
@@ -371,6 +374,7 @@ export function extractLifecycleSheets(sheets: { name: string; data: GridCell[][
     solicitations: parseSolicitations(grid('rfi-rfp')), goRecord: parseGoRecord(grid('go-no-go')),
     benefits: parseBenefits(grid('benefits')), checklist: parseChecklist(grid('checklist')), lessons: parseLessons(grid('lessons')),
     register: parseRegister(grid('projects')),
+    priority: parseScoring(grid('priority')),
     hasInitiateOrClose: false,
   };
   r.hasInitiateOrClose = [r.scoring, r.businessCase, r.stakeholders, r.solicitations, r.goRecord, r.benefits, r.checklist, r.lessons].some((x) => x.present);
@@ -395,7 +399,7 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
     leave: leaveSheet ? parseTemplateLeave(leaveSheet.data) : { entries: [], problems: [] },
     risks: life.risks, issues: life.issues, changes: life.changes,
     scoring: life.scoring, businessCase: life.businessCase, stakeholders: life.stakeholders, solicitations: life.solicitations, goRecord: life.goRecord,
-    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons, register: life.register,
+    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons, register: life.register, priority: life.priority,
   };
 }
 
