@@ -343,3 +343,10 @@ Monetization (paid features) and the contribution link wait until Spashta has a 
 - "Deadline" is not suggested as a gate date: a client deadline is not a stage gate. "Project status" is suggested as the phase; the person can change it.
 - The list gives names, phase, manager and dates only. It gives no task numbers or health, and the phase and update views still appear only once at least one project file is loaded.
 - Repeats, blank rows and unclear dates are reported, not guessed. Tests use made-up rows.
+
+## v1.6.2 – Large Excel files no longer hang (10 November 2026)
+
+- Found by the owner's live test: choosing the real Workfront report (about 200 KB, a large sheet inside) did nothing and showed no message. Cause: the Excel reader unpacks big sheets in a background helper that the app's security policy blocks.
+- Fix without loosening the policy: the workbook is unpacked and repacked uncompressed in the page before reading (added the `fflate` library, already present as a dependency of the reader), plus a 30-second limit with a plain message that suggests saving as CSV.
+- Checked on the real Workfront report (all 525 tasks now counted) and on the 3.5 MB Smartsheet workbook (sheet picker appears). Real files are not stored in the repo.
+- The Portfolio section 5 intro now mentions both the template sheet and the loaded project list.
