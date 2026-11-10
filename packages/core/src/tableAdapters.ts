@@ -248,14 +248,14 @@ export const workfrontAdapter = makeAdapter({
   ruleWhenNoPercent: 'status_based',
   notes: [
     'Report columns in Workfront are chosen by whoever built the view, so names can differ. Please check the choices in step 1.',
-    'Adobe documents that Planned Hours is stored in minutes in the database, and Actual Hours in hours. A report column labelled in hours should already be converted, but please check a few values before trusting the results.',
+    'Adobe documents that Planned Hours is stored in minutes in the database, and Actual Hours in hours. A report column labelled in hours is shown in hours; in one real report a task checked against Workfront matched. Please still check a few values in your own report.',
     'Workfront reports a % complete, but it is the tool\'s own figure. You can switch to a status-based rule if you do not trust it.',
   ],
   extraNotes: (_m, headers) => {
     const has = (n: string) => findHeader(headers, [n]) !== null;
     const out: string[] = [];
     if (has('hours variance') && has('actual hours') && has('planned hours')) {
-      out.push('Check the Actual Hours values before trusting cost figures. In a sample of this kind of report the "Hours Variance" column equalled Planned Hours minus Actual Hours divided by 60, which would mean Actual Hours holds minutes even though it is labelled hours. Open one task you know in Workfront and compare its logged time with this file.');
+      out.push('This report has a "Hours Variance" column. In one task checked against Workfront (planned 8 hours, actual 6 hours) Actual Hours matched Workfront, but Hours Variance did not (the report showed 7.9 where Workfront showed 2). Spashta does not use that column: it uses Planned Hours and Actual Hours directly.');
     }
     if (has('completion date')) out.push('"Completion Date" is left blank in this kind of report while a task is open, so it is read as the actual finish and is not used as the planned finish. The planned finish is taken from "Due Date".');
     return out;

@@ -113,6 +113,7 @@ describe('Workfront report with Task / Ref No. / Due Date columns (made-up row)'
     expect(sug?.mapping).toMatchObject({ name: 'Task', id: 'Ref No.', status: 'Status', planned: 'Planned Hours', actual: 'Actual Hours', start: 'Start Date', finish: 'Due Date', percent: null });
     expect(sug?.suggestedRule).toBe('status_based');
     expect(sug?.notes.join(' ')).toMatch(/Hours Variance/);
+    expect(sug?.notes.join(' ')).not.toMatch(/holds minutes/);
   });
   it('keeps the tool-reported rule when a % complete column exists', () => {
     const w = TABLE_ADAPTERS.find((a) => a.id === 'workfront-export');
