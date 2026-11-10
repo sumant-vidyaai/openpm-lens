@@ -67,6 +67,7 @@ const CASES: [string, string[]][] = [
   ['clickup-csv', ['Task ID', 'Task Name', 'Status', 'Time Estimated', 'Time Estimated Text', 'Time Spent', 'Time Spent Text']],
   ['workfront-export', ['Name', 'Status', 'Planned Hours', 'Actual Hours', 'Percent Complete']],
   ['ms-project-table', ['ID', 'Name', 'Duration', 'Start', 'Finish', 'Work', 'Baseline Work', 'Actual Work', '% Complete']],
+  ['asana-csv', ['Task ID', 'Creation Date', 'Completion Date', 'Last Modified Date', 'Name', 'Assignee', 'Due Date', 'Tags', 'Notes', 'Project Name', 'Parent Task']],
   ['jira-csv', ['Summary', 'Issue key', 'Issue Type', 'Status']],
 ];
 describe('all table adapters', () => {
@@ -101,5 +102,24 @@ describe('all table adapters', () => {
     expect(suggestStatusCategory('Removed')).toBe('cancelled');
     expect(suggestStatusCategory('Active')).toBe('in_progress');
     expect(suggestStatusCategory('Resolved')).toBe('done');
+  });
+});
+
+describe('Workfront report with Task / Ref No. / Due Date columns (made-up row)', () => {
+  const headers = ['Task', 'Ref No.', 'Status', 'Start Date', 'Due Date', 'Planned Hours', 'Actual Hours', 'Hours Variance', 'Completion Date'];
+  it('maps the columns and suggests a status rule when there is no % complete', () => {
+    const w = TABLE_ADAPTERS.find((a) => a.id === 'workfront-export');
+    const sug = w?.suggest(headers);
+    expect(sug?.mapping).toMatchObject({ name: 'Task', id: 'Ref No.', status: 'Status', planned: 'Planned Hours', actual: 'Actual Hours', start: 'Start Date', finish: 'Due Date', percent: null });
+    expect(sug?.suggestedRule).toBe('status_based');
+    expect(sug?.notes.join(' ')).toMatch(/Hours Variance/);
+  });
+  it('keeps the tool-reported rule when a % complete column exists', () => {
+    const w = TABLE_ADAPTERS.find((a) => a.id === 'workfront-export');
+    expect(w?.suggest([...headers, 'Percent Complete']).suggestedRule).toBe('tool_reported');
+  });
+  it('reads "6131 Hours" and "1 Hour" as hours', () => {
+    expect([parseQuantity('6131 Hours').value, parseQuantity('6131 Hours').unit]).toEqual([6131, 'hours']);
+    expect([parseQuantity('1 Hour').value, parseQuantity('1 Hour').unit]).toEqual([1, 'hours']);
   });
 });

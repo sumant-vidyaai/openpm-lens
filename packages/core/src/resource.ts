@@ -19,7 +19,9 @@ export const UNASSIGNED = '(unassigned)';
 /** Names in a cell, split on ";" only (a comma is often part of one name, as in "Smith, Ann"). */
 export function splitPeople(text: string | null): string[] {
   if (text === null) return [];
-  return text.split(';').map((s) => s.trim().replace(/\s+/g, ' ')).filter((s) => s !== '');
+  // Exports from some tools list people as "a@x.com, b@y.com". Commas only split when the text holds email addresses, so "Smith, John" stays one name.
+  const sep = text.includes('@') ? /[;,]/ : ';';
+  return text.split(sep).map((s) => s.trim().replace(/\s+/g, ' ')).filter((s) => s !== '');
 }
 
 export interface ResourceTask {
