@@ -10,6 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
+from openpyxl.comments import Comment
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'packages', 'web', 'public', 'templates')
 COLUMNS = ['Project', 'Programme', 'Team', 'ID', 'Task', 'Type', 'Status', 'Assignee',
@@ -71,6 +72,30 @@ EXAMPLE_LEAVE = [('Kiran', '2026-03-30', '2026-04-03')]
 EXAMPLE_SETTINGS['Original budget (h)'] = 540
 EXAMPLE_SETTINGS['Contingency reserve (h)'] = 60
 EXAMPLE_SETTINGS['Management reserve (h)'] = 40
+EXAMPLE_SETTINGS['Discount rate (%)'] = 8
+EXAMPLE_SETTINGS['Stakeholder high from'] = 4
+EXAMPLE_SCORING = [
+    ['Option', 'Price', 'Fit to needs', 'Support', 'Security'],
+    ['Weight', 40, 30, 20, 10],
+    ['Vendor A (made up)', 7, 9, 6, 8],
+    ['Vendor B (made up)', 8, 6, 7, 7],
+    ['Vendor C (made up)', 6, 8, 9, ''],
+]
+EXAMPLE_CASE = [[0, 50000, ''], [1, '', 20000], [2, '', 25000], [3, '', 15000]]
+STAKE_HEAD = ['Name', 'Role', 'Power (1-5)', 'Interest (1-5)', 'Note']
+EXAMPLE_STAKE = [
+    ['Sponsor (made up)', 'Funds the project', 5, 5, 'Weekly catch-up'],
+    ['Finance lead', 'Approves spend', 5, 2, 'Monthly summary'],
+    ['Support team', 'Will run the service', 2, 5, 'Invite to demos'],
+    ['Neighbouring team', 'Shares a server', 1, 2, ''],
+]
+SOL_HEAD = ['ID', 'Type', 'Vendor', 'Due', 'Received', 'Status']
+EXAMPLE_SOL = [
+    ['S-1', 'RFI', 'Vendor A (made up)', '2026-03-05', '2026-03-04', 'Answered'],
+    ['S-2', 'RFP', 'Vendor B (made up)', '2026-03-20', '', 'Sent'],
+    ['S-3', 'RFP', 'Vendor C (made up)', '2026-04-10', '', 'Sent'],
+]
+GO_HEAD = ['Decision', 'Decided by', 'Date', 'Reason']
 RISK_HEAD = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done']
 ISSUE_HEAD = ['ID', 'Issue', 'Priority', 'Owner', 'Status', 'Raised', 'Due', 'Resolved']
 CHANGE_HEAD = ['ID', 'Change', 'Requested by', 'Decision', 'Requested', 'Decided', 'Cost impact (h)', 'Schedule impact (days)']
@@ -111,7 +136,7 @@ def build(path, example):
     s.title = 'Start here'
     lines = [
         ('Spashta template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Business case, Stakeholders, RFI-RFP and Go-no-go sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -225,6 +250,8 @@ def build(path, example):
         ('Risk high from', 13, 'A risk score at or above this is High. A starting value, not a standard.'),
         ('Contingency reserve (h)', '', 'Hours held INSIDE the cost baseline for known risks (the project manager controls it). Enter your own figure; 0 is allowed. Optional, for the Planning tab.'),
         ('Management reserve (h)', '', 'Hours held ABOVE the cost baseline for unknown risks (the sponsor controls it). Enter your own figure; 0 is allowed. Optional, for the Planning tab.'),
+        ('Discount rate (%)', '', 'Yearly rate used to bring future money back to today\'s value in the Initiate business case (write 8 for 8%). Your own figure; 0 is allowed. Optional.'),
+        ('Stakeholder high from', '', 'Score (2 to 5) at or above which power or interest counts as "high" on the stakeholder grid. Your own figure. Optional.'),
     ]
     for i, (k, v, d) in enumerate(settings, start=2):
         if example and k in EXAMPLE_SETTINGS:
@@ -343,6 +370,56 @@ def build(path, example):
     log_sheet('Changes', CHANGE_HEAD, [8, 44, 16, 12, 14, 14, 16, 22], EXAMPLE_CHANGES, ['Requested', 'Decided'],
               {'Decision': ['Requested', 'Approved', 'Rejected', 'Withdrawn']}, [], ['Cost impact (h)', 'Schedule impact (days)'],
               'Optional. Cost impact in hours and schedule impact in days; use a minus sign for a reduction. Only Approved changes are added up.')
+
+    # --- Initiate sheets
+    def plain_sheet(name, head, widths, rows, note, example_rows):
+        ws = wb.create_sheet(name)
+        for j, h in enumerate(head, start=1):
+            c = ws.cell(row=1, column=j, value=h)
+            c.fill, c.font = HEAD_FILL, HEAD_FONT
+            ws.column_dimensions[get_column_letter(j)].width = widths[j - 1]
+        for i in range(2, rows + 2):
+            for j in range(1, len(head) + 1):
+                c = ws.cell(row=i, column=j)
+                c.fill = INPUT_FILL
+                if head[j - 1] in ('Due', 'Received', 'Date', 'ID'):
+                    c.number_format = '@'
+        if example:
+            for i, row in enumerate(example_rows, start=2):
+                for j, v in enumerate(row, start=1):
+                    if v != '':
+                        ws.cell(row=i, column=j, value=v)
+        ws.cell(row=1, column=len(head) + 2, value=note)
+        return ws
+
+    sc = wb.create_sheet('Scoring')
+    for j in range(1, 10):
+        c = sc.cell(row=1, column=j, value='Option' if j == 1 else None)
+        c.fill, c.font = HEAD_FILL, HEAD_FONT
+        sc.column_dimensions[get_column_letter(j)].width = 22 if j == 1 else 14
+        for i in range(2, 32):
+            sc.cell(row=i, column=j).fill = INPUT_FILL
+    sc.cell(row=2, column=1, value='Weight').font = Font(bold=True)
+    if example:
+        for i, row in enumerate(EXAMPLE_SCORING, start=1):
+            for j, v in enumerate(row, start=1):
+                if v != '':
+                    sc.cell(row=i, column=j, value=v)
+    sc['A1'].comment = Comment('Optional. Type criteria across row 1 and the importance of each in row 2 (any positive numbers). Then one option per row below, scored on your own scale. A missing score leaves that option unscored.', 'Spashta')
+    plain_sheet('Business case', ['Period', 'Cost', 'Benefit'], [10, 14, 14], 20,
+                'Optional. Period 0 is today (not discounted), 1 is the end of year 1, and so on. Money amounts in one currency. Set the Discount rate (%) on the Settings sheet.', EXAMPLE_CASE)
+    st = plain_sheet('Stakeholders', STAKE_HEAD, [24, 24, 14, 16, 30], 40,
+                     'Optional. Power and Interest are whole numbers 1 (lowest) to 5 (highest). Set "Stakeholder high from" on the Settings sheet.', EXAMPLE_STAKE)
+    dv = DataValidation(type='whole', operator='between', formula1='1', formula2='5', allow_blank=True, showErrorMessage=True, errorTitle='Score', error='Enter a whole number from 1 to 5.')
+    st.add_data_validation(dv); dv.add('C2:D41')
+    so = plain_sheet('RFI-RFP', SOL_HEAD, [8, 8, 26, 14, 14, 16], 40,
+                     'Optional. One row per request sent to a vendor. Type is RFI or RFP. A row with no Received date and a Due date before the status date counts as overdue.', EXAMPLE_SOL)
+    dv = DataValidation(type='list', formula1='"RFI,RFP"', allow_blank=True)
+    so.add_data_validation(dv); dv.add('B2:B41')
+    go = plain_sheet('Go-no-go', GO_HEAD, [14, 20, 14, 50], 1,
+                     'Optional. Your decision record. A No go or Hold needs a reason. Leave blank until decided.', [])
+    dv = DataValidation(type='list', formula1='"Go,No go,Hold"', allow_blank=True)
+    go.add_data_validation(dv); dv.add('A2')
     wb.active = 1
     wb.save(path)
 
