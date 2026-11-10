@@ -1,4 +1,4 @@
-# Roadmap: batches from v0.19 to v1.5
+# Roadmap: batches from v0.19 to v1.6
 
 Status: proposed 2026-10-16, replaces the earlier Batch B to F list. Detail of each area is in `lifecycle-map.md`.
 
@@ -52,8 +52,13 @@ Each release is built the same way: confirm formulas from independent sources, b
 | B | v1.3.2 (BUILT) | **Tidy-up:** first-run screen duplicate buttons and old wording; clearer messages on tabs when no file is loaded; Initiate and Close usable from a workbook that has no tasks yet | Claude |
 | C | v1.4.0 | **BUILT.** **Portfolio part 1:** Phase column and stage-gate view; reporting discipline (who has not updated); portfolio data-quality view | Claude |
 | D | v1.4.1 | **BUILT.** **Portfolio part 2:** prioritisation scoring set by the PMO (reuses weighted scoring); demand vs capacity across projects; risk heat map across projects | Claude |
+| F | v1.6.0 | **BUILT (partly).** **Tools and connections:** Workfront report columns (Task, Ref No., Start Date, Due Date) and status rule when no % complete; Asana CSV adapter (documented columns, no effort data); email lists split on commas. **Waiting on user:** real Smartsheet task export; Workfront Actual Hours unit check | Claude |
+| F2 | v1.6.1 | **BUILT.** **Project-list import:** load any CSV or Excel list of projects, match columns (suggested, checked by the user), fill the phase and update views on the Portfolio tab | Claude |
 | E | v1.5.0 | **BUILT.** **Finish earlier batches:** weights-sensitivity check for scoring; go / no-go checklist; load an archive back into the app; RFQ type | Claude |
 | F | v1.6.0 | **Tools and connections (old Batch 10):** readers for named tools built only from real header lines the user supplies; "paste your column names" helper; Trello reader if wanted; optional live connections with tokens held in memory only | User supplies real exports first |
 | G | v1.0 label | **Declare general availability** once A and B pass. Version numbers stay as they are; the label means "tested on real data, stable". Decision pending from the user | User decides |
 
 **Ongoing, optional, user-owned:** custom domain (after the name is settled); trademark registration in classes 9 and 42 with an attorney when commercialising; scrolling the "Spasht" WIPO list; Indian trademark portal check.
+
+
+**Update 10 Nov 2026:** payments, Pro gating and licence keys are on hold (owner: free for now). Remaining: v1.6.0 tools and connections (needs real export header lines), About page wording, owner steps (upload, repo private, domain and email, lawyer review).

@@ -303,3 +303,43 @@ Adapters for Smartsheet, Trello, GitHub Projects, Clarity, ServiceNow and Planvi
 **Learn:** four new terms and three new "which question does what" rows.
 **Checked:** 477 tests pass (new: sensitivity by hand, checklist counts and consistency rules, RFQ counts, zip reading including a deflate-compressed zip, archive round trip of risks, scoring, go record, RFI-RFP and gate checklist); example workbook, made-up portfolio and an archive made from the example loaded back in a browser all behave as expected; axe clean at 1100 px light and 390 px light and dark; no sideways scroll.
 **Not changed / not yet:** v1.6.0 (tools and connections) needs real header lines from the user's tools.
+
+## v1.5.1 – Business setup, first part (contact, privacy, visit counter)
+**Website:** a Contact page (`#/contact`) with "Ask a question" and "Request a customization" mail buttons, and a Privacy page (`#/privacy`), both linked from the footer; Contact is also in the top menu. The Contact address is one setting (`CONTACT_EMAIL` in `packages/web/src/site/config.ts`). While it is empty the page says contact details are being set up and no mail link is shown, so no public link points nowhere. The user chose to build with a placeholder and supply the address later; the personal Gmail was not used.
+**Visit counter:** Cloudflare Web Analytics is allowed in the Content-Security-Policy (index.html and public/_headers): `script-src` adds `https://static.cloudflareinsights.com`, `connect-src` adds `https://cloudflareinsights.com` (hosts from Cloudflare's CSP documentation). Nothing else was opened; no counter code is in the app: it is switched on in the Cloudflare dashboard (Pages project, Metrics, Web Analytics, Enable), which adds the script on the next deployment. The Privacy page says what Cloudflare states about it: no cookies or local storage for analytics, no tracking of individual visitors over time; EU and UK traffic can be excluded in the dashboard. The page counts visits only; the app never sees or sends project data.
+**Wording corrected:** "nothing is tracked" and "no server" became "nothing you load is uploaded" and "no server that receives your project", which stay true with a visit counter. The About page's "planned next" list was brought up to date.
+**Docs:** `docs/business-setup.md` holds what is done, what the user does, and drafts (pricing, delivery, cancellation and refunds, terms) with [brackets] where only the owner can decide. They are for lawyer review and are NOT on the website: price, trial length, refund rule and legal entity are not decided. The pages a payment provider asks for are listed there; the provider's current list should be checked at application time.
+**Checked:** 477 tests pass; Contact, Privacy, About and Home pass axe at 1100 px light, 1280 px dark and 390 px light; no sideways scroll.
+**Not done:** payments, Pro gating and licence keys (after the pricing decisions), domain and email address (user), v1.6.0 tools (needs real header lines).
+**v1.5.1 update (same day):** at the owner's request the Privacy page no longer has the "Visit counts", "Hosting" and "Changes" sections (it keeps project data, what the browser stores, and email). Cloudflare Web Analytics is still switched on in the dashboard, so the page no longer mentions it; the owner chose this. Whether a disclosure is required where visitors from some regions are counted is a question for the lawyer reviewing the legal drafts; Cloudflare says EU and UK traffic can be excluded in its dashboard. Section headings on the plain text pages were made smaller with more space above.
+
+## Decision (10 November 2026): everything stays free for now
+The owner decided not to charge yet. No Pro gating, licence keys or payment provider will be built until the owner reopens this. My earlier suggestion is kept for when that happens: Start, Plan and track, Control, basic Report and Learn free; Initiate, Close, Portfolio and Trends with the printable status report as Pro; a 14-day trial then free; a yearly price chosen by the owner after checking the payment provider's current fees. Limit to explain then: a tool that runs entirely in the browser can only offer a soft lock. The legal drafts in docs/business-setup.md stay drafts. The About page's "planned next" still mentions simple pricing and should be reworded in the next release.
+
+## Decision (10 November 2026): everything stays free for now
+The owner chose to keep every tab free for the time being. Payments, Pro gating and licence keys are not being built. The earlier suggestion (free: Start, Plan and track, Control, Report basics, Learn; Pro candidates: Initiate, Close, Portfolio, Trends with the printable status report; 14-day trial) is kept only as a starting idea for later. The business-setup drafts stay for lawyer review. Next focus: measuring reach and effort (visit counter, referrers, feedback by email) before any paid promotion.
+
+## v1.5.2 – Feedback line and optional contribution link
+**Feedback:** "Did this help? Tell us what is missing" now sits at the end of the Overview and in the app footer (Project column), linking to the Contact page. The empty Project column in the app footer also gained Privacy.
+**Optional contribution:** one setting, `SUPPORT_URL` in `packages/web/src/site/config.ts`. While empty (as shipped) no support link appears anywhere. When set to a hosted payment page, a quiet "Support Spashta" link appears in the website footer, the app footer and a short section on the Contact page. It is a plain outbound link that opens in a new tab (`noopener noreferrer`): no script, no payment code and no change to the security policy. A contribution is voluntary and unlocks nothing; every feature stays free. The statement on the Contact page says so.
+**Open for the owner:** which hosted page to use (check the provider's current rules on accepting voluntary contributions and any approval needed), and tax treatment of the income (ask an accountant).
+**Checked:** 477 tests pass; Contact, app and Home pages pass axe at 1100 px light and 390 px dark with the link switched on; no sideways scroll.
+
+## Decision (10 November 2026): free until the product has users
+Monetization (paid features) and the contribution link wait until Spashta has a meaningful number of users. `SUPPORT_URL` stays empty, so no support link shows. To revisit: use the visit counter (visits, returning referrers) and the messages received through the Contact page. The owner decides what "enough users" means; no number is set here.
+
+## v1.6.0 – Tool adapters from real evidence (10 November 2026)
+
+- Workfront: a real report used "Task", "Ref No.", "Start Date" and "Due Date", which the adapter did not know. It now maps them. With no % complete column it suggests the status-based rule, so tasks are no longer all left out. "Completion Date" is not used as the planned finish because it is blank while a task is open.
+- **Open fact, not guessed:** in that report "Hours Variance" equals Planned minus Actual divided by 60 on every row, which suggests Actual Hours holds minutes. The tool warns but does not convert. The user must compare one known task in Workfront.
+- Asana adapter added from Asana's documented export columns; it carries no effort or status, so it cannot give cost measures. Marked unverified against a real file.
+- People lists with email addresses now split on commas as well as ";". Without "@", only ";" splits, so "Smith, John" stays one name.
+- The shared Smartsheet file was a project register, not a task export. No Smartsheet adapter until a real task or Gantt sheet is supplied.
+- Real files shared by the user were not copied into the repo; tests use made-up rows.
+
+## v1.6.1 – Project-list import (10 November 2026)
+
+- A plain list of projects (register kept in Excel, Smartsheet or another tool) can be loaded on the Portfolio tab. The person matches the columns; suggestions come from names seen in real lists ("Project Name", "Project Lead", "Project status").
+- "Deadline" is not suggested as a gate date: a client deadline is not a stage gate. "Project status" is suggested as the phase; the person can change it.
+- The list gives names, phase, manager and dates only. It gives no task numbers or health, and the phase and update views still appear only once at least one project file is loaded.
+- Repeats, blank rows and unclear dates are reported, not guessed. Tests use made-up rows.
