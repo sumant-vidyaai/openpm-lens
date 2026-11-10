@@ -4,7 +4,7 @@ import {
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
   aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit, type DecimalStyle,
-  extractLifecycleSheets, extractTemplate, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
+  extractLifecycleSheets, extractTemplate, loadArchive, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
 } from '@spashta/core';
 import { MAX_XML_BYTES, readWorkbook } from './readFile';
 import { EarnedValueChart } from './charts';
@@ -38,6 +38,7 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
   const [sheetIdx, setSheetIdx] = useState(0);
   const [tpl, setTpl] = useState<TemplateParts | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [archiveNote, setArchiveNote] = useState<string | null>(null);
   const [mappingEdits, setMappingEdits] = useState<Partial<ColumnMapping>>({});
   const [statusEdits, setStatusEdits] = useState<StatusMap>({});
   const [defaultUnit, setDefaultUnit] = useState<Unit | ''>('hours');
@@ -132,7 +133,7 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
   useEffect(() => {
     onShare(
       calc && csv
-        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, evmRows: calc.evmRaw, schedRows: calc.schedRaw, holidays: holidays.dates, leave: tpl?.leave.entries ?? [], hoursPerDay, raid: tpl ? { risks: tpl.risks, issues: tpl.issues, changes: tpl.changes } : null, initiate: tpl ? { scoring: tpl.scoring, businessCase: tpl.businessCase, stakeholders: tpl.stakeholders, solicitations: tpl.solicitations, goRecord: tpl.goRecord } : null, close: tpl ? { benefits: tpl.benefits, checklist: tpl.checklist, lessons: tpl.lessons } : null, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
+        ? { fileName: fileName ?? '', table: csv, items: calc.items, hoursTasks: calc.tasks, schedTasks: calc.schedTasks, statusDate, dateOrder, dayCount, evmRows: calc.evmRaw, schedRows: calc.schedRaw, holidays: holidays.dates, leave: tpl?.leave.entries ?? [], hoursPerDay, raid: tpl ? { risks: tpl.risks, issues: tpl.issues, changes: tpl.changes } : null, initiate: tpl ? { scoring: tpl.scoring, businessCase: tpl.businessCase, stakeholders: tpl.stakeholders, solicitations: tpl.solicitations, goRecord: tpl.goRecord, gateChecklist: tpl.gateChecklist } : null, close: tpl ? { benefits: tpl.benefits, checklist: tpl.checklist, lessons: tpl.lessons } : null, template: tpl && readiness ? { settings: tpl.settings, rates: tpl.rates.rates, readiness } : readiness ? { settings: null, rates: {}, readiness } : null, summary: { ev: calc.agg.ev, ac: calc.agg.ac, bac: calc.agg.bac, pv: calc.schedule?.pv ?? null, evSchedule: calc.schedule?.ev ?? null, costTasks: calc.agg.counts.used, scheduleTasks: calc.schedule?.counts.used ?? 0, tasksTotal: calc.agg.counts.total } }
         : null,
     );
   }, [calc, csv, fileName, statusDate, dateOrder, dayCount, holidays, hoursPerDay, tpl, readiness, onShare]);
@@ -207,7 +208,7 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
   }
 
   function reset(name: string, next: Raw, tp: TemplateParts | null = null) {
-    setTpl(tp); setFileName(name); setRaw(next); setSheetIdx(tp ? tp.tasksIndex : 0); setLoadError(null); setDefaultUnit('hours'); setDecimal('auto'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
+    setArchiveNote(null); setTpl(tp); setFileName(name); setRaw(next); setSheetIdx(tp ? tp.tasksIndex : 0); setLoadError(null); setDefaultUnit('hours'); setDecimal('auto'); setRule('tool_reported'); setMappingEdits({}); setStatusEdits({});
   }
   async function loadExample() {
     try {
@@ -227,6 +228,20 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
         if (sheets.length === 0) throw new Error('The workbook has no sheets.');
         const mapped = sheets.map((s) => ({ name: s.sheet, data: s.data as Grid }));
         reset(f.name, { kind: 'xlsx', sheets: mapped }, extractTemplate(mapped));
+      } else if (/\.zip$/i.test(f.name)) {
+        if (f.size > MAX_XML_BYTES) throw new Error('The zip file is larger than 25 MB, which is more than a Spashta archive should be. It was not read.');
+        const a = await loadArchive(new Uint8Array(await f.arrayBuffer()), isTemplateTable);
+        if (a.sheets.length === 0) throw new Error('The archive has nothing to load.');
+        const mapped = a.sheets.map((x) => ({ name: x.name, data: x.data as Grid }));
+        reset(f.name, { kind: 'xlsx', sheets: mapped }, extractTemplate(mapped));
+        if (a.tasksAreGeneric && a.statusDate) setStatusDate(a.statusDate);
+        setArchiveNote([
+          `Loaded from a Spashta archive${a.version ? ` made by version ${a.version}` : ''}${a.sourceFile ? ` (source file: ${a.sourceFile})` : ''}. The tasks and sheets are read back exactly as archived; every figure is worked out again from them. Rates, holidays, leave and the other Settings are not part of an archive, so enter them again if you need them.`,
+          a.statusDate ? `Status date from the archive: ${a.statusDate}.` : 'The archive gave no status date.',
+          a.tasksAreGeneric ? 'The task table is not in the template layout, so check the column mapping below.' : '',
+          a.hasSnapshots ? 'It also holds snapshots.json: unzip the archive and add that file on the Trends tab ("Add snapshot files").' : '',
+          ...a.problems,
+        ].filter(Boolean).join(' '));
       } else if (/\.xml$/i.test(f.name)) {
         if (f.size > MAX_XML_BYTES) throw new Error('The XML file is larger than 25 MB, which is more than a project plan should be. It was not read.');
         const r = parseMspdi(await f.text());
@@ -254,13 +269,13 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
         {statusDate ? `; status date ${statusDate}` : ''}. Calculated in the browser from the file; nothing was uploaded.
       </p>
       <p className="lead noprint">
-        Choose a CSV, Excel (.xlsx) or Microsoft Project XML (.xml) export from your tool. The file is read in this browser tab only. It is never uploaded.
+        Choose a CSV, Excel (.xlsx) or Microsoft Project XML (.xml) export from your tool, or a Spashta archive (.zip) you saved earlier. The file is read in this browser tab only. It is never uploaded.
       </p>
       <div className="row noprint">
         <label className="btn">
           Choose file{' '}
           <input
-            type="file" accept=".csv,text/csv,.txt,.xlsx,.xml"
+            type="file" accept=".csv,text/csv,.txt,.xlsx,.xml,.zip"
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (f) await onFile(f);
@@ -273,6 +288,7 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}
+      {archiveNote && <p className="note" role="status">{archiveNote}</p>}
       {life && life.hasInitiateOrClose && !tpl && (
         <p role="note" className="noprint">This workbook has no Tasks sheet, so the task tabs have nothing to show. Its Initiate and Close sheets are ready: open <strong>Choose and justify</strong> or <strong>Close and review</strong>.</p>
       )}
@@ -290,8 +306,8 @@ export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShar
             <div className="card noprint" role="note">
               <h3>Your Spashta template was recognised</h3>
               <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets were read where present.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
-              {tpl && [...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems, ...tpl.scoring.problems, ...tpl.businessCase.problems, ...tpl.stakeholders.problems, ...tpl.solicitations.problems, ...tpl.goRecord.problems, ...tpl.benefits.problems, ...tpl.checklist.problems, ...tpl.lessons.problems].length > 0 && (
-                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems, ...tpl.scoring.problems, ...tpl.businessCase.problems, ...tpl.stakeholders.problems, ...tpl.solicitations.problems, ...tpl.goRecord.problems, ...tpl.benefits.problems, ...tpl.checklist.problems, ...tpl.lessons.problems].map((p) => <li key={p}>{p}</li>)}</ul>
+              {tpl && [...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.gateChecklist.problems, ...tpl.issues.problems, ...tpl.changes.problems, ...tpl.scoring.problems, ...tpl.businessCase.problems, ...tpl.stakeholders.problems, ...tpl.solicitations.problems, ...tpl.goRecord.problems, ...tpl.benefits.problems, ...tpl.checklist.problems, ...tpl.lessons.problems].length > 0 && (
+                <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.gateChecklist.problems, ...tpl.issues.problems, ...tpl.changes.problems, ...tpl.scoring.problems, ...tpl.businessCase.problems, ...tpl.stakeholders.problems, ...tpl.solicitations.problems, ...tpl.goRecord.problems, ...tpl.benefits.problems, ...tpl.checklist.problems, ...tpl.lessons.problems].map((p) => <li key={p}>{p}</li>)}</ul>
               )}
               <Readiness readiness={readiness} />
             </div>

@@ -4,7 +4,7 @@ import type { PercentRule } from './percentComplete';
 import { parseDateText } from './dates';
 import { suggestStatusCategory } from './importTasks';
 import { parseBenefits, parseChecklist, parseLessons, type BenefitParse, type ChecklistParse, type LessonParse } from './close';
-import { parseCaseSheet, parseGoRecord, parseScoring, parseSolicitations, parseStakeholders, type CaseParse, type GoParse, type ScoringParse, type SolicitationParse, type StakeholderParse } from './initiate';
+import { parseCaseSheet, parseGoRecord, parseScoring, parseGoChecklist, type GoCheckParse, parseSolicitations, parseStakeholders, type CaseParse, type GoParse, type ScoringParse, type SolicitationParse, type StakeholderParse } from './initiate';
 import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
 import { parsePhaseOrder, parseRegister, type RegisterParse } from './control';
 
@@ -343,6 +343,8 @@ export interface TemplateParts {
   register: RegisterParse;
   /** The optional "Priority" sheet: the PMO's criteria, weights and each project's scores (same layout as Scoring). */
   priority: ScoringParse;
+  /** The optional "Gate checklist" sheet. */
+  gateChecklist: GoCheckParse;
   /** True when a Settings sheet was present at all. */
   hasSettings: boolean;
 }
@@ -357,6 +359,7 @@ export interface LifecycleSheets {
   /** The optional "Projects" register sheet (phase, manager, last update, next gate). */
   register: RegisterParse;
   priority: ScoringParse;
+  gateChecklist: GoCheckParse;
   /** True when at least one of the Initiate or Close sheets is in the file. */
   hasInitiateOrClose: boolean;
 }
@@ -375,9 +378,10 @@ export function extractLifecycleSheets(sheets: { name: string; data: GridCell[][
     benefits: parseBenefits(grid('benefits')), checklist: parseChecklist(grid('checklist')), lessons: parseLessons(grid('lessons')),
     register: parseRegister(grid('projects')),
     priority: parseScoring(grid('priority')),
+    gateChecklist: parseGoChecklist(grid('gate checklist')),
     hasInitiateOrClose: false,
   };
-  r.hasInitiateOrClose = [r.scoring, r.businessCase, r.stakeholders, r.solicitations, r.goRecord, r.benefits, r.checklist, r.lessons].some((x) => x.present);
+  r.hasInitiateOrClose = [r.scoring, r.businessCase, r.stakeholders, r.solicitations, r.goRecord, r.gateChecklist, r.benefits, r.checklist, r.lessons].some((x) => x.present);
   return r;
 }
 
@@ -399,7 +403,7 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
     leave: leaveSheet ? parseTemplateLeave(leaveSheet.data) : { entries: [], problems: [] },
     risks: life.risks, issues: life.issues, changes: life.changes,
     scoring: life.scoring, businessCase: life.businessCase, stakeholders: life.stakeholders, solicitations: life.solicitations, goRecord: life.goRecord,
-    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons, register: life.register, priority: life.priority,
+    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons, register: life.register, priority: life.priority, gateChecklist: life.gateChecklist,
   };
 }
 

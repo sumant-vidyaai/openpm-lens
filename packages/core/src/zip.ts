@@ -53,3 +53,37 @@ export function buildZip(files: readonly ZipFile[], when: Date): Uint8Array {
   for (const u of parts) { out.set(u, p); p += u.length; }
   return out;
 }
+
+export interface ZipEntry { name: string; data: Uint8Array }
+const dec = new TextDecoder('utf-8');
+export const zipText = (e: ZipEntry): string => dec.decode(e.data);
+
+/** Unpacks a ZIP held in memory (stored or "deflate" files, no password, no ZIP64). Reads the central directory, so extra data after the files does not matter. */
+export async function readZip(bytes: Uint8Array): Promise<ZipEntry[]> {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let end = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65535); i--) { if (v.getUint32(i, true) === 0x06054b50) { end = i; break; } }
+  if (end < 0) throw new Error('This is not a zip file, or it is damaged.');
+  const count = v.getUint16(end + 10, true);
+  let p = v.getUint32(end + 16, true);
+  const out: ZipEntry[] = [];
+  for (let n = 0; n < count; n++) {
+    if (p + 46 > bytes.length || v.getUint32(p, true) !== 0x02014b50) throw new Error('The zip file is damaged (bad directory).');
+    const flags = v.getUint16(p + 8, true), method = v.getUint16(p + 10, true);
+    const csize = v.getUint32(p + 20, true), nlen = v.getUint16(p + 28, true), elen = v.getUint16(p + 30, true), clen = v.getUint16(p + 32, true);
+    const lho = v.getUint32(p + 42, true);
+    const name = dec.decode(bytes.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + elen + clen;
+    if (name.endsWith('/')) continue;
+    if (flags & 1) throw new Error('The zip file is password protected, which is not supported.');
+    if (lho + 30 > bytes.length || v.getUint32(lho, true) !== 0x04034b50) throw new Error('The zip file is damaged (bad entry).');
+    const start = lho + 30 + v.getUint16(lho + 26, true) + v.getUint16(lho + 28, true);
+    const raw = bytes.subarray(start, start + csize);
+    if (method === 0) { out.push({ name, data: raw.slice() }); continue; }
+    if (method !== 8) throw new Error(`The zip file uses a compression method (${method}) that is not supported.`);
+    if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot unpack a compressed zip. Load the archive straight from Spashta, or unzip it and load the files.');
+    const stream = new Blob([raw.slice()]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    out.push({ name, data: new Uint8Array(await new Response(stream).arrayBuffer()) });
+  }
+  return out;
+}

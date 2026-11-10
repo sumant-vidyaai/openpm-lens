@@ -5,6 +5,7 @@ import {
 } from '@spashta/core';
 import { suggestAssignee } from './common';
 import { HeatMap } from './Raid';
+import { SensitivityPanel } from './SensitivityPanel';
 
 export interface PrioState { criteria: { name: string; weight: string }[]; scores: Record<string, Record<string, string>> }
 export interface PmoSet { project: string; table: CsvResult; unit: Unit | '' }
@@ -151,6 +152,7 @@ export function PortfolioPmo({ sets, settings, statusDate, prio, onPrio, capText
         </div>
       )}
       {pv.ignored.length > 0 && <p className="note">Left out because they have no positive weight: {pv.ignored.join(', ')}.</p>}
+      <SensitivityPanel criteria={criteria} options={scoreRows} />
       <details className="explain"><summary>How the priority score works</summary>
         <ul>
           <li>Score = sum of (weight x score) / sum of weights, over the criteria with a positive weight. With weights {pv.criteriaUsed === 0 ? '(none yet)' : `adding to ${r2(pv.weightTotal)}`}, any scale works.</li>

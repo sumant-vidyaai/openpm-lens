@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  businessCase, goRecordGaps, gridQuadrant, QUADRANT_LABEL, roundHalfUp, scoreOptions, summariseSolicitations,
+  businessCase, goCheckConsistency, goRecordGaps, gridQuadrant, QUADRANT_LABEL, roundHalfUp, scoreOptions, solicitationsByType, summariseGoCheck, summariseSolicitations,
   type GridQuadrant,
 } from '@spashta/core';
 import { NeedsImport } from './common';
+import { SensitivityPanel } from './SensitivityPanel';
 import type { Lifecycle, SharedData } from './shared';
 
 const readNum = (t: string | undefined): number | null => {
@@ -34,7 +35,7 @@ export function InitiateScreen({ shared, life, onGoImport, onGoTemplate }: { sha
   const sol = useMemo(() => (init?.solicitations.present ? summariseSolicitations(init.solicitations.rows, statusDate || null) : null), [init, statusDate]);
 
   if (!shared && !(life && life.hasInitiateOrClose)) return (<><h2>Choose and justify</h2><NeedsImport onGo={onGoImport} what="This tab reads the Scoring, Business case, Stakeholders, RFI-RFP and Go-no-go sheets of the Spashta template workbook." /></>);
-  const none = !init || (!init.scoring.present && !init.businessCase.present && !init.stakeholders.present && !init.solicitations.present && !init.goRecord.present);
+  const none = !init || (!init.scoring.present && !init.businessCase.present && !init.stakeholders.present && !init.solicitations.present && !init.goRecord.present && !init.gateChecklist.present);
   const go = init?.goRecord.record ?? null;
   const gaps = go ? goRecordGaps(go) : null;
 
@@ -44,7 +45,7 @@ export function InitiateScreen({ shared, life, onGoImport, onGoTemplate }: { sha
       <p className="lead">The early questions: which option, is it worth the money, who matters, and did we decide. Every weight, score, rate and cut-off here is yours; the app only does the arithmetic and never fills one in.</p>
       {none && (
         <div className="card" role="note">
-          <p>The file you loaded has none of the Initiate sheets (Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go). They are in the Spashta template workbook.</p>
+          <p>The file you loaded has none of the Initiate sheets (Scoring, Business case, Stakeholders, RFI-RFP, Gate checklist, Go-no-go). They are in the Spashta template workbook.</p>
           <button type="button" onClick={onGoTemplate}>Go to the Template tab</button>
         </div>
       )}
@@ -72,6 +73,7 @@ export function InitiateScreen({ shared, life, onGoImport, onGoTemplate }: { sha
               </table>
             </div>
           )}
+          <SensitivityPanel criteria={init?.scoring.criteria ?? []} options={init?.scoring.options ?? []} />
           <p className="note">Weights total {scoring.weightTotal}. {scoring.ignored.length > 0 ? `Left out (no usable weight): ${scoring.ignored.join(', ')}. ` : ''}A high score is a guide for the discussion, not the decision.</p>
         </section>
       )}
@@ -140,6 +142,7 @@ export function InitiateScreen({ shared, life, onGoImport, onGoTemplate }: { sha
         <section aria-labelledby="in-so">
           <h3 id="in-so">RFI and RFP tracker</h3>
           <p>{sol.total} sent, {sol.received} answered, {sol.open} waiting{statusDate ? `, ${sol.overdue} overdue at ${statusDate}` : ' (set a status date to see overdue)'}{sol.noDue > 0 ? `; ${sol.noDue} waiting with no due date` : ''}.</p>
+          {init.solicitations.rows.length > 0 && <p className="note">By type: {solicitationsByType(init.solicitations.rows).map((t) => `${t.type} ${t.total} (${t.received} answered)`).join(', ')}. RFI asks for information, RFP for proposals, RFQ for a price on a fixed specification.</p>}
           {init.solicitations.rows.length > 0 && (
             <div className="scroll" tabIndex={0}>
               <table>
@@ -158,6 +161,39 @@ export function InitiateScreen({ shared, life, onGoImport, onGoTemplate }: { sha
           )}
         </section>
       )}
+
+      {init?.gateChecklist.present && (() => {
+        const items = init.gateChecklist.items;
+        const sm = summariseGoCheck(items);
+        const notes = goCheckConsistency(go?.decision ?? null, sm);
+        const label = { yes: 'Yes', no: 'No', na: 'Not applicable' } as const;
+        return (
+          <section aria-labelledby="in-gc">
+            <h3 id="in-gc">Go / no-go checklist</h3>
+            {items.length === 0 ? <p>No criteria listed. Write your own criteria on the Gate checklist sheet.</p> : (
+              <>
+                <p>{sm.total} criteria: {sm.met} met, {sm.notMet} not met, {sm.notAnswered} not answered{sm.notApplicable > 0 ? `, ${sm.notApplicable} not applicable` : ''}.</p>
+                <div className="scroll" tabIndex={0}>
+                  <table>
+                    <caption>Criteria for the decision</caption>
+                    <thead><tr><th scope="col">Criterion</th><th scope="col">Owner</th><th scope="col">Met?</th><th scope="col">Note</th></tr></thead>
+                    <tbody>
+                      {items.map((i, n) => (
+                        <tr key={`${i.criterion}-${n}`}>
+                          <th scope="row">{i.criterion}</th><td>{i.owner}</td>
+                          <td>{i.answer === null ? 'Not answered' : label[i.answer]}</td><td>{i.note}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {notes.map((n) => <p key={n} className="warn" role="status">{n}</p>)}
+            <p className="note">The criteria are your own list; the app supplies none and counts none as more important. It lines the checklist up with the decision and points out what does not match.</p>
+          </section>
+        );
+      })()}
 
       {init?.goRecord.present && (
         <section aria-labelledby="in-go">

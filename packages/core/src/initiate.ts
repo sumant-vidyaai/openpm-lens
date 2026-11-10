@@ -145,6 +145,92 @@ export function goRecordGaps(r: GoRecord): string[] {
   return g;
 }
 
+/* ---------- how far can a weight move before the top choice changes? ---------- */
+export interface FlipPoint {
+  /** The weight at which the challenger ties with the current leader; a bit beyond it the challenger leads. */
+  weight: number;
+  /** Change from the current weight, in percent of that weight (negative = lower). Null when the current weight is 0 (not possible: only positive weights are used). */
+  percent: number;
+  challenger: string;
+}
+export interface SensitivityRow { criterion: string; weight: number; lower: FlipPoint | null; higher: FlipPoint | null }
+export interface Sensitivity {
+  /** Null when fewer than two options have a full set of scores, or when the top place is already tied. */
+  leader: string | null;
+  tiedAtTop: string[];
+  rows: SensitivityRow[];
+  /** Options left out because a weighted score was missing. */
+  leftOut: string[];
+  /** True when no single weight, moved anywhere from 0 upward, changes the leader. */
+  holdsForAnyWeight: boolean;
+}
+
+/**
+ * For each weighted criterion, finds the nearest weight (lower, and higher) at which another option would tie the leader, moving that one weight and leaving the others as they are.
+ * Exact, not simulated. For a leader a and a challenger b, with S = the weighted scores of all the OTHER criteria, the two tie where
+ *   S_a + w * a_j = S_b + w * b_j   =>   w = (S_b - S_a) / (a_j - b_j)
+ * (the divisor "total weight" is the same for both options, so it cancels). Only weights of 0 or more count; 0 means dropping the criterion.
+ */
+export function weightSensitivity(criteria: readonly Criterion[], options: readonly OptionScores[]): Sensitivity {
+  const res = scoreOptions(criteria, options);
+  const used = criteria.filter((c) => c.weight !== null && Number.isFinite(c.weight) && (c.weight as number) > 0) as { name: string; weight: number }[];
+  const full = res.options.filter((o) => o.score !== null);
+  const leftOut = res.options.filter((o) => o.score === null).map((o) => o.option);
+  const out: Sensitivity = { leader: null, tiedAtTop: [], rows: [], leftOut, holdsForAnyWeight: false };
+  if (full.length < 2) return out;
+  const top = Math.max(...full.map((o) => o.score as number));
+  const tied = full.filter((o) => Math.abs((o.score as number) - top) < 1e-9).map((o) => o.option);
+  if (tied.length > 1) { out.tiedAtTop = tied; return out; }
+  const leader = tied[0] as string;
+  out.leader = leader;
+  const sc = (name: string, c: string) => (options.find((o) => o.option === name)?.scores[c] ?? 0) as number;
+  let any = false;
+  for (const c of used) {
+    const others = used.filter((k) => k.name !== c.name);
+    const rest = (name: string) => others.reduce((n, k) => n + k.weight * sc(name, k.name), 0);
+    let lower: FlipPoint | null = null, higher: FlipPoint | null = null;
+    for (const b of full) {
+      if (b.option === leader) continue;
+      const da = sc(leader, c.name) - sc(b.option, c.name);
+      if (Math.abs(da) < 1e-12) continue; // same score on this criterion: its weight cannot separate them
+      const w = (rest(b.option) - rest(leader)) / da;
+      if (!(w >= 0) || !Number.isFinite(w) || Math.abs(w - c.weight) < 1e-12) continue;
+      const fp: FlipPoint = { weight: w, percent: ((w - c.weight) / c.weight) * 100, challenger: b.option };
+      if (w < c.weight) { if (lower === null || w > lower.weight) lower = fp; }
+      else if (higher === null || w < higher.weight) higher = fp;
+    }
+    if (lower || higher) any = true;
+    out.rows.push({ criterion: c.name, weight: c.weight, lower, higher });
+  }
+  out.holdsForAnyWeight = !any;
+  return out;
+}
+
+/* ---------- go / no-go checklist ---------- */
+export type GoCheckAnswer = 'yes' | 'no' | 'na';
+export interface GoCheckItem { criterion: string; owner: string; answer: GoCheckAnswer | null; note: string }
+export interface GoCheckSummary { total: number; met: number; notMet: number; notAnswered: number; notApplicable: number }
+export function summariseGoCheck(items: readonly GoCheckItem[]): GoCheckSummary {
+  let met = 0, notMet = 0, notAnswered = 0, na = 0;
+  for (const i of items) { if (i.answer === 'yes') met++; else if (i.answer === 'no') notMet++; else if (i.answer === 'na') na++; else notAnswered++; }
+  return { total: items.length, met, notMet, notAnswered, notApplicable: na };
+}
+/**
+ * Facts that do not line up between the checklist and the recorded decision. The app states them; it never decides.
+ * A Go with criteria not met or not answered, or a No go / Hold when every applicable criterion is met, is worth a second look.
+ */
+export function goCheckConsistency(decision: GoDecision | null, s: GoCheckSummary): string[] {
+  const out: string[] = [];
+  if (decision === null || s.total === 0) return out;
+  if (decision === 'go') {
+    if (s.notMet > 0) out.push(`The decision is Go but ${s.notMet} criteri${s.notMet === 1 ? 'on is' : 'a are'} marked not met. The reason or an agreed exception should be recorded.`);
+    if (s.notAnswered > 0) out.push(`The decision is Go but ${s.notAnswered} criteri${s.notAnswered === 1 ? 'on has' : 'a have'} no answer yet.`);
+  } else if (s.notMet === 0 && s.notAnswered === 0 && s.met > 0) {
+    out.push(`Every applicable criterion is met but the decision is ${decision === 'no_go' ? 'No go' : 'Hold'}. The reason should say why.`);
+  }
+  return out;
+}
+
 /* ---------- reading the optional template sheets ---------- */
 
 const t_ = (c: GridCell | undefined): string => {
@@ -281,4 +367,36 @@ export function parseGoRecord(grid: GridCell[][] | undefined): GoParse {
   const date = iT < 0 ? { iso: null, bad: false } : dateField(t_(r[iT]));
   if (date.bad) problems.push('Go-no-go: "Date" is not a clear date (write year-month-day); ignored.');
   return { record: { decision, decidedBy: iB < 0 ? null : t_(r[iB]) || null, date: date.iso, reason: iR < 0 ? null : t_(r[iR]) || null }, problems, present: true };
+}
+
+export interface GoCheckParse { items: GoCheckItem[]; problems: string[]; present: boolean }
+/** "Gate checklist" sheet: Criterion, Owner, Met (Yes, No or Not applicable), Note. The criteria are your own list; the app supplies none. */
+export function parseGoChecklist(grid: GridCell[][] | undefined): GoCheckParse {
+  if (grid === undefined) return { items: [], problems: [], present: false };
+  const iC = colIdx(grid, 'Criterion'), iO = colIdx(grid, 'Owner'), iM = colIdx(grid, 'Met'), iN = colIdx(grid, 'Note');
+  if (iC < 0) return { items: [], problems: ['Gate checklist: no "Criterion" column was found, so the sheet was ignored.'], present: true };
+  const problems: string[] = [];
+  const items: GoCheckItem[] = [];
+  grid.slice(1).forEach((r, i) => {
+    if (blank(r)) return;
+    const criterion = t_(r[iC]);
+    if (criterion === '') { problems.push(`Gate checklist: row ${i + 2} has no criterion and was ignored.`); return; }
+    const m = iM < 0 ? '' : t_(r[iM]).toLowerCase().replace(/[\s.]+/g, '');
+    const answer: GoCheckAnswer | null = m === 'yes' || m === 'y' || m === 'met' ? 'yes' : m === 'no' || m === 'n' || m === 'notmet' ? 'no' : m === 'notapplicable' || m === 'na' || m === 'n/a' ? 'na' : null;
+    if (m !== '' && answer === null) problems.push(`Gate checklist: row ${i + 2} "Met" is "${t_(r[iM])}", not Yes, No or Not applicable; treated as not answered.`);
+    items.push({ criterion, owner: iO < 0 ? '' : t_(r[iO]), answer, note: iN < 0 ? '' : t_(r[iN]) });
+  });
+  return { items, problems, present: true };
+}
+
+/** Counts by type (RFI, RFP, RFQ or your own word); a blank type is listed as "(no type)". */
+export function solicitationsByType(rows: readonly Solicitation[]): { type: string; total: number; received: number }[] {
+  const m = new Map<string, { type: string; total: number; received: number }>();
+  for (const r of rows) {
+    const label = r.kind.trim() === '' ? '(no type)' : r.kind.trim().toUpperCase();
+    const e = m.get(label) ?? { type: label, total: 0, received: 0 };
+    e.total += 1; if (r.received) e.received += 1;
+    m.set(label, e);
+  }
+  return [...m.values()].sort((a, b) => a.type.localeCompare(b.type));
 }
