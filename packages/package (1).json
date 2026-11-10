@@ -1,25 +1,13 @@
 {
-  "name": "@spashta/web",
-  "version": "1.4.0",
-  "description": "The browser app. Runs entirely on the user's device.",
+  "name": "@spashta/registry",
+  "version": "1.6.0",
+  "description": "Metric recipe cards (YAML) with a loader and validator.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "dependencies": {
-    "@spashta/core": "1.4.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "read-excel-file": "^9.3.12",
-    "yaml": "^2.9.1"
-  },
-  "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^5.0.0"
+    "@spashta/core": "1.6.0"
   }
 }

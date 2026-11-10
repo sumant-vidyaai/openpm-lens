@@ -69,7 +69,9 @@ interface AdapterSpec {
   /** True when the column names are our own, so nothing about them is unverified. */
   ownColumns?: boolean;
   /** Notes added only when something expected is missing from this particular file. */
-  extraNotes?: (mapping: ColumnMapping) => string[];
+  extraNotes?: (mapping: ColumnMapping, headers: string[]) => string[];
+  /** Rule to suggest when the file has no % complete column, so tasks are not all left out. */
+  ruleWhenNoPercent?: PercentRule;
 }
 
 function makeAdapter(spec: AdapterSpec): TableAdapter {
@@ -96,7 +98,12 @@ function makeAdapter(spec: AdapterSpec): TableAdapter {
       const mapping = Object.fromEntries(
         (Object.keys(spec.columns) as ImportField[]).map((f) => [f, findHeader(headers, spec.columns[f])]),
       ) as ColumnMapping;
-      const notes = [...spec.notes, ...(spec.extraNotes ? spec.extraNotes(mapping) : [])];
+      const notes = [...spec.notes, ...(spec.extraNotes ? spec.extraNotes(mapping, headers) : [])];
+      let rule = spec.suggestedRule;
+      if (spec.columns.percent.length > 0 && mapping.percent === null && spec.ruleWhenNoPercent) {
+        rule = spec.ruleWhenNoPercent;
+        notes.push('This file has no % complete column, so a status-based rule is suggested: tasks marked done count as 100% and not started as 0%; for tasks in progress, you set the percentage in step 1.');
+      }
       if (spec.ownColumns) {
         // Our own template: its names are fixed, nothing to verify.
       } else if (spec.columns.start.length === 0 || spec.columns.finish.length === 0) {
@@ -111,7 +118,7 @@ function makeAdapter(spec: AdapterSpec): TableAdapter {
         notes.push('No actual-effort column was found, so tasks will be left out until you choose one in step 1.');
       }
       return {
-        mapping, defaultUnit: spec.defaultUnit, suggestedRule: spec.suggestedRule, notes,
+        mapping, defaultUnit: spec.defaultUnit, suggestedRule: rule, notes,
         cannotSupply: spec.cannotSupply,
       };
     },
@@ -225,25 +232,60 @@ export const workfrontAdapter = makeAdapter({
   id: 'workfront-export',
   name: 'Workfront task report export',
   required: [['planned hours'], ['actual hours', 'percent complete']],
-  bonus: [['percent complete'], ['status'], ['name', 'task name']],
+  bonus: [['percent complete'], ['status'], ['name', 'task name', 'task'], ['due date', 'planned completion date'], ['ref no.', 'task id', 'id']],
   columns: {
-    id: ['id', 'task id'],
-    name: ['name', 'task name'],
+    id: ['ref no.', 'id', 'task id'],
+    name: ['task', 'name', 'task name'],
     status: ['status'],
     planned: ['planned hours'],
     actual: ['actual hours'],
     percent: ['percent complete', '% complete'],
-    start: ['planned start date'],
-    finish: ['planned completion date'],
+    start: ['planned start date', 'start date'],
+    finish: ['planned completion date', 'due date'],
   },
   defaultUnit: 'hours',
   suggestedRule: 'tool_reported',
+  ruleWhenNoPercent: 'status_based',
   notes: [
     'Report columns in Workfront are chosen by whoever built the view, so names can differ. Please check the choices in step 1.',
     'Adobe documents that Planned Hours is stored in minutes in the database, and Actual Hours in hours. A report column labelled in hours should already be converted, but please check a few values before trusting the results.',
     'Workfront reports a % complete, but it is the tool\'s own figure. You can switch to a status-based rule if you do not trust it.',
   ],
+  extraNotes: (_m, headers) => {
+    const has = (n: string) => findHeader(headers, [n]) !== null;
+    const out: string[] = [];
+    if (has('hours variance') && has('actual hours') && has('planned hours')) {
+      out.push('Check the Actual Hours values before trusting cost figures. In a sample of this kind of report the "Hours Variance" column equalled Planned Hours minus Actual Hours divided by 60, which would mean Actual Hours holds minutes even though it is labelled hours. Open one task you know in Workfront and compare its logged time with this file.');
+    }
+    if (has('completion date')) out.push('"Completion Date" is left blank in this kind of report while a task is open, so it is read as the actual finish and is not used as the planned finish. The planned finish is taken from "Due Date".');
+    return out;
+  },
   cannotSupply: [],
+});
+
+/** Asana: the CSV export has no effort columns, so cost measures cannot be worked out from it. Column names are from Asana's own export guide. */
+export const asanaAdapter = makeAdapter({
+  id: 'asana-csv',
+  name: 'Asana CSV export',
+  required: [['task id'], ['name'], ['project name']],
+  bonus: [['creation date'], ['completion date'], ['parent task'], ['assignee']],
+  columns: {
+    id: ['task id'],
+    name: ['name'],
+    status: [],
+    planned: [],
+    actual: [],
+    percent: [],
+    start: [],
+    finish: ['due date'],
+  },
+  defaultUnit: null,
+  suggestedRule: 'status_based',
+  notes: [
+    'Asana\'s CSV export has no planned or actual effort columns, so cost measures (CPI, earned value) cannot be worked out from it. Add effort columns in a spreadsheet, or use the Flow tab with Creation Date and Completion Date.',
+    'It has a Due Date but no start date and no status column: a task with a Completion Date is done, a blank one is open.',
+  ],
+  cannotSupply: ['planned effort', 'actual effort', 'start date', 'status'],
 });
 
 export const msProjectAdapter = makeAdapter({
@@ -296,7 +338,7 @@ export const templateAdapter = makeAdapter({
 });
 
 export const TABLE_ADAPTERS: TableAdapter[] = [
-  jiraAdapter, azureDevOpsAdapter, linearAdapter, clickUpAdapter, workfrontAdapter, msProjectAdapter,
+  jiraAdapter, azureDevOpsAdapter, linearAdapter, clickUpAdapter, workfrontAdapter, asanaAdapter, msProjectAdapter,
 ];
 
 /** The best-matching adapter for these headers, or null for a generic file. */

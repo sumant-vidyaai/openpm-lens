@@ -1,6 +1,6 @@
 {
   "name": "@spashta/core",
-  "version": "1.4.0",
+  "version": "1.6.0",
   "description": "Pure formula library, canonical data model and adapter interface for spashta.",
   "license": "UNLICENSED",
   "private": true,
