@@ -1,0 +1,449 @@
+import type { GridCell } from './csv';
+import type { DayCount } from './dates';
+import type { PercentRule } from './percentComplete';
+import { parseDateText } from './dates';
+import { suggestStatusCategory } from './importTasks';
+import { parseBenefits, parseChecklist, parseLessons, type BenefitParse, type ChecklistParse, type LessonParse } from './close';
+import { parseCaseSheet, parseGoRecord, parseScoring, parseSolicitations, parseStakeholders, type CaseParse, type GoParse, type ScoringParse, type SolicitationParse, type StakeholderParse } from './initiate';
+import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
+import { parsePhaseOrder, parseRegister, type RegisterParse } from './control';
+
+/**
+ * The Spashta fill-in template. Its column names are fixed so the app can recognise a
+ * filled template and set itself up with no mapping questions. Nothing here is a standard:
+ * it is just our agreed layout, explained on the "Start here" sheet of the workbook.
+ */
+export const TEMPLATE_COLUMNS = [
+  'Project', 'Programme', 'Team', 'ID', 'Task', 'Type', 'Status', 'Assignee',
+  'Planned start', 'Planned finish', 'Actual start', 'Actual finish',
+  'Estimate (h)', 'Actual (h)', '% complete', 'Created', 'Severity', 'Found in',
+  'Optimistic (h)', 'Pessimistic (h)', 'Depends on',
+] as const;
+export type TemplateColumn = (typeof TEMPLATE_COLUMNS)[number];
+
+export const TEMPLATE_STATUSES = ['Not started', 'In progress', 'Done', 'Cancelled'] as const;
+export const TEMPLATE_TYPES = ['Task', 'Bug', 'Story', 'Milestone', 'Risk', 'Change'] as const;
+
+/** Column names that are enough to call a file "our template" (the rest are optional). */
+const REQUIRED_FOR_DETECTION: TemplateColumn[] = ['Task', 'Status', 'Estimate (h)', 'Actual (h)', '% complete', 'Planned start', 'Actual start'];
+
+export function isTemplateTable(headers: string[]): boolean {
+  const set = new Set(headers.map((h) => h.trim()));
+  return REQUIRED_FOR_DETECTION.every((c) => set.has(c));
+}
+
+export const SETTING_LABELS = {
+  statusDate: 'Status date',
+  hoursPerDay: 'Hours per working day',
+  dayCount: 'Days counted',
+  capacity: 'Weekly capacity (h)',
+  currency: 'Currency',
+  defaultRate: 'Default hourly rate',
+  greenMin: 'Green from',
+  amberMin: 'Amber from',
+  rule: 'Progress rule',
+  inProgressPercent: 'In-progress credit (%)',
+  originalBudget: 'Original budget (h)',
+  riskMediumMin: 'Risk medium from',
+  riskHighMin: 'Risk high from',
+  contingency: 'Contingency reserve (h)',
+  management: 'Management reserve (h)',
+  discountRate: 'Discount rate (%)',
+  highFrom: 'Stakeholder high from',
+  phaseOrder: 'Phase order',
+  updateDue: 'Update due every (days)',
+} as const;
+
+export const RULE_CHOICES: { label: string; rule: PercentRule }[] = [
+  { label: 'Use the % complete column', rule: 'tool_reported' },
+  { label: '0/100', rule: 'zero_hundred' },
+  { label: '50/50', rule: 'fifty_fifty' },
+  { label: 'Status-based', rule: 'status_based' },
+];
+export const DAY_CHOICES: { label: string; value: DayCount }[] = [
+  { label: 'Weekdays', value: 'weekdays' },
+  { label: 'All days', value: 'calendar' },
+];
+
+export interface TemplateSettings {
+  statusDate: string | null;
+  hoursPerDay: number | null;
+  dayCount: DayCount | null;
+  capacity: number | null;
+  currency: string | null;
+  defaultRate: number | null;
+  greenMin: number | null;
+  amberMin: number | null;
+  rule: PercentRule | null;
+  inProgressPercent: number | null;
+  /** Hours in the plan before any approved change; used only for scope growth. */
+  originalBudget: number | null;
+  /** Risk score (probability x impact) from which a risk is Medium / High. Starting values, not a standard. */
+  riskMediumMin: number | null;
+  riskHighMin: number | null;
+  /** Hours held inside the cost baseline for known risks (the PM controls it). Entered by the user, never defaulted; 0 is allowed. */
+  contingency: number | null;
+  /** Hours held above the cost baseline for unknown risks (the sponsor controls it). Entered by the user, never defaulted; 0 is allowed. */
+  management: number | null;
+  /** Yearly rate (percent, e.g. 8) used to discount the business case. Entered by the user, never defaulted; 0 is allowed. */
+  discountRate: number | null;
+  /** Score (1 to 5) at or above which a stakeholder's power or interest counts as "high" on the grid. Entered by the user, never defaulted. */
+  highFrom: number | null;
+  /** Phase names in order, typed by the user (for example "Idea, Plan, Build"). Empty when blank. */
+  phaseOrder: string[];
+  /** An update is late when it is more than this many days old at the status date. Entered by the user, never defaulted. */
+  updateDue: number | null;
+  /** Things in the Settings sheet that were not understood (shown to the user, never guessed). */
+  problems: string[];
+}
+
+export interface TemplateRates {
+  rates: Record<string, number>;
+  problems: string[];
+}
+
+const txt = (c: GridCell): string => {
+  if (c === null || c === undefined) return '';
+  if (c instanceof Date) return Number.isNaN(c.getTime()) ? '' : c.toISOString().slice(0, 10);
+  return String(c).trim();
+};
+const num = (c: GridCell): number | null => {
+  if (typeof c === 'number') return Number.isFinite(c) ? c : null;
+  const t = txt(c);
+  return /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : null;
+};
+
+/** Reads the Settings sheet (label in column A, value in column B). Blank or odd values stay null. */
+export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
+  const s: TemplateSettings = {
+    statusDate: null, hoursPerDay: null, dayCount: null, capacity: null, currency: null,
+    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, contingency: null, management: null, discountRate: null, highFrom: null, phaseOrder: [], updateDue: null, problems: [],
+  };
+  const byLabel = new Map<string, GridCell>();
+  for (const r of grid) {
+    const k = txt(r[0]).toLowerCase();
+    if (k) byLabel.set(k, r[1]);
+  }
+  const get = (label: string) => byLabel.get(label.toLowerCase());
+  const positive = (label: string, max = Infinity): number | null => {
+    const c = get(label);
+    if (txt(c) === '') return null;
+    const n = num(c);
+    if (n === null || !(n > 0) || n > max) {
+      s.problems.push(`Settings: "${label}" is "${txt(c)}", which is not a usable number, so it was ignored.`);
+      return null;
+    }
+    return n;
+  };
+  const sd = get(SETTING_LABELS.statusDate);
+  if (txt(sd) !== '') {
+    const d = parseDateText(txt(sd), 'auto', 'statusDate');
+    if (d.iso) s.statusDate = d.iso;
+    else s.problems.push(`Settings: "Status date" is "${txt(sd)}". Write it as year-month-day, for example 2026-03-31. It was ignored.`);
+  }
+  s.hoursPerDay = positive(SETTING_LABELS.hoursPerDay, 24);
+  s.capacity = positive(SETTING_LABELS.capacity, 168);
+  s.defaultRate = positive(SETTING_LABELS.defaultRate);
+  const dc = txt(get(SETTING_LABELS.dayCount));
+  if (dc !== '') {
+    const hit = DAY_CHOICES.find((d) => d.label.toLowerCase() === dc.toLowerCase());
+    if (hit) s.dayCount = hit.value;
+    else s.problems.push(`Settings: "Days counted" is "${dc}". Choose Weekdays or All days. It was ignored.`);
+  }
+  const rl = txt(get(SETTING_LABELS.rule));
+  if (rl !== '') {
+    const hit = RULE_CHOICES.find((d) => d.label.toLowerCase() === rl.toLowerCase());
+    if (hit) s.rule = hit.rule;
+    else s.problems.push(`Settings: "Progress rule" is "${rl}". Choose one from the list. It was ignored.`);
+  }
+  const cur = txt(get(SETTING_LABELS.currency));
+  if (cur !== '') s.currency = cur.slice(0, 8);
+  const band = (label: string): number | null => {
+    const c = get(label);
+    if (txt(c) === '') return null;
+    const n = num(c);
+    if (n === null || n <= 0 || n > 2) {
+      s.problems.push(`Settings: "${label}" should be a number such as 0.95. It was ignored.`);
+      return null;
+    }
+    return n;
+  };
+  s.greenMin = band(SETTING_LABELS.greenMin);
+  s.amberMin = band(SETTING_LABELS.amberMin);
+  if (s.greenMin !== null && s.amberMin !== null && s.amberMin >= s.greenMin) {
+    s.problems.push('Settings: "Amber from" must be lower than "Green from". Both were ignored.');
+    s.greenMin = null;
+    s.amberMin = null;
+  }
+  const ip = get(SETTING_LABELS.inProgressPercent);
+  if (txt(ip) !== '') {
+    const n = num(ip);
+    if (n === null || n < 0 || n > 100) s.problems.push('Settings: "In-progress credit (%)" should be 0 to 100. It was ignored.');
+    else s.inProgressPercent = n;
+  }
+  s.originalBudget = positive(SETTING_LABELS.originalBudget);
+  const nonNegative = (label: string): number | null => {
+    const c = get(label);
+    if (txt(c) === '') return null;
+    const n = num(c);
+    if (n === null || n < 0) {
+      s.problems.push(`Settings: "${label}" is "${txt(c)}", which is not a usable number (0 or more), so it was ignored.`);
+      return null;
+    }
+    return n;
+  };
+  s.contingency = nonNegative(SETTING_LABELS.contingency);
+  s.management = nonNegative(SETTING_LABELS.management);
+  const dr = get(SETTING_LABELS.discountRate);
+  if (txt(dr) !== '') {
+    const n = num(dr);
+    if (n === null || n < 0 || n > 100) s.problems.push(`Settings: "Discount rate (%)" is "${txt(dr)}"; enter a number from 0 to 100 (write 8 for 8%). It was ignored.`);
+    else s.discountRate = n;
+  }
+  const hf = get(SETTING_LABELS.highFrom);
+  if (txt(hf) !== '') {
+    const n = num(hf);
+    if (n === null || !Number.isInteger(n) || n < 2 || n > 5) s.problems.push(`Settings: "Stakeholder high from" should be a whole number from 2 to 5. It was ignored.`);
+    else s.highFrom = n;
+  }
+  const po = txt(get(SETTING_LABELS.phaseOrder));
+  if (po !== '') s.phaseOrder = parsePhaseOrder(po);
+  const ud = get(SETTING_LABELS.updateDue);
+  if (txt(ud) !== '') {
+    const n = num(ud);
+    if (n === null || !Number.isInteger(n) || n < 1 || n > 365) s.problems.push(`Settings: "Update due every (days)" should be a whole number from 1 to 365. It was ignored.`);
+    else s.updateDue = n;
+  }
+  const riskLimit = (label: string): number | null => {
+    const c = get(label);
+    if (txt(c) === '') return null;
+    const n = num(c);
+    if (n === null || !Number.isInteger(n) || n < 2 || n > 25) {
+      s.problems.push(`Settings: "${label}" should be a whole number from 2 to 25. It was ignored.`);
+      return null;
+    }
+    return n;
+  };
+  s.riskMediumMin = riskLimit(SETTING_LABELS.riskMediumMin);
+  s.riskHighMin = riskLimit(SETTING_LABELS.riskHighMin);
+  if (s.riskMediumMin !== null && s.riskHighMin !== null && s.riskMediumMin >= s.riskHighMin) {
+    s.problems.push('Settings: "Risk medium from" must be lower than "Risk high from". Both were ignored.');
+    s.riskMediumMin = null;
+    s.riskHighMin = null;
+  }
+  return s;
+}
+
+/** Reads the Rates sheet (person in column A, hourly rate in column B, header row first). */
+export function parseTemplateRates(grid: GridCell[][]): TemplateRates {
+  const rates: Record<string, number> = {};
+  const problems: string[] = [];
+  grid.slice(1).forEach((r, i) => {
+    const who = txt(r[0]);
+    if (who === '' && txt(r[1]) === '') return;
+    const n = num(r[1]);
+    if (who === '' || n === null || n < 0) {
+      problems.push(`Rates: row ${i + 2} ("${who}", "${txt(r[1])}") was not understood and was ignored.`);
+      return;
+    }
+    rates[who] = n;
+  });
+  return { rates, problems };
+}
+
+export interface TemplateReadiness {
+  /** Tasks counted (cancelled tasks are out of scope and not counted). */
+  total: number;
+  cancelled: number;
+  /** For each metric: how many of the tasks have what it needs, and what is missing in plain words. */
+  checks: { metric: string; ready: number; needs: string }[];
+}
+
+/** Counts, per metric, how many rows have the columns that metric needs. Blank means missing, never zero. */
+export function templateReadiness(headers: string[], allRows: string[][]): TemplateReadiness {
+  const iStatus = headers.indexOf('Status');
+  const isCancelled = (r: string[]) => iStatus >= 0 && suggestStatusCategory(r[iStatus] ?? '') === 'cancelled';
+  const rows = allRows.filter((r) => !isCancelled(r));
+  const ix = (c: TemplateColumn) => headers.indexOf(c);
+  const filled = (r: string[], c: TemplateColumn) => {
+    const i = ix(c);
+    return i >= 0 && (r[i] ?? '').trim() !== '';
+  };
+  const all = (...cs: TemplateColumn[]) => rows.filter((r) => cs.every((c) => filled(r, c))).length;
+  return {
+    total: rows.length,
+    cancelled: allRows.length - rows.length,
+    checks: [
+      { metric: 'Cost (CPI, cost variance)', ready: all('Estimate (h)', 'Actual (h)', '% complete'), needs: 'Estimate (h), Actual (h) and % complete' },
+      { metric: 'Schedule (SPI, schedule variance)', ready: all('Estimate (h)', 'Planned start', 'Planned finish', '% complete'), needs: 'Estimate (h), Planned start, Planned finish and % complete' },
+      { metric: 'Flow (cycle time, throughput)', ready: all('Actual start', 'Actual finish'), needs: 'Actual start and Actual finish' },
+      { metric: 'Resources', ready: all('Assignee', 'Estimate (h)'), needs: 'Assignee and Estimate (h)' },
+      { metric: 'Quality (defects)', ready: all('Type', 'Created'), needs: 'Type and Created' },
+    ],
+  };
+}
+
+export interface TemplateHolidays { dates: string[]; problems: string[] }
+export interface TemplateLeave { entries: { person: string; from: string; to: string }[]; problems: string[] }
+
+/** Reads the Holidays sheet (date in column A, name in column B, header row first). Unclear dates are listed, never guessed. */
+export function parseTemplateHolidays(grid: GridCell[][]): TemplateHolidays {
+  const dates: string[] = [];
+  const problems: string[] = [];
+  grid.slice(1).forEach((r, i) => {
+    const t = txt(r[0]);
+    if (t === '') return;
+    const d = parseDateText(t, 'auto', 'holiday');
+    if (d.iso) { if (!dates.includes(d.iso)) dates.push(d.iso); }
+    else problems.push(`Holidays: row ${i + 2} ("${t}") is not a clear date (write year-month-day). It was ignored.`);
+  });
+  return { dates: dates.sort(), problems };
+}
+
+/** Reads the Leave sheet (person, from, to; a blank "to" means just the "from" day). */
+export function parseTemplateLeave(grid: GridCell[][]): TemplateLeave {
+  const entries: TemplateLeave['entries'] = [];
+  const problems: string[] = [];
+  grid.slice(1).forEach((r, i) => {
+    const who = txt(r[0]), f = txt(r[1]), t = txt(r[2]);
+    if (who === '' && f === '' && t === '') return;
+    const from = parseDateText(f, 'auto', 'leave from').iso;
+    const to = t === '' ? from : parseDateText(t, 'auto', 'leave to').iso;
+    if (who === '' || from === null || to === null || to < from) {
+      problems.push(`Leave: row ${i + 2} ("${who}", "${f}", "${t}") was not understood and was ignored.`);
+      return;
+    }
+    entries.push({ person: who, from, to });
+  });
+  return { entries, problems };
+}
+
+export interface TemplateParts {
+  /** Index of the "Tasks" sheet. */
+  tasksIndex: number;
+  settings: TemplateSettings;
+  rates: TemplateRates;
+  holidays: TemplateHolidays;
+  leave: TemplateLeave;
+  /** The optional Risks, Issues and Changes sheets (present = false when the sheet is not in the file). */
+  risks: RiskParse;
+  issues: IssueParse;
+  changes: ChangeParse;
+  /** The optional Initiate sheets (Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go). */
+  scoring: ScoringParse;
+  businessCase: CaseParse;
+  stakeholders: StakeholderParse;
+  solicitations: SolicitationParse;
+  goRecord: GoParse;
+  /** The optional Close sheets (Benefits, Checklist, Lessons). */
+  benefits: BenefitParse;
+  checklist: ChecklistParse;
+  lessons: LessonParse;
+  /** The optional Projects register sheet (phase, manager, last update, next gate). */
+  register: RegisterParse;
+  /** True when a Settings sheet was present at all. */
+  hasSettings: boolean;
+}
+
+/** The sheets that do not depend on the task table: settings, risks and issues, and the Initiate and Close sheets. */
+export interface LifecycleSheets {
+  settings: TemplateSettings;
+  hasSettings: boolean;
+  risks: RiskParse; issues: IssueParse; changes: ChangeParse;
+  scoring: ScoringParse; businessCase: CaseParse; stakeholders: StakeholderParse; solicitations: SolicitationParse; goRecord: GoParse;
+  benefits: BenefitParse; checklist: ChecklistParse; lessons: LessonParse;
+  /** The optional "Projects" register sheet (phase, manager, last update, next gate). */
+  register: RegisterParse;
+  /** True when at least one of the Initiate or Close sheets is in the file. */
+  hasInitiateOrClose: boolean;
+}
+
+/** Reads those sheets by name from any workbook, whether or not it has a Tasks sheet. */
+export function extractLifecycleSheets(sheets: { name: string; data: GridCell[][] }[]): LifecycleSheets {
+  const find = (n: string) => sheets.findIndex((s) => s.name.trim().toLowerCase() === n);
+  const grid = (n: string) => sheets[find(n)]?.data;
+  const settingsSheet = sheets[find('settings')];
+  const r: LifecycleSheets = {
+    hasSettings: settingsSheet !== undefined,
+    settings: settingsSheet ? parseTemplateSettings(settingsSheet.data) : parseTemplateSettings([]),
+    risks: parseRisks(grid('risks')), issues: parseIssues(grid('issues')), changes: parseChanges(grid('changes')),
+    scoring: parseScoring(grid('scoring')), businessCase: parseCaseSheet(grid('business case')), stakeholders: parseStakeholders(grid('stakeholders')),
+    solicitations: parseSolicitations(grid('rfi-rfp')), goRecord: parseGoRecord(grid('go-no-go')),
+    benefits: parseBenefits(grid('benefits')), checklist: parseChecklist(grid('checklist')), lessons: parseLessons(grid('lessons')),
+    register: parseRegister(grid('projects')),
+    hasInitiateOrClose: false,
+  };
+  r.hasInitiateOrClose = [r.scoring, r.businessCase, r.stakeholders, r.solicitations, r.goRecord, r.benefits, r.checklist, r.lessons].some((x) => x.present);
+  return r;
+}
+
+/** Finds the Tasks / Settings / Rates sheets of a workbook by name. Null if there is no "Tasks" sheet. */
+export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]): TemplateParts | null {
+  const find = (n: string) => sheets.findIndex((s) => s.name.trim().toLowerCase() === n);
+  const t = find('tasks');
+  if (t < 0) return null;
+  const ratesSheet = sheets[find('rates')];
+  const holSheet = sheets[find('holidays')];
+  const leaveSheet = sheets[find('leave')];
+  const life = extractLifecycleSheets(sheets);
+  return {
+    tasksIndex: t,
+    hasSettings: life.hasSettings,
+    settings: life.settings,
+    rates: ratesSheet ? parseTemplateRates(ratesSheet.data) : { rates: {}, problems: [] },
+    holidays: holSheet ? parseTemplateHolidays(holSheet.data) : { dates: [], problems: [] },
+    leave: leaveSheet ? parseTemplateLeave(leaveSheet.data) : { entries: [], problems: [] },
+    risks: life.risks, issues: life.issues, changes: life.changes,
+    scoring: life.scoring, businessCase: life.businessCase, stakeholders: life.stakeholders, solicitations: life.solicitations, goRecord: life.goRecord,
+    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons, register: life.register,
+  };
+}
+
+export interface TemplateProject {
+  name: string;
+  programme: string;
+  team: string;
+  table: { delimiter: ',' | ';' | '\t'; headers: string[]; rows: string[][]; warnings: string[] };
+}
+
+/**
+ * Splits a filled template into one table per value of the Project column (in first-seen order).
+ * Programme and Team are taken from the first non-blank value among a project's rows; if a project
+ * names two different programmes the first is kept and the conflict is reported in warnings.
+ * Rows with a blank Project go to "(no project named)". A file with no Project values at all is one project.
+ */
+export function splitTemplateProjects(table: TemplateProject['table']): { projects: TemplateProject[]; warnings: string[] } {
+  const iP = table.headers.indexOf('Project');
+  const iG = table.headers.indexOf('Programme');
+  const iT = table.headers.indexOf('Team');
+  const cell = (r: string[], i: number) => (i < 0 ? '' : (r[i] ?? '').trim());
+  const groups = new Map<string, string[][]>();
+  for (const r of table.rows) {
+    const k = cell(r, iP) || '(no project named)';
+    const g = groups.get(k);
+    if (g) g.push(r); else groups.set(k, [r]);
+  }
+  const warnings: string[] = [];
+  const projects: TemplateProject[] = [];
+  for (const [name, rows] of groups) {
+    const first = (i: number, what: string) => {
+      const vals = [...new Set(rows.map((r) => cell(r, i)).filter((v) => v !== ''))];
+      if (vals.length > 1) warnings.push(`Project "${name}" lists more than one ${what} (${vals.join(', ')}). The first, "${vals[0]}", was used.`);
+      return vals[0] ?? '';
+    };
+    projects.push({ name, programme: first(iG, 'programme'), team: first(iT, 'team'), table: { ...table, rows } });
+  }
+  return { projects, warnings };
+}
+
+/** Reads typed holidays: one date per line (or separated by commas or semicolons). Unclear dates are listed, never guessed. */
+export function parseHolidayText(text: string): TemplateHolidays {
+  const dates: string[] = [];
+  const problems: string[] = [];
+  for (const part of text.split(/[\n,;]+/).map((x) => x.trim()).filter((x) => x !== '')) {
+    const d = parseDateText(part, 'auto', 'holiday');
+    if (d.iso) { if (!dates.includes(d.iso)) dates.push(d.iso); }
+    else problems.push(`"${part}" is not a clear date (write year-month-day, for example 2026-03-25). It was ignored.`);
+  }
+  return { dates: dates.sort(), problems };
+}
