@@ -2,11 +2,13 @@ import { useMemo, useRef, useState } from 'react';
 import {
   ALL_PROJECTS, analyseTable, isTemplateTable, parseHolidayText, splitTemplateProjects, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
   toCsv, validateThresholds, type AnalyseSettings, type CsvCell, type CsvResult, type DateOrder, type DayCount,
-  type Health, type PercentRule, type PortfolioProject, type RegisterRow, type RollupBy, type Unit,
+  type Health, type PercentRule, type PortfolioProject, type RegisterRow, type RiskInput, type OptionScores, type Criterion, type RollupBy, type Unit,
 } from '@spashta/core';
 import { readTable } from './readFile';
-import { SAMPLE_PHASE_ORDER, SAMPLE_PORTFOLIO, SAMPLE_REGISTER, SAMPLE_UPDATE_DUE } from './sample';
+import { ProjectListImport } from './ProjectListImport';
+import { SAMPLE_CAPACITY, SAMPLE_PHASE_ORDER, SAMPLE_PORTFOLIO, SAMPLE_PRIORITY, SAMPLE_REGISTER, SAMPLE_RISKS, SAMPLE_UPDATE_DUE } from './sample';
 import { PortfolioControl } from './PortfolioControl';
+import { PortfolioPmo, type PrioState } from './PortfolioPmo';
 
 interface Entry {
   id: string;
@@ -23,6 +25,13 @@ const SYMBOL: Record<Health, string> = { green: '●', amber: '▲', red: '■',
 const BY_LABEL: Record<RollupBy, string> = {
   project: 'Each project', programme: 'Each programme', team: 'Each team', all: 'Whole portfolio',
 };
+
+function fromScoring(criteria: Criterion[], options: OptionScores[]): PrioState {
+  return {
+    criteria: criteria.map((c) => ({ name: c.name, weight: c.weight === null ? '' : String(c.weight) })),
+    scores: Object.fromEntries(options.map((o) => [o.option, Object.fromEntries(Object.entries(o.scores).map(([k, v]) => [k, v === null ? '' : String(v)]))])),
+  };
+}
 
 function Rag({ health }: { health: Health }) {
   return <span className={`rag rag-${health}`}><span aria-hidden="true">{SYMBOL[health]}</span> {HEALTH_LABEL[health]}</span>;
@@ -46,6 +55,11 @@ export function PortfolioScreen() {
   const [register, setRegister] = useState<RegisterRow[]>([]);
   const [phaseOrderText, setPhaseOrderText] = useState('');
   const [dueText, setDueText] = useState('');
+  const [prio, setPrio] = useState<PrioState>({ criteria: [], scores: {} });
+  const [capText, setCapText] = useState('');
+  const [overText, setOverText] = useState('100');
+  const [risks, setRisks] = useState<RiskInput[]>([]);
+  const [riskBands, setRiskBands] = useState<{ mediumMin: number; highMin: number } | null>(null);
   const nextId = useRef(1);
 
   const parsed = { greenMin: Number(green), amberMin: Number(amber), minTasks: Number(minTasks) };
@@ -68,6 +82,7 @@ export function PortfolioScreen() {
         if (isTemplateTable(table.headers)) {
           // Our template: one project per value in the Project column; Settings fill the shared controls.
           const split = splitTemplateProjects(table);
+          const loadedNames = split.projects.map((x) => x.name);
           for (const p of split.projects) {
             added.push({ name: p.name, programme: p.programme, team: p.team, fileName: f.name, table: p.table, unit: '', note: null });
           }
@@ -86,6 +101,18 @@ export function PortfolioScreen() {
             if (t.phaseOrder.length > 0) setPhaseOrderText(t.phaseOrder.join(', '));
             if (t.updateDue !== null) setDueText(String(t.updateDue));
             if (template.register.present) { setRegister(template.register.rows); problems.push(...template.register.problems); }
+            if (t.capacity !== null) setCapText(String(t.capacity));
+            if (t.riskMediumMin !== null && t.riskHighMin !== null) setRiskBands({ mediumMin: t.riskMediumMin, highMin: t.riskHighMin });
+            if (template.priority.present) {
+              setPrio(fromScoring(template.priority.criteria, template.priority.options));
+              problems.push(...template.priority.problems);
+            }
+            if (template.risks.present) {
+              // A risk with a Project column goes to that project. Without one, it goes to the file's only project, or stays unnamed.
+              const only = loadedNames.length === 1 ? (loadedNames[0] as string) : '';
+              setRisks((cur) => [...cur, ...template.risks.risks.map((r) => ({ ...r, project: (r.project ?? '').trim() || only }))]);
+              problems.push(...template.risks.problems);
+            }
           }
         } else {
           added.push({ name: f.name.replace(/\.[^.]+$/, ''), programme: '', team: '', fileName: f.name, table, unit: '', note });
@@ -106,6 +133,9 @@ export function PortfolioScreen() {
     setRegister(SAMPLE_REGISTER);
     setPhaseOrderText(SAMPLE_PHASE_ORDER);
     setDueText(SAMPLE_UPDATE_DUE);
+    setPrio(fromScoring(SAMPLE_PRIORITY.criteria, SAMPLE_PRIORITY.options));
+    setCapText(SAMPLE_CAPACITY);
+    setRisks(SAMPLE_RISKS);
   }
   const edit = (id: string, patch: Partial<Entry>) => setEntries((cur) => cur.map((e) => (e.id === id ? { ...e, ...patch } : e)));
 
@@ -172,8 +202,9 @@ export function PortfolioScreen() {
           }} />
         </label>
         <button type="button" onClick={addSamples}>Try three made-up projects</button>
-        {entries.length > 0 && <button type="button" onClick={() => { setEntries([]); setRegister([]); setPhaseOrderText(''); setDueText(''); }}>Clear all</button>}
+        {entries.length > 0 && <button type="button" onClick={() => { setEntries([]); setRegister([]); setPhaseOrderText(''); setDueText(''); setPrio({ criteria: [], scores: {} }); setCapText(''); setRisks([]); setRiskBands(null); }}>Clear all</button>}
       </div>
+      <ProjectListImport onRegister={setRegister} loaded={register.length} />
       {error && <p className="warn" role="alert">{error}</p>}
 
       {entries.length === 0 ? (
@@ -312,6 +343,9 @@ export function PortfolioScreen() {
           </details>
           <PortfolioControl projects={projects} register={register} statusDate={statusDate} thresholds={thresholds}
             phaseOrderText={phaseOrderText} dueText={dueText} onPhaseOrder={setPhaseOrderText} onDue={setDueText} />
+          <PortfolioPmo sets={projects.map((p) => ({ project: p.name, table: entries.find((e) => e.id === p.id)?.table ?? { headers: [], rows: [] } as unknown as CsvResult, unit: entries.find((e) => e.id === p.id)?.unit ?? '' }))}
+            settings={settings} statusDate={statusDate} prio={prio} onPrio={setPrio} capText={capText} overText={overText} onCap={setCapText} onOver={setOverText}
+            risks={risks} riskBands={riskBands} />
         </>
       )}
     </section>
