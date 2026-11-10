@@ -82,6 +82,19 @@ EXAMPLE_PROJ = [
     ['Mobile app', 'Build', 'Kiran', '2026-03-10', '2026-03-27'],
     ['Data warehouse (made up)', 'Idea', 'Ravi', '', '2026-05-15'],
 ]
+EXAMPLE_GATE = [
+    ['Business case approved (made up)', 'Asha', 'Yes', 'Signed off 2026-02-20'],
+    ['Budget secured (made up)', 'Ravi', 'No', 'Waiting for the finance committee'],
+    ['Team named (made up)', 'Meena', '', ''],
+    ['Legal review (made up)', '', 'Not applicable', 'No contract at this stage'],
+]
+EXAMPLE_PRIORITY = [
+    ['Project', 'Strategic fit', 'Value', 'Ease'],
+    ['Weight', 5, 3, 2],
+    ['Website relaunch', 3, 4, 4],
+    ['Mobile app', 5, 4, 2],
+    ['Data warehouse (made up)', 4, 5, 2],
+]
 EXAMPLE_SCORING = [
     ['Option', 'Price', 'Fit to needs', 'Support', 'Security'],
     ['Weight', 40, 30, 20, 10],
@@ -102,8 +115,10 @@ EXAMPLE_SOL = [
     ['S-1', 'RFI', 'Vendor A (made up)', '2026-03-05', '2026-03-04', 'Answered'],
     ['S-2', 'RFP', 'Vendor B (made up)', '2026-03-20', '', 'Sent'],
     ['S-3', 'RFP', 'Vendor C (made up)', '2026-04-10', '', 'Sent'],
+    ['S-4', 'RFQ', 'Vendor D (made up)', '2026-03-12', '', 'Sent'],
 ]
 GO_HEAD = ['Decision', 'Decided by', 'Date', 'Reason']
+EXAMPLE_GO = [['Go', 'Sponsor (made up)', '2026-02-28', '']]
 BEN_HEAD = ['ID', 'Benefit', 'Owner', 'Measure', 'Planned', 'Realised', 'Due']
 EXAMPLE_BEN = [
     ['B-1', 'Fewer support calls (made up)', 'Support lead', 'calls a month', 400, 340, '2026-09-30'],
@@ -127,16 +142,16 @@ EXAMPLE_LESSON = [
     ['Went badly', 'The payment vendor delivered late (made up)', 'Agree a fallback before signing', 'Ravi', '2026-03-25'],
     ['Do differently', 'Estimates ignored testing effort (made up)', 'Add a testing line to every estimate', 'Meena', '2026-03-28'],
 ]
-RISK_HEAD = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done']
+RISK_HEAD = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done', 'Project']
 ISSUE_HEAD = ['ID', 'Issue', 'Priority', 'Owner', 'Status', 'Raised', 'Due', 'Resolved']
 CHANGE_HEAD = ['ID', 'Change', 'Requested by', 'Decision', 'Requested', 'Decided', 'Cost impact (h)', 'Schedule impact (days)']
 EXAMPLE_RISKS = [
-    ['R-1', 'Payment vendor delivers the API late', 4, 4, 'Asha', 'Mitigate', 'Open', 'Agree a fallback sandbox', '2026-03-20', ''],
-    ['R-2', 'Key developer leaves', 2, 5, 'Ravi', 'Mitigate', 'Open', 'Cross-train a second person', '2026-04-10', ''],
-    ['R-3', 'App store review takes longer than planned', 3, 3, 'Dev', 'Accept', 'Open', 'Submit two weeks early', '2026-03-25', '2026-03-24'],
-    ['R-4', 'Test data is not available', 3, 2, '', '', 'Open', '', '', ''],
-    ['R-5', 'Design sign-off delayed', 4, 2, 'Meena', 'Avoid', 'Closed', 'Weekly review set up', '2026-03-05', '2026-03-04'],
-    ['R-6', 'Server capacity too small', 2, 4, 'Kiran', 'Mitigate', 'Occurred', 'See issue I-1', '', ''],
+    ['R-1', 'Payment vendor delivers the API late', 4, 4, 'Asha', 'Mitigate', 'Open', 'Agree a fallback sandbox', '2026-03-20', '', 'Mobile app'],
+    ['R-2', 'Key developer leaves', 2, 5, 'Ravi', 'Mitigate', 'Open', 'Cross-train a second person', '2026-04-10', '', 'Mobile app'],
+    ['R-3', 'App store review takes longer than planned', 3, 3, 'Dev', 'Accept', 'Open', 'Submit two weeks early', '2026-03-25', '2026-03-24', 'Mobile app'],
+    ['R-4', 'Test data is not available', 3, 2, '', '', 'Open', '', '', '', 'Website relaunch'],
+    ['R-5', 'Design sign-off delayed', 4, 2, 'Meena', 'Avoid', 'Closed', 'Weekly review set up', '2026-03-05', '2026-03-04', 'Website relaunch'],
+    ['R-6', 'Server capacity too small', 2, 4, 'Kiran', 'Mitigate', 'Occurred', 'See issue I-1', '', '', 'Data warehouse (made up)'],
 ]
 EXAMPLE_ISSUES = [
     ['I-1', 'Staging server runs out of memory', 'High', 'Kiran', 'Open', '2026-03-01', '2026-03-20', ''],
@@ -167,7 +182,7 @@ def build(path, example):
     s.title = 'Start here'
     lines = [
         ('Spashta template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings, Projects, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go, Checklist, Lessons and Benefits sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Fill in the Tasks sheet, optionally the Settings, Projects, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Priority, Gate checklist, Business case, Stakeholders, RFI-RFP, Go-no-go, Checklist, Lessons and Benefits sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -393,10 +408,10 @@ def build(path, example):
             ws.add_data_validation(dv); dv.add(f'{col(h)}2:{col(h)}201')
         ws.cell(row=1, column=len(head) + 2, value=note)
 
-    log_sheet('Risks', RISK_HEAD, [8, 44, 18, 14, 14, 14, 12, 34, 14, 14], EXAMPLE_RISKS, ['Action due', 'Action done'],
+    log_sheet('Risks', RISK_HEAD, [8, 44, 18, 14, 14, 14, 12, 34, 14, 14, 24], EXAMPLE_RISKS, ['Action due', 'Action done'],
               {'Response': ['Avoid', 'Mitigate', 'Transfer', 'Accept'], 'Status': ['Open', 'Closed', 'Occurred']},
               ['Probability (1-5)', 'Impact (1-5)'], [],
-              'Optional. Probability and Impact are whole numbers 1 (lowest) to 5 (highest); score = probability x impact. Leave blank if not yet rated: the risk is listed as not scored.')
+              'Optional. Probability and Impact are whole numbers 1 (lowest) to 5 (highest); score = probability x impact. Leave blank if not yet rated: the risk is listed as not scored. Project (optional) is the project name; the Portfolio tab uses it to show risks across projects.')
     log_sheet('Issues', ISSUE_HEAD, [8, 44, 12, 14, 12, 14, 14, 14], EXAMPLE_ISSUES, ['Raised', 'Due', 'Resolved'],
               {'Priority': ['Low', 'Medium', 'High', 'Critical'], 'Status': ['Open', 'Resolved', 'Closed']}, [], [],
               'Optional. An issue is a problem that has already happened. Age is counted from Raised to the status date (calendar days).')
@@ -425,20 +440,24 @@ def build(path, example):
         ws.cell(row=1, column=len(head) + 2, value=note)
         return ws
 
-    sc = wb.create_sheet('Scoring')
-    for j in range(1, 10):
-        c = sc.cell(row=1, column=j, value='Option' if j == 1 else None)
-        c.fill, c.font = HEAD_FILL, HEAD_FONT
-        sc.column_dimensions[get_column_letter(j)].width = 22 if j == 1 else 14
-        for i in range(2, 32):
-            sc.cell(row=i, column=j).fill = INPUT_FILL
-    sc.cell(row=2, column=1, value='Weight').font = Font(bold=True)
-    if example:
-        for i, row in enumerate(EXAMPLE_SCORING, start=1):
-            for j, v in enumerate(row, start=1):
-                if v != '':
-                    sc.cell(row=i, column=j, value=v)
-    sc['A1'].comment = Comment('Optional. Type criteria across row 1 and the importance of each in row 2 (any positive numbers). Then one option per row below, scored on your own scale. A missing score leaves that option unscored.', 'Spashta')
+    for sname, srows, first, snote in (
+        ('Scoring', EXAMPLE_SCORING, 'Option', 'Optional. Type criteria across row 1 and the importance of each in row 2 (any positive numbers). Then one option per row below, scored on your own scale. A missing score leaves that option unscored.'),
+        ('Priority', EXAMPLE_PRIORITY, 'Project', 'Optional. For the Portfolio tab. Type your prioritisation criteria across row 1 and the importance of each in row 2 (any positive numbers). Then one project per row below (names as on the Tasks sheet), scored on your own scale. A missing score leaves that project unscored.'),
+    ):
+        sc = wb.create_sheet(sname)
+        for j in range(1, 10):
+            c = sc.cell(row=1, column=j, value=first if j == 1 else None)
+            c.fill, c.font = HEAD_FILL, HEAD_FONT
+            sc.column_dimensions[get_column_letter(j)].width = 22 if j == 1 else 14
+            for i in range(2, 32):
+                sc.cell(row=i, column=j).fill = INPUT_FILL
+        sc.cell(row=2, column=1, value='Weight').font = Font(bold=True)
+        if example:
+            for i, row in enumerate(srows, start=1):
+                for j, v in enumerate(row, start=1):
+                    if v != '':
+                        sc.cell(row=i, column=j, value=v)
+        sc['A1'].comment = Comment(snote, 'Spashta')
     plain_sheet('Business case', ['Period', 'Cost', 'Benefit'], [10, 14, 14], 20,
                 'Optional. Period 0 is today (not discounted), 1 is the end of year 1, and so on. Money amounts in one currency. Set the Discount rate (%) on the Settings sheet.', EXAMPLE_CASE)
     st = plain_sheet('Stakeholders', STAKE_HEAD, [24, 24, 14, 16, 30], 40,
@@ -446,13 +465,17 @@ def build(path, example):
     dv = DataValidation(type='whole', operator='between', formula1='1', formula2='5', allow_blank=True, showErrorMessage=True, errorTitle='Score', error='Enter a whole number from 1 to 5.')
     st.add_data_validation(dv); dv.add('C2:D41')
     so = plain_sheet('RFI-RFP', SOL_HEAD, [8, 8, 26, 14, 14, 16], 40,
-                     'Optional. One row per request sent to a vendor. Type is RFI or RFP. A row with no Received date and a Due date before the status date counts as overdue.', EXAMPLE_SOL)
-    dv = DataValidation(type='list', formula1='"RFI,RFP"', allow_blank=True)
+                     'Optional. One row per request sent to a vendor. Type is RFI (request for information), RFP (request for proposal) or RFQ (request for quotation). A row with no Received date and a Due date before the status date counts as overdue.', EXAMPLE_SOL)
+    dv = DataValidation(type='list', formula1='"RFI,RFP,RFQ"', allow_blank=True)
     so.add_data_validation(dv); dv.add('B2:B41')
     go = plain_sheet('Go-no-go', GO_HEAD, [14, 20, 14, 50], 1,
-                     'Optional. Your decision record. A No go or Hold needs a reason. Leave blank until decided.', [])
+                     'Optional. Your decision record. A No go or Hold needs a reason. Leave blank until decided.', EXAMPLE_GO)
     dv = DataValidation(type='list', formula1='"Go,No go,Hold"', allow_blank=True)
     go.add_data_validation(dv); dv.add('A2')
+    gc = plain_sheet('Gate checklist', ['Criterion', 'Owner', 'Met', 'Note'], [40, 16, 16, 40], 30,
+                     'Optional. Write your own criteria for the go / no-go decision (the app supplies none). Met is Yes, No or Not applicable; blank means not answered yet.', EXAMPLE_GATE)
+    dv = DataValidation(type='list', formula1='"Yes,No,Not applicable"', allow_blank=True)
+    gc.add_data_validation(dv); dv.add('C2:C31')
 
     # --- Close sheets
     ck = plain_sheet('Checklist', CHECK_HEAD, [18, 46, 14, 16, 14], 60,
