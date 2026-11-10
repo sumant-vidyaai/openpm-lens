@@ -1,8 +1,8 @@
 {
   "name": "@spashta/web",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "The browser app. Runs entirely on the user's device.",
-  "license": "Apache-2.0",
+  "license": "UNLICENSED",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@spashta/core": "1.3.4",
+    "@spashta/core": "1.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "read-excel-file": "^9.3.12",

@@ -8,7 +8,7 @@ export function AboutPage() {
     { icon: ICONS.lock, t: 'Nothing is uploaded', p: 'Your file is read in your browser tab. There is no server, no account and no copy kept anywhere else.' },
     { icon: ICONS.eye, t: 'Nothing is guessed', p: 'Missing values are left out and listed. A blank is never turned into zero.' },
     { icon: ICONS.scale, t: 'Judgement stays yours', p: 'Weights, scores, discount rates and the limits for green, amber and red are entered by you. They are never filled in for you.' },
-    { icon: ICONS.code, t: 'The working is shown', p: 'Every number comes with its formula, and the code is open source for anyone to check.' },
+    { icon: ICONS.code, t: 'The working is shown', p: 'Every number comes with its formula, so you can check it and defend it in the meeting.' },
   ];
   return (
     <>
@@ -17,7 +17,7 @@ export function AboutPage() {
         <div className="s-wrap s-prose">
           <h2 id="why-h" className="s-h2">Why it exists</h2>
           <p>Status reports are often built from whatever the tool shows, with hidden assumptions and numbers nobody can reproduce. Spashta takes a plain export and applies well-known, published project-management formulas, then shows the working so you can defend every figure.</p>
-          <p>It is made by Vidyaai as a free, open-source learning and knowledge-sharing tool for project managers, PMOs and portfolio leads.</p>
+          <p>It is made by Vidyaai as a learning and knowledge-sharing tool for project managers, PMOs and portfolio leads.</p>
         </div>
       </section>
       <section className="s-band s-tint" aria-labelledby="prom-h">
@@ -39,8 +39,7 @@ export function AboutPage() {
             <li>Prioritising projects with the same weighted scoring</li>
             <li>Ready-made connections for common tools</li>
           </ul>
-          <p className="about-mark"><Mark size={40} /><span>Spashta by Vidyaai. Open source under Apache-2.0.</span></p>
-          <p><a className="s-btn s-btn-accent" href="https://github.com/sumant-vidyaai/spashta">View the source code</a></p>
+          <p className="about-mark"><Mark size={40} /><span>Spashta by Vidyaai. © 2026 Vidyaai. All rights reserved.</span></p>
         </div>
       </section>
       <CtaBand />

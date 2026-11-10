@@ -48,7 +48,7 @@ const FAQ: { q: string; a: string }[] = [
   { q: 'Do I have to use your template?', a: 'No. Any task export works and you map the columns once on the Import page. The template is there if you would rather keep everything in one file.' },
   { q: 'Who decides the green, amber and red limits?', a: 'You do. The limits shown are starting values, not a standard. Weights, scores, discount rate and similar judgement values are always entered by you and never filled in for you.' },
   { q: 'What happens when a value is missing?', a: 'It is left out and listed, never turned into zero. A project with too few tasks is reported as not enough data rather than guessed.' },
-  { q: 'Is it free?', a: 'Yes. Spashta is open source under the Apache-2.0 licence.' },
+  { q: 'Can I try it before paying?', a: 'Yes. Open the example project and click through every page without signing up. Some advanced features will be paid; the price and what is included will be shown here before anything is charged.' },
 ];
 
 export function Faq() {

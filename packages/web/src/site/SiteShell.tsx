@@ -34,7 +34,7 @@ export function SiteShell({ route, children }: { route: Route; children: ReactNo
         <div className="s-wrap s-footer-grid">
           <div className="s-footer-about">
             <p className="s-footer-logo"><Mark size={32} /><span>Spashta</span></p>
-            <p>Project status you can explain in one sentence. A free, open-source tool by Vidyaai that runs in your browser.</p>
+            <p>Project status you can explain in one sentence. Made by Vidyaai. It runs in your browser, so your project stays on your device.</p>
           </div>
           <nav aria-label="Footer pages"><h2>Explore</h2>
             <ul>{LINKS.map((l) => <li key={l.route}><a href={href(l.route)}>{l.label}</a></li>)}</ul>
@@ -49,12 +49,11 @@ export function SiteShell({ route, children }: { route: Route; children: ReactNo
           </nav>
           <nav aria-label="Project"><h2>Project</h2>
             <ul>
-              <li><a href="https://github.com/sumant-vidyaai/spashta">Source code</a></li>
               <li><a href={href('about')}>Privacy and promises</a></li>
             </ul>
           </nav>
         </div>
-        <div className="s-wrap s-footer-base"><p>Open source under Apache-2.0. Your project data stays on your device. Colour limits shown are starting values, not a standard.</p></div>
+        <div className="s-wrap s-footer-base"><p>© 2026 Vidyaai. All rights reserved. Your project data stays on your device. Colour limits shown are starting values, not a standard.</p></div>
       </footer>
     </div>
   );

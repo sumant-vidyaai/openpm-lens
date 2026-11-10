@@ -18,7 +18,7 @@ export function HomePage() {
               <a className="s-btn s-btn-sun" href={A('app', true)}>Try the example</a>
               <a className="s-btn s-btn-line" href={href('how')}>See how it works</a>
             </p>
-            <p className="s-micro">Free and open source. Nothing is uploaded.</p>
+            <p className="s-micro">Nothing is uploaded. Try the example, no sign-up.</p>
           </div>
           <div className="s-hero-art" aria-hidden="false">
             <span className="orb orb-red" aria-hidden="true" /><span className="orb orb-amber" aria-hidden="true" /><span className="orb orb-green" aria-hidden="true" />
@@ -127,7 +127,7 @@ export function HomePage() {
             <p className="s-sub">Spashta runs entirely in your browser. There is no upload, no account and no server holding your plan, so it is safe to use with a confidential project.</p>
             <ul className="ticks">
               <li>Works offline once loaded</li>
-              <li>Open source, so anyone can check what it does</li>
+              <li>Every number comes with its formula</li>
               <li>Missing values are listed, never guessed</li>
             </ul>
           </div>

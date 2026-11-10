@@ -212,7 +212,7 @@ export function App({ exampleSignal = 0, goto }: { exampleSignal?: number; goto?
         <div className="footer-in">
           <div className="footer-about">
             <p className="footer-brand"><strong>Spashta</strong> by Vidyaai</p>
-            <p>Open source, Apache-2.0. Your data stays on this device and is never uploaded. Colour limits shown are starting values, not a standard.</p>
+            <p>© 2026 Vidyaai. All rights reserved. Your data stays on this device and is never uploaded. Colour limits shown are starting values, not a standard.</p>
           </div>
           <nav aria-label="Product"><h2 className="footer-h">Product</h2>
             <ul className="footer-links">
@@ -229,7 +229,6 @@ export function App({ exampleSignal = 0, goto }: { exampleSignal?: number; goto?
             </ul></nav>
           <nav aria-label="Project"><h2 className="footer-h">Project</h2>
             <ul className="footer-links">
-              <li><a href="https://github.com/sumant-vidyaai/spashta">Source code</a></li>
             </ul></nav>
         </div>
       </footer>

@@ -11,7 +11,7 @@ export function ResourcesPage() {
     { icon: ICONS.book, t: 'Learn and practise', p: 'Plain-language terms, a short glossary for each stage, and practice questions with a four-step case study.', links: [{ l: 'Open Learn', h: '#/app/learn' }] },
     { icon: ICONS.scale, t: 'Metric library', p: 'The metrics Spashta can calculate, each with its formula and what it means.', links: [{ l: 'Open the library', h: '#/app/library' }] },
     { icon: ICONS.eye, t: 'Tool coverage', p: 'What Spashta covers across the project lifecycle and what it does not, so you know where it fits next to your other tools.', links: [{ l: 'See coverage', h: '#/app/coverage' }] },
-    { icon: ICONS.code, t: 'Source code', p: 'Spashta is open source under Apache-2.0. Read the code, check the formulas or suggest a change.', links: [{ l: 'View on GitHub', h: 'https://github.com/sumant-vidyaai/spashta' }] },
+    { icon: ICONS.lock, t: 'Privacy and promises', p: 'What Spashta never does with your data, and how every number is worked out.', links: [{ l: 'Read the promises', h: '#/about' }] },
   ];
   return (
     <>

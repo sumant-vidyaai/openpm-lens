@@ -1,13 +1,13 @@
 {
   "name": "@spashta/registry",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Metric recipe cards (YAML) with a loader and validator.",
-  "license": "Apache-2.0",
+  "license": "UNLICENSED",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@spashta/core": "1.3.4"
+    "@spashta/core": "1.3.5"
   }
 }
