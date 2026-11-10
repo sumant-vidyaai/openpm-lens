@@ -53,6 +53,7 @@ Each release is built the same way: confirm formulas from independent sources, b
 | C | v1.4.0 | **BUILT.** **Portfolio part 1:** Phase column and stage-gate view; reporting discipline (who has not updated); portfolio data-quality view | Claude |
 | D | v1.4.1 | **BUILT.** **Portfolio part 2:** prioritisation scoring set by the PMO (reuses weighted scoring); demand vs capacity across projects; risk heat map across projects | Claude |
 | F | v1.6.0 | **BUILT (partly).** **Tools and connections:** Workfront report columns (Task, Ref No., Start Date, Due Date) and status rule when no % complete; Asana CSV adapter (documented columns, no effort data); email lists split on commas. **Waiting on user:** real Smartsheet task export; Workfront Actual Hours unit check | Claude |
+| F4 | v1.6.3 | **BUILT.** Workfront Actual Hours confirmed as hours by the owner; misleading warning replaced | Claude |
 | F3 | v1.6.2 | **BUILT.** **Large Excel files:** a workbook with a sheet over about 500 KB used to hang with no message (the reader's helper is blocked by the security policy); it now loads, with a 30-second limit and a clear message | Claude |
 | F2 | v1.6.1 | **BUILT.** **Project-list import:** load any CSV or Excel list of projects, match columns (suggested, checked by the user), fill the phase and update views on the Portfolio tab | Claude |
 | E | v1.5.0 | **BUILT.** **Finish earlier batches:** weights-sensitivity check for scoring; go / no-go checklist; load an archive back into the app; RFQ type | Claude |

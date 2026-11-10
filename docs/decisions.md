@@ -350,3 +350,9 @@ Monetization (paid features) and the contribution link wait until Spashta has a 
 - Fix without loosening the policy: the workbook is unpacked and repacked uncompressed in the page before reading (added the `fflate` library, already present as a dependency of the reader), plus a 30-second limit with a plain message that suggests saving as CSV.
 - Checked on the real Workfront report (all 525 tasks now counted) and on the 3.5 MB Smartsheet workbook (sheet picker appears). Real files are not stored in the repo.
 - The Portfolio section 5 intro now mentions both the template sheet and the loaded project list.
+
+## v1.6.3 – Workfront Actual Hours confirmed as hours (10 November 2026)
+
+- The owner checked one task in Workfront (planned 8 hours, actual 6 hours, variance 2). The real report showed Actual "6 Hours" but Hours Variance 7.9. So Actual Hours is in hours and the report's own Hours Variance column is the wrong one (it equals Planned minus Actual divided by 60).
+- Spashta does not use that column. The warning that Actual Hours may hold minutes is replaced by a note about the Variance column. Checked on one task only; users are still told to check a few values.
+- Result for the owner's report: 9,423 hours spent against 2,862 budgeted (CPI about 0.3) is the data as reported, not a unit error.
