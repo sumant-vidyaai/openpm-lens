@@ -376,3 +376,5 @@ footer.site-footer { max-width: none; padding: 0; margin: 2rem 0 0; }
 @media (max-width: 30rem) { .journey { grid-template-columns: minmax(0, 1fr); } }
 .faq-list summary { color: var(--fg); }
 .feature-visual progress { accent-color: var(--accent); height: .9rem; }
+.scroll + .scroll { margin-top: 1rem; }
+section h4 { margin: 1.75rem 0 .5rem; }

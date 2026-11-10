@@ -1,3 +1,4 @@
+import { updateDiscipline } from './control';
 import { summariseBenefits } from './close';
 import { businessCase, gridQuadrant, QUADRANT_LABEL, scoreOptions } from './initiate';
 import { analyseNetwork } from './network';
@@ -35,6 +36,7 @@ export function practiceQuestions(): PracticeQuestion[] {
   const ben = summariseBenefits([{ id: 'b', name: 'b', owner: '', measure: 'k', planned: 404000, realised: 370000, due: null }]);
   const stack = reserveStack(10000, 600, 500);
   const quad = gridQuadrant(5, 1, 4);
+  const upd = updateDiscipline([{ project: 'P', phase: '', manager: '', lastUpdated: '2026-03-16', nextGate: null }], '2026-03-31', 14).rows[0]!;
   return [
     q('cpi', 'Cost', 'Earned value is 80 hours and 100 hours have been spent. What is the cost performance index (CPI)?', n(cpi), [n(100 / 80), n(costVariance(80, 100)), n(0.2)], 1, `CPI = EV / AC = 80 / 100 = ${n(cpi)}. Below 1 means less work done than the hours spent would suggest. Dividing the other way round (${n(100 / 80)}) is a common slip.`),
     q('spi', 'Schedule', 'Earned value is 90 and planned value is 120. What is the schedule performance index (SPI)?', n(spi), [n(120 / 90), n(90 - 120), n(0.25)], 2, `SPI = EV / PV = 90 / 120 = ${n(spi)}. Below 1 means behind the plan. The difference, -30, is the schedule variance (SV), not the index.`),
@@ -48,6 +50,7 @@ export function practiceQuestions(): PracticeQuestion[] {
     q('grid', 'Initiate', 'A stakeholder has high power but low interest in the project. Where do they go on the power / interest grid?', QUADRANT_LABEL[quad as keyof typeof QUADRANT_LABEL], [QUADRANT_LABEL.manage_closely, QUADRANT_LABEL.keep_informed, QUADRANT_LABEL.monitor], 1, 'High power and low interest means keep satisfied: they can affect the project, so keep them updated and ask for their views, without overloading them.'),
     q('reserve', 'Planning', 'A work estimate is 10,000, contingency reserve 600 and management reserve 500. What is the project budget?', n(stack.budget, 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), ['10,600', '10,500', '11,600'], 2, `Cost baseline = estimate + contingency = ${n(stack.costBaseline, 0)}; project budget = cost baseline + management reserve = ${n(stack.budget, 0)}. The 10,600 answer is the cost baseline, which stops before the management reserve.`),
     q('risk', 'Risks', 'A risk has probability 4 and impact 3 (each on a 1 to 5 scale). What is its score?', String(4 * 3), ['7', '43', '5'], 1, 'Risk score = probability x impact = 12. The score is an ordering aid; scores are never added together.'),
+    q('update', 'Portfolio', 'The status date is 31 March and a project was last updated on 16 March. The PMO says an update is overdue when it is more than 14 days old. What is the position?', `${upd.daysSince} days old: ${upd.state === 'overdue' ? 'overdue' : 'on time'}`, ['14 days old: on time', '15 days old: on time', '16 days old: overdue'], 1, `Days since update = 31 March minus 16 March = ${upd.daysSince}. That is more than 14, so it is overdue; exactly 14 days would still be on time.`),
     q('blank', 'Data', 'The Actual (h) cell for a task is blank. How should a metric treat it?', 'As not known: the task is left out of the calculation and listed', ['As 0 hours spent', 'As equal to the estimate', 'As the average of the other tasks'], 0, 'Blank means not known, which is different from 0. Counting it as 0 would make the project look cheaper than it is, so the app leaves the task out and says so.'),
   ];
 }

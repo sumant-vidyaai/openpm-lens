@@ -43,3 +43,4 @@ export * from './close';
 export * from './zip';
 export * from './archive';
 export * from './practice';
+export * from './control';

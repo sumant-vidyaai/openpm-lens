@@ -33,7 +33,10 @@ export function Root() {
   const [route, setRoute] = useState<Route>(() => parse(window.location.hash));
   const [appOpened, setAppOpened] = useState(route === 'app');
   const [exampleSignal, setExampleSignal] = useState(0);
-  const [goto, setGoto] = useState({ tab: '', n: 0 });
+  const [goto, setGoto] = useState(() => {
+    const t = parse(window.location.hash) === 'app' ? (window.location.hash.split('?')[0] ?? '').split('/')[2] : undefined;
+    return { tab: t ?? '', n: t ? 1 : 0 };
+  });
   const first = useRef(true);
   useEffect(() => {
     const on = () => {

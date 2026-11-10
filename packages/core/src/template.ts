@@ -6,6 +6,7 @@ import { suggestStatusCategory } from './importTasks';
 import { parseBenefits, parseChecklist, parseLessons, type BenefitParse, type ChecklistParse, type LessonParse } from './close';
 import { parseCaseSheet, parseGoRecord, parseScoring, parseSolicitations, parseStakeholders, type CaseParse, type GoParse, type ScoringParse, type SolicitationParse, type StakeholderParse } from './initiate';
 import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
+import { parsePhaseOrder, parseRegister, type RegisterParse } from './control';
 
 /**
  * The Spashta fill-in template. Its column names are fixed so the app can recognise a
@@ -49,6 +50,8 @@ export const SETTING_LABELS = {
   management: 'Management reserve (h)',
   discountRate: 'Discount rate (%)',
   highFrom: 'Stakeholder high from',
+  phaseOrder: 'Phase order',
+  updateDue: 'Update due every (days)',
 } as const;
 
 export const RULE_CHOICES: { label: string; rule: PercentRule }[] = [
@@ -86,6 +89,10 @@ export interface TemplateSettings {
   discountRate: number | null;
   /** Score (1 to 5) at or above which a stakeholder's power or interest counts as "high" on the grid. Entered by the user, never defaulted. */
   highFrom: number | null;
+  /** Phase names in order, typed by the user (for example "Idea, Plan, Build"). Empty when blank. */
+  phaseOrder: string[];
+  /** An update is late when it is more than this many days old at the status date. Entered by the user, never defaulted. */
+  updateDue: number | null;
   /** Things in the Settings sheet that were not understood (shown to the user, never guessed). */
   problems: string[];
 }
@@ -110,7 +117,7 @@ const num = (c: GridCell): number | null => {
 export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
   const s: TemplateSettings = {
     statusDate: null, hoursPerDay: null, dayCount: null, capacity: null, currency: null,
-    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, contingency: null, management: null, discountRate: null, highFrom: null, problems: [],
+    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, contingency: null, management: null, discountRate: null, highFrom: null, phaseOrder: [], updateDue: null, problems: [],
   };
   const byLabel = new Map<string, GridCell>();
   for (const r of grid) {
@@ -198,6 +205,14 @@ export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
     const n = num(hf);
     if (n === null || !Number.isInteger(n) || n < 2 || n > 5) s.problems.push(`Settings: "Stakeholder high from" should be a whole number from 2 to 5. It was ignored.`);
     else s.highFrom = n;
+  }
+  const po = txt(get(SETTING_LABELS.phaseOrder));
+  if (po !== '') s.phaseOrder = parsePhaseOrder(po);
+  const ud = get(SETTING_LABELS.updateDue);
+  if (txt(ud) !== '') {
+    const n = num(ud);
+    if (n === null || !Number.isInteger(n) || n < 1 || n > 365) s.problems.push(`Settings: "Update due every (days)" should be a whole number from 1 to 365. It was ignored.`);
+    else s.updateDue = n;
   }
   const riskLimit = (label: string): number | null => {
     const c = get(label);
@@ -324,6 +339,8 @@ export interface TemplateParts {
   benefits: BenefitParse;
   checklist: ChecklistParse;
   lessons: LessonParse;
+  /** The optional Projects register sheet (phase, manager, last update, next gate). */
+  register: RegisterParse;
   /** True when a Settings sheet was present at all. */
   hasSettings: boolean;
 }
@@ -335,6 +352,8 @@ export interface LifecycleSheets {
   risks: RiskParse; issues: IssueParse; changes: ChangeParse;
   scoring: ScoringParse; businessCase: CaseParse; stakeholders: StakeholderParse; solicitations: SolicitationParse; goRecord: GoParse;
   benefits: BenefitParse; checklist: ChecklistParse; lessons: LessonParse;
+  /** The optional "Projects" register sheet (phase, manager, last update, next gate). */
+  register: RegisterParse;
   /** True when at least one of the Initiate or Close sheets is in the file. */
   hasInitiateOrClose: boolean;
 }
@@ -351,6 +370,7 @@ export function extractLifecycleSheets(sheets: { name: string; data: GridCell[][
     scoring: parseScoring(grid('scoring')), businessCase: parseCaseSheet(grid('business case')), stakeholders: parseStakeholders(grid('stakeholders')),
     solicitations: parseSolicitations(grid('rfi-rfp')), goRecord: parseGoRecord(grid('go-no-go')),
     benefits: parseBenefits(grid('benefits')), checklist: parseChecklist(grid('checklist')), lessons: parseLessons(grid('lessons')),
+    register: parseRegister(grid('projects')),
     hasInitiateOrClose: false,
   };
   r.hasInitiateOrClose = [r.scoring, r.businessCase, r.stakeholders, r.solicitations, r.goRecord, r.benefits, r.checklist, r.lessons].some((x) => x.present);
@@ -375,7 +395,7 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
     leave: leaveSheet ? parseTemplateLeave(leaveSheet.data) : { entries: [], problems: [] },
     risks: life.risks, issues: life.issues, changes: life.changes,
     scoring: life.scoring, businessCase: life.businessCase, stakeholders: life.stakeholders, solicitations: life.solicitations, goRecord: life.goRecord,
-    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons,
+    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons, register: life.register,
   };
 }
 

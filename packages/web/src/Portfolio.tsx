@@ -2,10 +2,11 @@ import { useMemo, useRef, useState } from 'react';
 import {
   ALL_PROJECTS, analyseTable, isTemplateTable, parseHolidayText, splitTemplateProjects, DEFAULT_ANALYSE, DEFAULT_THRESHOLDS, HEALTH_LABEL, parseCsv, rollup, roundHalfUp,
   toCsv, validateThresholds, type AnalyseSettings, type CsvCell, type CsvResult, type DateOrder, type DayCount,
-  type Health, type PercentRule, type PortfolioProject, type RollupBy, type Unit,
+  type Health, type PercentRule, type PortfolioProject, type RegisterRow, type RollupBy, type Unit,
 } from '@spashta/core';
 import { readTable } from './readFile';
-import { SAMPLE_PORTFOLIO } from './sample';
+import { SAMPLE_PHASE_ORDER, SAMPLE_PORTFOLIO, SAMPLE_REGISTER, SAMPLE_UPDATE_DUE } from './sample';
+import { PortfolioControl } from './PortfolioControl';
 
 interface Entry {
   id: string;
@@ -42,6 +43,9 @@ export function PortfolioScreen() {
   const [minTasks, setMinTasks] = useState(String(DEFAULT_THRESHOLDS.minTasks));
   const [ruleOverride, setRuleOverride] = useState<PercentRule | null>(null);
   const [inProgressPercent, setInProgressPercent] = useState(50);
+  const [register, setRegister] = useState<RegisterRow[]>([]);
+  const [phaseOrderText, setPhaseOrderText] = useState('');
+  const [dueText, setDueText] = useState('');
   const nextId = useRef(1);
 
   const parsed = { greenMin: Number(green), amberMin: Number(amber), minTasks: Number(minTasks) };
@@ -79,6 +83,9 @@ export function PortfolioScreen() {
             if (t.inProgressPercent !== null) setInProgressPercent(t.inProgressPercent);
             if (t.greenMin !== null && t.amberMin !== null) { setGreen(String(t.greenMin)); setAmber(String(t.amberMin)); }
             problems.push(...t.problems);
+            if (t.phaseOrder.length > 0) setPhaseOrderText(t.phaseOrder.join(', '));
+            if (t.updateDue !== null) setDueText(String(t.updateDue));
+            if (template.register.present) { setRegister(template.register.rows); problems.push(...template.register.problems); }
           }
         } else {
           added.push({ name: f.name.replace(/\.[^.]+$/, ''), programme: '', team: '', fileName: f.name, table, unit: '', note });
@@ -96,6 +103,9 @@ export function PortfolioScreen() {
       name: s.name, programme: s.programme, team: s.team, fileName: `${s.name}.csv (made-up example)`, table: parseCsv(s.csv), unit: '' as const, note: null,
     })));
     setStatusDate('2026-01-21');
+    setRegister(SAMPLE_REGISTER);
+    setPhaseOrderText(SAMPLE_PHASE_ORDER);
+    setDueText(SAMPLE_UPDATE_DUE);
   }
   const edit = (id: string, patch: Partial<Entry>) => setEntries((cur) => cur.map((e) => (e.id === id ? { ...e, ...patch } : e)));
 
@@ -162,7 +172,7 @@ export function PortfolioScreen() {
           }} />
         </label>
         <button type="button" onClick={addSamples}>Try three made-up projects</button>
-        {entries.length > 0 && <button type="button" onClick={() => setEntries([])}>Clear all</button>}
+        {entries.length > 0 && <button type="button" onClick={() => { setEntries([]); setRegister([]); setPhaseOrderText(''); setDueText(''); }}>Clear all</button>}
       </div>
       {error && <p className="warn" role="alert">{error}</p>}
 
@@ -300,6 +310,8 @@ export function PortfolioScreen() {
             <summary>Assumptions in force</summary>
             <ul>{assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
           </details>
+          <PortfolioControl projects={projects} register={register} statusDate={statusDate} thresholds={thresholds}
+            phaseOrderText={phaseOrderText} dueText={dueText} onPhaseOrder={setPhaseOrderText} onDue={setDueText} />
         </>
       )}
     </section>

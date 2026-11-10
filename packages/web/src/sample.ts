@@ -58,3 +58,12 @@ export const SAMPLE_FLOW = [
   'L,Typo,Done,2026-01-05,2026-01-03',
   'M,Next release,In Progress,2026-02-02,',
 ].join('\n');
+
+// Made-up project register for the three sample projects (names match). Status date for the sample is 2026-01-21.
+export const SAMPLE_REGISTER: { project: string; phase: string; manager: string; lastUpdated: string | null; nextGate: string | null }[] = [
+  { project: 'Website redesign', phase: 'Build', manager: 'Meera (made up)', lastUpdated: '2026-01-19', nextGate: '2026-02-06' },
+  { project: 'Mobile app', phase: 'Plan', manager: 'Dev (made up)', lastUpdated: '2026-01-02', nextGate: '2026-01-16' },
+  { project: 'Data platform', phase: 'Idea', manager: 'Meera (made up)', lastUpdated: null, nextGate: '2026-03-01' },
+];
+export const SAMPLE_PHASE_ORDER = 'Idea, Plan, Build, Test, Launch';
+export const SAMPLE_UPDATE_DUE = '14';
