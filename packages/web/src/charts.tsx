@@ -210,7 +210,7 @@ export function IndexRuler({ name, value, greenMin, amberMin, band }: { name: st
   const label = value === null ? `${name} is not available.` : `${name} is ${+value.toFixed(2)}, ${band}.`;
   const f = (n: number) => String(+n.toFixed(2));
   return (
-    <svg className="viz-svg ruler" viewBox={`0 0 ${w} 96`} role="img" aria-label={label}>
+    <svg className="viz-svg ruler" viewBox={`0 -12 ${w} 108`} role="img" aria-label={label}>
       <title>{label}</title>
       <rect className="zone zone-bad" x={x(RULER_MIN)} y={barY} width={x(amberMin) - x(RULER_MIN)} height={barH} />
       <rect className="zone zone-warn" x={x(amberMin)} y={barY} width={x(greenMin) - x(amberMin)} height={barH} />

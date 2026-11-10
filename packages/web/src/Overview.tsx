@@ -21,23 +21,13 @@ const NEXT: Goto[] = [
 export function OverviewScreen({ shared, onGo, onTryExample }: { shared: SharedData | null; onGo: (id: string) => void; onTryExample: () => void }) {
   if (!shared) {
     return (
-      <section aria-labelledby="ov-h" className="hero">
-        <h2 id="ov-h">See where your project stands</h2>
-        <p className="lead">Load a task export from the tool you already use. You get cost and schedule health, forecasts, flow, resources and quality, and every number comes with its working.</p>
-        <ol className="firstrun">
-          <li><strong>See it first.</strong> One click loads a made-up project with dates, risks and issues, so every tab shows something. <button type="button" className="primary" onClick={onTryExample}>Try the example</button></li>
-          <li><strong>Use your own data.</strong> Load an export from your tool, or fill in the template. <button type="button" onClick={() => onGo('import')}>Load a file</button></li>
-          <li><strong>Share it.</strong> Open Status report for a one-page summary you can save as PDF. <button type="button" onClick={() => onGo('learn')}>How the numbers work</button></li>
-        </ol>
+      <section aria-labelledby="ov-h" className="app-empty">
+        <h2 id="ov-h">Load a project to see where it stands</h2>
+        <p className="lead">Load a task export from the tool you already use, or try the made-up example. Nothing is uploaded.</p>
         <p className="row">
-          <button type="button" onClick={() => onGo('template')}>Get the fill-in template</button>
+          <button type="button" className="primary" onClick={onTryExample}>Try the example</button>
+          <button type="button" onClick={() => onGo('import')}>Load a file</button>
         </p>
-        <ul className="plain">
-          <li><strong>Health at a glance.</strong> One status from cost and schedule, with the reason in words.</li>
-          <li><strong>Nothing is guessed.</strong> Missing values are left out and listed, never turned into zero.</li>
-          <li><strong>Private.</strong> Your file is read in this browser tab and never uploaded. It works offline.</li>
-        </ul>
-        <p className="note">Works with CSV, Excel and Microsoft Project XML exports. Click "Try the example" above to see it with sample data first.</p>
       </section>
     );
   }

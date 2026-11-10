@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { metricFunctions, roundHalfUp } from '@spashta/core';
 import { cards } from './cards';
 import { ImportScreen } from './Import';
@@ -97,7 +97,7 @@ function applyAccent(a: Accent) {
 }
 
 
-export function App() {
+export function App({ exampleSignal = 0, goto }: { exampleSignal?: number; goto?: { tab: string; n: number } }) {
   const [tab, setTab] = useState<TabId>('overview');
   const [shared, setShared] = useState<SharedData | null>(null);
   const [life, setLife] = useState<Lifecycle | null>(null);
@@ -110,56 +110,70 @@ export function App() {
     return a === 'blue' || a === 'violet' || a === 'orange' ? a : 'teal';
   });
   const [exampleTick, setExampleTick] = useState(0);
-  const goImport = () => setTab('import');
+  const [lastInGroup, setLastInGroup] = useState<Record<string, TabId>>({});
+  const goImport = () => choose('import');
   const actions = { tryExample: () => { setExampleTick((n) => n + 1); setTab('import'); } };
+  useEffect(() => { if (exampleSignal > 0) actions.tryExample(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exampleSignal]);
+  useEffect(() => { const t = goto && GROUPS.flatMap((g) => g.tabs).find((x) => x.id === goto.tab); if (t) choose(t.id); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goto?.n]);
   // Every tab stays mounted (just hidden) so what you loaded and typed is kept when you switch.
   const panel = (id: TabId, node: React.ReactNode) => <div hidden={tab !== id}>{node}</div>;
+  const group = GROUPS.find((g) => g.tabs.some((t) => t.id === tab)) ?? GROUPS[0]!;
+  const openGroup = (title: string) => {
+    const g = GROUPS.find((x) => x.title === title);
+    if (g) setTab(lastInGroup[title] ?? g.tabs[0]!.id);
+  };
+  const choose = (id: TabId) => { setTab(id); setLastInGroup((m) => ({ ...m, [GROUPS.find((g) => g.tabs.some((t) => t.id === id))?.title ?? '']: id })); };
   return (
     <AppActions.Provider value={actions}>
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <div className="shell">
-        <aside className="side noprint">
-          <h1 className="brand"><span aria-hidden="true" className="brand-mark" />Spashta</h1>
-          <nav className="tabs side-nav" aria-label="Sections">
+      <header className="topbar noprint">
+        <div className="topbar-in">
+          <h1 className="brand"><a href="#/" aria-label="Spashta by Vidyaai, back to the website"><span aria-hidden="true" className="brand-mark" />Spashta<span className="brand-by"> by Vidyaai</span></a></h1>
+          <nav className="groups" aria-label="Sections">
             {GROUPS.map((g) => (
-              <div key={g.title} className="side-group">
-                <p className="side-title">{g.title}</p>
-                {g.tabs.map((t) => (
-                  <button key={t.id} type="button" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
-                ))}
-              </div>
+              <button key={g.title} type="button" aria-current={g.title === group.title ? 'true' : undefined} onClick={() => openGroup(g.title)}>{g.title}</button>
             ))}
           </nav>
-          <label className="theme">
-            Theme{' '}
-            <select
-              value={theme}
-              onChange={(e) => {
-                const t = e.target.value as Theme;
-                setTheme(t);
-                applyTheme(t);
-              }}
-            >
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-          <label className="theme">
-            Accent colour{' '}
-            <select value={accent} onChange={(e) => { const a = e.target.value as Accent; setAccent(a); applyAccent(a); }}>
-              <option value="teal">Teal</option>
-              <option value="blue">Blue</option>
-              <option value="violet">Violet</option>
-              <option value="orange">Orange</option>
-            </select>
-          </label>
-        </aside>
-        <div className="content">
+          <details className="appearance">
+            <summary>Appearance</summary>
+            <div className="appearance-panel">
+              <label>
+                Theme{' '}
+                <select value={theme} onChange={(e) => { const t = e.target.value as Theme; setTheme(t); applyTheme(t); }}>
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
+              <label>
+                Accent colour{' '}
+                <select value={accent} onChange={(e) => { const a = e.target.value as Accent; setAccent(a); applyAccent(a); }}>
+                  <option value="teal">Teal</option>
+                  <option value="blue">Blue</option>
+                  <option value="violet">Violet</option>
+                  <option value="orange">Orange</option>
+                </select>
+              </label>
+            </div>
+          </details>
+        </div>
+        {group.tabs.length > 1 && (
+          <nav className="pages" aria-label={`${group.title} pages`}>
+            <div className="pages-in">
+              {group.tabs.map((t) => (
+                <button key={t.id} type="button" aria-current={tab === t.id ? 'page' : undefined} onClick={() => choose(t.id)}>{t.label}</button>
+              ))}
+            </div>
+          </nav>
+        )}
+      </header>
+      <div className="content">
       <StatusStrip shared={shared} />
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <h1 className="printonly">Spashta</h1>
         {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} onTryExample={() => setExampleTick((n) => n + 1)} />)}
         {panel('import', <ImportScreen onShare={setShared} onLifecycle={setLife} exampleTick={exampleTick} />)}
@@ -194,10 +208,31 @@ export function App() {
           </>
         ))}
       </main>
-      <footer>
-        <p>Open source, Apache-2.0. Your data stays on this device. Thresholds shown are starting values, not a standard.</p>
-      </footer>
+      <footer className="site-footer noprint">
+        <div className="footer-in">
+          <div className="footer-about">
+            <p className="footer-brand"><strong>Spashta</strong> by Vidyaai</p>
+            <p>Open source, Apache-2.0. Your data stays on this device and is never uploaded. Colour limits shown are starting values, not a standard.</p>
+          </div>
+          <nav aria-label="Product"><h2 className="footer-h">Product</h2>
+            <ul className="footer-links">
+              <li><a href="#/">Back to the website</a></li>
+              <li><button type="button" className="link" onClick={() => choose('overview')}>Overview</button></li>
+              <li><button type="button" className="link" onClick={() => choose('import')}>Import a file</button></li>
+              <li><button type="button" className="link" onClick={() => choose('template')}>Fill-in template</button></li>
+            </ul></nav>
+          <nav aria-label="Learn"><h2 className="footer-h">Learn</h2>
+            <ul className="footer-links">
+              <li><button type="button" className="link" onClick={() => choose('learn')}>Learn and practice</button></li>
+              <li><button type="button" className="link" onClick={() => choose('library')}>Metric library</button></li>
+              <li><button type="button" className="link" onClick={() => choose('coverage')}>Tool coverage</button></li>
+            </ul></nav>
+          <nav aria-label="Project"><h2 className="footer-h">Project</h2>
+            <ul className="footer-links">
+              <li><a href="https://github.com/sumant-vidyaai/spashta">Source code</a></li>
+            </ul></nav>
         </div>
+      </footer>
       </div>
     </AppActions.Provider>
   );
