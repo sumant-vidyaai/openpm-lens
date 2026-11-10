@@ -336,3 +336,10 @@ Monetization (paid features) and the contribution link wait until Spashta has a 
 - People lists with email addresses now split on commas as well as ";". Without "@", only ";" splits, so "Smith, John" stays one name.
 - The shared Smartsheet file was a project register, not a task export. No Smartsheet adapter until a real task or Gantt sheet is supplied.
 - Real files shared by the user were not copied into the repo; tests use made-up rows.
+
+## v1.6.1 – Project-list import (10 November 2026)
+
+- A plain list of projects (register kept in Excel, Smartsheet or another tool) can be loaded on the Portfolio tab. The person matches the columns; suggestions come from names seen in real lists ("Project Name", "Project Lead", "Project status").
+- "Deadline" is not suggested as a gate date: a client deadline is not a stage gate. "Project status" is suggested as the phase; the person can change it.
+- The list gives names, phase, manager and dates only. It gives no task numbers or health, and the phase and update views still appear only once at least one project file is loaded.
+- Repeats, blank rows and unclear dates are reported, not guessed. Tests use made-up rows.
