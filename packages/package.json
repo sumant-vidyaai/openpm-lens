@@ -1,13 +1,13 @@
 {
-  "name": "@spashta/registry",
+  "name": "@spashta/core",
   "version": "1.4.0",
-  "description": "Metric recipe cards (YAML) with a loader and validator.",
+  "description": "Pure formula library, canonical data model and adapter interface for spashta.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@spashta/core": "1.4.0"
+    "fast-xml-parser": "^5.11.2"
   }
 }
