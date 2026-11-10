@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   FORECAST_DEFAULTS, chanceByDate, forecastMilestones, historyVerdict, roundHalfUp, simulateFinish, suggestFlowColumns, summarise, weeklyThroughput,
   type ForecastSummary, type MilestoneForecast, type WeeklyHistory,
-} from '@openpm-lens/core';
+} from '@spashta/core';
 import { ThroughputChart } from './charts';
 import { ColumnSelect, NeedsImport, actualDatesOf } from './common';
 import type { SharedData } from './shared';

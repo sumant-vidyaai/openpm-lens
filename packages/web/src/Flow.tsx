@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   analyseFlow, buildFlowItems, MIN_FLOW_SAMPLE, parseCsv, roundHalfUp, suggestFlowColumns, toCsv,
   type CsvCell, type CsvResult, type DateOrder, type FlowColumns,
-} from '@openpm-lens/core';
+} from '@spashta/core';
 import { readTable } from './readFile';
 import { SAMPLE_FLOW } from './sample';
 import { StepsPanel } from './Explain';
@@ -71,7 +71,7 @@ export function FlowScreen() {
     flow.caveats.forEach((c) => add('Caveat', 'Note', c));
     const url = URL.createObjectURL(new Blob(['﻿' + toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
-    a.href = url; a.download = `openpm-lens-flow-${statusDate}.csv`;
+    a.href = url; a.download = `spashta-flow-${statusDate}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

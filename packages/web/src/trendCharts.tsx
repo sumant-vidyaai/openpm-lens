@@ -1,4 +1,4 @@
-import { daysApart } from '@openpm-lens/core';
+import { daysApart } from '@spashta/core';
 import { ChartTable, Frame, H, L, niceMax, PH, PW, R, T, W } from './charts';
 
 /* Trend charts over snapshot status dates. Plain SVG; colours come from CSS classes. The horizontal position is proportional to the days between status dates. */

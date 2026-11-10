@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   addSnapshot, compareSnapshots, type CsvCell, cpiOf, daysSinceUpdate, roundHalfUp, seriesOf, snapshotId, snapshotLabels, SNAPSHOT_FORMAT, spiOf,
-  toggleBaseline, trendPoints, validateSnapshot, type Snapshot,
-} from '@openpm-lens/core';
+  lockBaseline, rebaseline, trendPoints, validateSnapshot, type Snapshot,
+} from '@spashta/core';
 import { computeRaid } from './Raid';
 import { StackedChart, TrendChart } from './trendCharts';
 import { NeedsImport, saveCsv } from './common';
 import type { SharedData } from './shared';
 
-const KEY = 'openpm-lens-snapshots-v1';
+const KEY = 'spashta-snapshots-v1';
+/** Where snapshots were kept before the rename. Read once if the new place is empty; never deleted. */
+const LEGACY_KEY = 'openpm-lens-snapshots-v1';
 const MAX_FILE = 2_000_000;
 
 function loadStored(): Snapshot[] {
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY);
     if (!raw) return [];
     const arr: unknown = JSON.parse(raw);
     if (!Array.isArray(arr)) return [];
@@ -86,6 +88,8 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
   const [pickB, setPickB] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
+  const [rebaseId, setRebaseId] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
 
   useEffect(() => { if (shared && !typed) setLabel(shared.fileName.replace(/\.[^.]+$/, '')); }, [shared, typed]);
 
@@ -115,6 +119,7 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
     if (label.trim() === '') { setMsg('Give the snapshot a label, for example the project name.'); return; }
     const s = buildSnapshot(shared, label);
     const r = addSnapshot(list, s);
+    if (r.blocked) { setMsg(`The snapshot "${s.label}" for ${s.statusDate} is the locked baseline, so it was not replaced. Change the baseline first (with a reason), or save under another status date.`); return; }
     commit(r.list);
     setPickLabel(s.label);
     setMsg(`${r.replaced ? 'Replaced' : 'Saved'} the snapshot "${s.label}" for status date ${s.statusDate}.`);
@@ -129,7 +134,12 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
       const items = Array.isArray(data) ? data : [data];
       for (const it of items) {
         const r = validateSnapshot(it);
-        if (r.snapshot) { next = addSnapshot(next, r.snapshot).list; added += 1; } else problems.push(`${f.name}: ${r.problem}`);
+        if (r.snapshot) {
+          const a = addSnapshot(next, r.snapshot);
+          if (a.blocked) { problems.push(`${f.name}: that status date is the locked baseline, so it was not replaced.`); continue; }
+          next = a.list; added += 1;
+          if (a.baselineKept) problems.push(`${f.name}: it was marked as a baseline, but this project already has one, so it was added as an ordinary snapshot.`);
+        } else problems.push(`${f.name}: ${r.problem}`);
       }
     }
     if (added > 0) commit(next);
@@ -140,7 +150,7 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
   /** Opens the browser's print window with the report; the person chooses "Save as PDF". The file name suggestion is set through the page title. */
   function printReport() {
     const oldTitle = document.title;
-    document.title = `openpm-lens report - ${active ?? 'snapshots'} - ${latest?.statusDate ?? ''}`.trim();
+    document.title = `Spashta report - ${active ?? 'snapshots'} - ${latest?.statusDate ?? ''}`.trim();
     const restore = () => { document.title = oldTitle; window.removeEventListener('afterprint', restore); };
     window.addEventListener('afterprint', restore);
     window.print();
@@ -177,9 +187,9 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
         )}
         <div className="snap-actions">
           <label className="btn">Add snapshot files <input type="file" accept=".json,application/json" multiple onChange={(e) => { void upload(e.target.files); e.target.value = ''; }} /></label>
-          {list.length > 0 && <button type="button" onClick={() => download('openpm-lens-snapshots.json', JSON.stringify(list, null, 2))}>Download all snapshots</button>}
+          {list.length > 0 && <button type="button" onClick={() => download('spashta-snapshots.json', JSON.stringify(list, null, 2))}>Download all snapshots</button>}
           {series.length >= 1 && <button type="button" onClick={printReport}>Download report (PDF, with charts)</button>}
-          {list.length > 0 && <button type="button" onClick={() => saveCsv('openpm-lens-snapshots.csv', snapshotRows(list))}>Download as spreadsheet (CSV, opens in Excel)</button>}
+          {list.length > 0 && <button type="button" onClick={() => saveCsv('spashta-snapshots.csv', snapshotRows(list))}>Download as spreadsheet (CSV, opens in Excel)</button>}
         </div>
         <p role="status" aria-live="polite">{msg}</p>
         <p className="note">The PDF button opens your browser's print window: choose "Save as PDF" as the printer. Charts and the comparison table are included.</p>
@@ -203,12 +213,29 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
                       <td>{s.statusDate}</td>
                       <td className="num">{cpiOf(s) === null ? '-' : roundHalfUp(cpiOf(s) as number, 2)}</td>
                       <td className="num">{spiOf(s) === null ? '-' : roundHalfUp(spiOf(s) as number, 2)}</td>
-                      <td><button type="button" aria-pressed={s.baseline} onClick={() => commit(toggleBaseline(list, id))}>{s.baseline ? '★ Baseline (remove)' : 'Make baseline'}</button></td>
                       <td>
-                        <button type="button" onClick={() => download(`openpm-lens-snapshot-${s.label.replace(/[^A-Za-z0-9]+/g, '-')}-${s.statusDate}.json`, JSON.stringify(s, null, 2))}>Download</button>{' '}
+                        {s.baseline ? (
+                          <>
+                            <strong>★ Baseline (locked)</strong>
+                            <br /><span className="note">Set {s.baselineSetAt ? s.baselineSetAt.slice(0, 10) : 'earlier'}{s.baselineReplaces ? `, replacing the baseline of ${s.baselineReplaces}` : ''}.{s.baselineNote ? ` Reason: ${s.baselineNote}` : ''}</span>
+                          </>
+                        ) : !list.some((x) => x.label === s.label && x.baseline) ? (
+                          <button type="button" onClick={() => { const r = lockBaseline(list, id, new Date().toISOString()); if (r.problem) setMsg(r.problem); else { commit(r.list); setMsg('Baseline set and locked. Changing it later needs a written reason.'); } }}>Make baseline</button>
+                        ) : rebaseId === id ? (
+                          <form onSubmit={(e) => { e.preventDefault(); const r = rebaseline(list, id, reason, new Date().toISOString()); if (r.problem) setMsg(r.problem); else { commit(r.list); setRebaseId(null); setReason(''); setMsg('Baseline changed. The reason was saved with it.'); } }}>
+                            <label>Why change the baseline?
+                              <input type="text" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} />
+                            </label>{' '}
+                            <button type="submit">Change baseline</button>{' '}
+                            <button type="button" onClick={() => { setRebaseId(null); setReason(''); }}>Cancel</button>
+                          </form>
+                        ) : <button type="button" onClick={() => { setRebaseId(id); setReason(''); }}>Change baseline to this…</button>}
+                      </td>
+                      <td>
+                        <button type="button" onClick={() => download(`spashta-snapshot-${s.label.replace(/[^A-Za-z0-9]+/g, '-')}-${s.statusDate}.json`, JSON.stringify(s, null, 2))}>Download</button>{' '}
                         {confirmDel === id ? (
                           <>Delete this one? <button type="button" onClick={() => { commit(list.filter((x) => snapshotId(x) !== id)); setConfirmDel(null); setMsg('Snapshot deleted.'); }}>Delete</button> <button type="button" onClick={() => setConfirmDel(null)}>Keep</button></>
-                        ) : <button type="button" onClick={() => setConfirmDel(id)}>Delete</button>}
+                        ) : s.baseline ? <span className="note">Locked: change the baseline first</span> : <button type="button" onClick={() => setConfirmDel(id)}>Delete</button>}
                       </td>
                     </tr>
                   );
@@ -221,7 +248,7 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
               <>Delete all {list.length} snapshots on this device? <button type="button" onClick={() => { commit([]); setConfirmAll(false); setMsg('All snapshots deleted.'); }}>Delete all</button> <button type="button" onClick={() => setConfirmAll(false)}>Keep them</button></>
             ) : <button type="button" onClick={() => setConfirmAll(true)}>Delete all snapshots</button>}
           </p>
-          <p className="note">The baseline is the snapshot you treat as the plan to compare against (usually the first one after approval). Each label has at most one.</p>
+          <p className="note">The baseline is the snapshot you treat as the plan to compare against (usually the first one after approval). Each label has at most one. Once set it is locked: it cannot be deleted or replaced, and moving it to another snapshot needs a written reason, which is saved with the new baseline.</p>
         </div>
       )}
 

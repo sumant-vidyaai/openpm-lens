@@ -1,4 +1,4 @@
-import { costContributors, fixFirst, roundHalfUp, scheduleContributors, type Contributors } from '@openpm-lens/core';
+import { costContributors, fixFirst, roundHalfUp, scheduleContributors, type Contributors } from '@spashta/core';
 import type { SharedData } from './shared';
 
 const h1 = (n: number) => `${roundHalfUp(n, 1)} h`;

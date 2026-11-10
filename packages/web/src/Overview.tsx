@@ -1,4 +1,4 @@
-import { assessHealth, DEFAULT_THRESHOLDS, HEALTH_LABEL, roundHalfUp, type Health } from '@openpm-lens/core';
+import { assessHealth, DEFAULT_THRESHOLDS, HEALTH_LABEL, roundHalfUp, type Health } from '@spashta/core';
 import { IndexRuler } from './charts';
 import type { SharedData } from './shared';
 import { Readiness } from './Template';

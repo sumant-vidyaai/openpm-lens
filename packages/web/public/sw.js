@@ -1,7 +1,11 @@
 // Simple offline support: keep a copy of every file the app loads, from this site only.
-const CACHE = 'openpm-lens-v1';
+const CACHE = 'spashta-v1';
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (e) => e.waitUntil(
+  caches.keys()
+    .then((names) => Promise.all(names.filter((n) => n !== CACHE).map((n) => caches.delete(n))))
+    .then(() => self.clients.claim()),
+));
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { metricFunctions, roundHalfUp } from '@openpm-lens/core';
+import { metricFunctions, roundHalfUp } from '@spashta/core';
 import { cards } from './cards';
 import { ImportScreen } from './Import';
 import { CoverageScreen } from './Coverage';
@@ -14,6 +14,7 @@ import { LearnScreen } from './Learn';
 import { OverviewScreen } from './Overview';
 import { RaidScreen } from './Raid';
 import { ForecastScreen } from './Forecast';
+import { PlanningScreen } from './Planning';
 import { StatusReportScreen } from './StatusReport';
 import { StatusStrip } from './StatusStrip';
 import { TrendsScreen } from './Trends';
@@ -25,8 +26,8 @@ function applyTheme(theme: Theme) {
   if (theme === 'system') delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = theme;
   try {
-    if (theme === 'system') localStorage.removeItem('openpm-lens-theme');
-    else localStorage.setItem('openpm-lens-theme', theme);
+    if (theme === 'system') { localStorage.removeItem('spashta-theme'); localStorage.removeItem('openpm-lens-theme'); }
+    else localStorage.setItem('spashta-theme', theme);
   } catch {
     /* ignore */
   }
@@ -74,10 +75,10 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
-type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'forecast' | 'report' | 'trends' | 'learn' | 'coverage' | 'library';
+type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'forecast' | 'planning' | 'report' | 'trends' | 'learn' | 'coverage' | 'library';
 const GROUPS: { title: string; tabs: { id: TabId; label: string }[] }[] = [
   { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'template', label: 'Template' }] },
-  { title: 'Plan and track', tabs: [{ id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'flow', label: 'Flow metrics' }] },
+  { title: 'Plan and track', tabs: [{ id: 'planning', label: 'Planning' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'flow', label: 'Flow metrics' }] },
   { title: 'Control', tabs: [{ id: 'quality', label: 'Quality' }, { id: 'raid', label: 'Risks, issues, changes' }, { id: 'forecast', label: 'Forecast' }] },
   { title: 'Report', tabs: [{ id: 'report', label: 'Status report' }, { id: 'trends', label: 'Snapshots and trends' }] },
   { title: 'Portfolio', tabs: [{ id: 'portfolio', label: 'Portfolio' }] },
@@ -87,7 +88,7 @@ type Accent = 'teal' | 'blue' | 'violet' | 'orange';
 function applyAccent(a: Accent) {
   if (a === 'teal') delete document.documentElement.dataset.accent;
   else document.documentElement.dataset.accent = a;
-  try { if (a === 'teal') localStorage.removeItem('openpm-lens-accent'); else localStorage.setItem('openpm-lens-accent', a); } catch { /* ignore */ }
+  try { if (a === 'teal') { localStorage.removeItem('spashta-accent'); localStorage.removeItem('openpm-lens-accent'); } else localStorage.setItem('spashta-accent', a); } catch { /* ignore */ }
 }
 
 
@@ -113,7 +114,7 @@ export function App() {
       </a>
       <div className="shell">
         <aside className="side noprint">
-          <h1 className="brand"><span aria-hidden="true" className="brand-mark" />openpm-lens</h1>
+          <h1 className="brand"><span aria-hidden="true" className="brand-mark" />Spashta</h1>
           <nav className="tabs side-nav" aria-label="Sections">
             {GROUPS.map((g) => (
               <div key={g.title} className="side-group">
@@ -152,7 +153,7 @@ export function App() {
         <div className="content">
       <StatusStrip shared={shared} />
       <main id="main">
-        <h1 className="printonly">openpm-lens</h1>
+        <h1 className="printonly">Spashta</h1>
         {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} onTryExample={() => setExampleTick((n) => n + 1)} />)}
         {panel('import', <ImportScreen onShare={setShared} exampleTick={exampleTick} />)}
         {panel('template', <TemplateScreen onGoImport={goImport} />)}
@@ -163,6 +164,7 @@ export function App() {
         {panel('resources', <ResourceScreen shared={shared} onGoImport={goImport} />)}
         {panel('quality', <QualityScreen shared={shared} onGoImport={goImport} />)}
         {panel('raid', <RaidScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
+        {panel('planning', <PlanningScreen shared={shared} onGoImport={goImport} />)}
         {panel('forecast', <ForecastScreen shared={shared} onGoImport={goImport} />)}
         {panel('report', <StatusReportScreen shared={shared} onGoImport={goImport} />)}
         {panel('trends', <TrendsScreen shared={shared} onGoImport={goImport} />)}

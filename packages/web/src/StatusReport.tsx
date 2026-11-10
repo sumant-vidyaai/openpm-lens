@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { DEFAULT_THRESHOLDS, HEALTH_LABEL, analyseMilestones, assessHealth, parseDateText, suggestFlowColumns, writeCommentary, type ReportFacts } from '@openpm-lens/core';
+import { DEFAULT_THRESHOLDS, HEALTH_LABEL, analyseMilestones, assessHealth, parseDateText, suggestFlowColumns, writeCommentary, type ReportFacts } from '@spashta/core';
 import { NeedsImport } from './common';
 import { VERDICT_TEXT, computeForecast } from './Forecast';
 import { computeRaid } from './Raid';
@@ -60,7 +60,7 @@ export function StatusReportScreen({ shared, onGoImport }: { shared: SharedData 
   const filled = boxes.some((b) => b.trim() !== '');
   function print() {
     const old = document.title;
-    document.title = `openpm-lens status report - ${shared?.statusDate ?? ''}`.trim();
+    document.title = `Spashta status report - ${shared?.statusDate ?? ''}`.trim();
     const restore = () => { document.title = old; window.removeEventListener('afterprint', restore); };
     window.addEventListener('afterprint', restore);
     window.print();
@@ -94,7 +94,7 @@ export function StatusReportScreen({ shared, onGoImport }: { shared: SharedData 
             ))}
             <h4>Limits of this report</h4>
             <ul>{c.limits.map((s) => <li key={s}>{s}</li>)}</ul>
-            <p className="note">Health rating: {HEALTH_LABEL[buildFacts(shared).health]}. Made with openpm-lens from {shared.fileName}, status date {shared.statusDate}.{filled ? '' : ' Add your own notes above to complete it.'}</p>
+            <p className="note">Health rating: {HEALTH_LABEL[buildFacts(shared).health]}. Made with Spashta from {shared.fileName}, status date {shared.statusDate}.{filled ? '' : ' Add your own notes above to complete it.'}</p>
           </article>
         </>
       )}

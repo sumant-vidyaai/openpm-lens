@@ -5,7 +5,7 @@ import {
   aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit, type DecimalStyle,
   extractTemplate, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
-} from '@openpm-lens/core';
+} from '@spashta/core';
 import { MAX_XML_BYTES, readWorkbook } from './readFile';
 import { EarnedValueChart } from './charts';
 import { SAMPLE_CSV } from './sample';
@@ -66,7 +66,7 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
     if (suggestion?.defaultUnit) setDefaultUnit(suggestion.defaultUnit);
     else if (suggestion) setDefaultUnit(''); // unit unknown for this tool: the user must choose
     if (suggestion?.suggestedRule) setRule(suggestion.suggestedRule);
-    if (adapter?.id === 'openpm-lens-template') {
+    if (adapter?.id === 'spashta-template') {
       setPercentScale('0-100');
       if (tpl?.settings.rule) setRule(tpl.settings.rule);
     }
@@ -208,9 +208,9 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
   }
   async function loadExample() {
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}templates/openpm-lens-example.xlsx`);
+      const res = await fetch(`${import.meta.env.BASE_URL}templates/spashta-example.xlsx`);
       if (!res.ok || /text\/html/i.test(res.headers.get('content-type') ?? '')) throw new Error('example not available');
-      await onFile(new File([await res.blob()], 'openpm-lens-example.xlsx'));
+      await onFile(new File([await res.blob()], 'spashta-example.xlsx'));
     } catch {
       reset('sample.csv (made-up example)', { kind: 'csv', text: SAMPLE_CSV });
     }
@@ -247,7 +247,7 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
     <section aria-labelledby="import-h">
       <h2 id="import-h" className="noprint">Import your tasks</h2>
       <p className="printonly">
-        openpm-lens results for {fileName}. Made on {new Date().toLocaleDateString('en-CA')}
+        Spashta results for {fileName}. Made on {new Date().toLocaleDateString('en-CA')}
         {statusDate ? `; status date ${statusDate}` : ''}. Calculated in the browser from the file; nothing was uploaded.
       </p>
       <p className="lead noprint">
@@ -265,8 +265,8 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
             }}
           />
         </label>
-        <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)' && fileName !== 'openpm-lens-example.xlsx'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => { void loadExample(); }} />
-        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)' && fileName !== 'openpm-lens-example.xlsx'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setTpl(null); setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
+        <ReplaceButton loaded={raw !== null && fileName !== 'sample.csv (made-up example)' && fileName !== 'spashta-example.xlsx'} what={fileName ?? 'your file'} label="Try the made-up example" onConfirm={() => { void loadExample(); }} />
+        {raw !== null && <ReplaceButton loaded={fileName !== 'sample.csv (made-up example)' && fileName !== 'spashta-example.xlsx'} what={fileName ?? 'your file'} label="Clear" verb="removes" confirmLabel="Clear" onConfirm={() => { setTpl(null); setFileName(null); setRaw(null); setSheetIdx(0); setLoadError(null); setMappingEdits({}); setStatusEdits({}); }} />}
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}
@@ -282,7 +282,7 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
           )}
           {isTpl && readiness && (
             <div className="card noprint" role="note">
-              <h3>Your openpm-lens template was recognised</h3>
+              <h3>Your Spashta template was recognised</h3>
               <p>Columns, hours and 0-100 percent are set up for you.{tpl ? ' Settings, Rates, Holidays, Leave, Risks, Issues and Changes sheets were read where present.' : ' A CSV has no Settings sheet, so choose the status date below.'}</p>
               {tpl && [...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems].length > 0 && (
                 <ul className="warn">{[...tpl.settings.problems, ...tpl.rates.problems, ...tpl.holidays.problems, ...tpl.leave.problems, ...tpl.risks.problems, ...tpl.issues.problems, ...tpl.changes.problems].map((p) => <li key={p}>{p}</li>)}</ul>
@@ -543,10 +543,10 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
                 <h3 id="dl-h">Share these results</h3>
                 <p className="note">Files are made in this browser tab and saved to your device. Nothing is uploaded.</p>
                 <div className="row">
-                  <button type="button" onClick={() => saveFile(`openpm-lens-summary-${stamp()}.csv`, toCsv(summaryRows(reportInput())), 'text/csv;charset=utf-8')}>
+                  <button type="button" onClick={() => saveFile(`spashta-summary-${stamp()}.csv`, toCsv(summaryRows(reportInput())), 'text/csv;charset=utf-8')}>
                     Download summary (CSV)
                   </button>
-                  <button type="button" onClick={() => saveFile(`openpm-lens-tasks-${stamp()}.csv`, toCsv(taskRows(calc?.evmRaw ?? [], calc?.schedRaw ?? [])), 'text/csv;charset=utf-8')}>
+                  <button type="button" onClick={() => saveFile(`spashta-tasks-${stamp()}.csv`, toCsv(taskRows(calc?.evmRaw ?? [], calc?.schedRaw ?? [])), 'text/csv;charset=utf-8')}>
                     Download task detail (CSV)
                   </button>
                   <button type="button" onClick={printSummary}>Print or save as PDF</button>

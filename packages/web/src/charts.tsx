@@ -1,4 +1,4 @@
-import type { CyclePoint, ThroughputBlock } from '@openpm-lens/core';
+import type { CyclePoint, ThroughputBlock } from '@spashta/core';
 
 /* Charts are plain SVG. Colours come from CSS classes (see styles.css), never inline styles (the CSP forbids them). */
 export const W = 640, H = 280, L = 48, R = 16, T = 16, B = 40;

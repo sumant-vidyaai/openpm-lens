@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { analyseMilestones, MILESTONE_LABEL, parseDateText, roundHalfUp, type MilestoneState } from '@openpm-lens/core';
+import { analyseMilestones, MILESTONE_LABEL, parseDateText, roundHalfUp, type MilestoneState } from '@spashta/core';
 import { ColumnSelect } from './common';
 import type { SharedData } from './shared';
 

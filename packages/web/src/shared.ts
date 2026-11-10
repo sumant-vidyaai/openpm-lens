@@ -1,4 +1,4 @@
-import type { ChangeParse, IssueParse, RiskParse, EvmRow, ScheduleRow, TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@openpm-lens/core';
+import type { ChangeParse, IssueParse, RiskParse, EvmRow, ScheduleRow, TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@spashta/core';
 
 /**
  * What the Import tab has worked out, shared with the other tabs so a file is loaded and set up once.
@@ -19,7 +19,7 @@ export interface SharedData {
   hoursPerDay: number;
   /** The template's Risks, Issues and Changes sheets (null when the file is not a template workbook). */
   raid: { risks: RiskParse; issues: IssueParse; changes: ChangeParse } | null;
-  /** Present when the file is the openpm-lens template: its Settings and Rates sheets (null for a CSV) and the readiness counts. */
+  /** Present when the file is the Spashta template: its Settings and Rates sheets (null for a CSV) and the readiness counts. */
   template: { settings: TemplateSettings | null; rates: Record<string, number>; readiness: TemplateReadiness } | null;
   /** Per-task working behind the cost and schedule numbers (same order as items). */
   evmRows: EvmRow[];

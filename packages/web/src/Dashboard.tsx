@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { HEALTH_LABEL, assessHealth, roundHalfUp, sumSubset, type HealthThresholds } from '@openpm-lens/core';
+import { HEALTH_LABEL, assessHealth, roundHalfUp, sumSubset, type HealthThresholds } from '@spashta/core';
 import { ColumnSelect, suggestAssignee } from './common';
 import type { SharedData } from './shared';
 

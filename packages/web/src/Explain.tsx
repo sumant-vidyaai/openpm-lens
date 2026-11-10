@@ -1,4 +1,4 @@
-import type { StepGroup } from '@openpm-lens/core';
+import type { StepGroup } from '@spashta/core';
 
 const MAX_ROWS = 200;
 

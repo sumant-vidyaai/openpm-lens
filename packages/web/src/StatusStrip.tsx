@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { HEALTH_LABEL, roundHalfUp, type Health } from '@openpm-lens/core';
+import { HEALTH_LABEL, roundHalfUp, type Health } from '@spashta/core';
 import { buildFacts } from './StatusReport';
 import type { SharedData } from './shared';
 

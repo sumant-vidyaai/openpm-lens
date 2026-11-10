@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { actualSpendItems, monthly, roundHalfUp, spreadDaily, suggestFlowColumns, type MoneyResult } from '@openpm-lens/core';
+import { actualSpendItems, monthly, roundHalfUp, spreadDaily, suggestFlowColumns, type MoneyResult } from '@spashta/core';
 import { CashFlowChart } from './charts';
 import { ColumnSelect, actualDatesOf, suggestActualStart } from './common';
 import type { SharedData } from './shared';
