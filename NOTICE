@@ -1,4 +1,6 @@
 Spashta
-Copyright 2026 Vidyaai
+Copyright 2026 Vidyaai. All rights reserved. See LICENSE.
 
-This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+Spashta includes third-party open-source libraries (for example React). They are
+listed in package-lock.json and are used under their own licences. Their
+copyright notices stay with their packages.

@@ -8,8 +8,6 @@
 - No scripts, fonts or images are loaded from other websites at runtime.
 - API tokens, when connectors are added, are kept in memory only and are lost when the tab
   closes, unless the user explicitly chooses otherwise.
-- The release build can be downloaded as a zip and hosted internally (including offline),
-  so organisations with strict rules can inspect and run it behind their own firewall.
 
 ## What the app cannot control
 

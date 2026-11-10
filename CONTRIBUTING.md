@@ -1,7 +1,7 @@
-# Contributing
+# Working rules (internal)
 
-Thank you for helping. This project is built for project managers, so clarity matters as
-much as correctness.
+These rules are for people working on Spashta for Vidyaai. The project is built for
+project managers, so clarity matters as much as correctness.
 
 ## Ground rules (non-negotiable)
 
