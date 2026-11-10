@@ -3,6 +3,7 @@ import type { DayCount } from './dates';
 import type { PercentRule } from './percentComplete';
 import { parseDateText } from './dates';
 import { suggestStatusCategory } from './importTasks';
+import { parseCaseSheet, parseGoRecord, parseScoring, parseSolicitations, parseStakeholders, type CaseParse, type GoParse, type ScoringParse, type SolicitationParse, type StakeholderParse } from './initiate';
 import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
 
 /**
@@ -45,6 +46,8 @@ export const SETTING_LABELS = {
   riskHighMin: 'Risk high from',
   contingency: 'Contingency reserve (h)',
   management: 'Management reserve (h)',
+  discountRate: 'Discount rate (%)',
+  highFrom: 'Stakeholder high from',
 } as const;
 
 export const RULE_CHOICES: { label: string; rule: PercentRule }[] = [
@@ -78,6 +81,10 @@ export interface TemplateSettings {
   contingency: number | null;
   /** Hours held above the cost baseline for unknown risks (the sponsor controls it). Entered by the user, never defaulted; 0 is allowed. */
   management: number | null;
+  /** Yearly rate (percent, e.g. 8) used to discount the business case. Entered by the user, never defaulted; 0 is allowed. */
+  discountRate: number | null;
+  /** Score (1 to 5) at or above which a stakeholder's power or interest counts as "high" on the grid. Entered by the user, never defaulted. */
+  highFrom: number | null;
   /** Things in the Settings sheet that were not understood (shown to the user, never guessed). */
   problems: string[];
 }
@@ -102,7 +109,7 @@ const num = (c: GridCell): number | null => {
 export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
   const s: TemplateSettings = {
     statusDate: null, hoursPerDay: null, dayCount: null, capacity: null, currency: null,
-    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, contingency: null, management: null, problems: [],
+    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, contingency: null, management: null, discountRate: null, highFrom: null, problems: [],
   };
   const byLabel = new Map<string, GridCell>();
   for (const r of grid) {
@@ -179,6 +186,18 @@ export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
   };
   s.contingency = nonNegative(SETTING_LABELS.contingency);
   s.management = nonNegative(SETTING_LABELS.management);
+  const dr = get(SETTING_LABELS.discountRate);
+  if (txt(dr) !== '') {
+    const n = num(dr);
+    if (n === null || n < 0 || n > 100) s.problems.push(`Settings: "Discount rate (%)" is "${txt(dr)}"; enter a number from 0 to 100 (write 8 for 8%). It was ignored.`);
+    else s.discountRate = n;
+  }
+  const hf = get(SETTING_LABELS.highFrom);
+  if (txt(hf) !== '') {
+    const n = num(hf);
+    if (n === null || !Number.isInteger(n) || n < 2 || n > 5) s.problems.push(`Settings: "Stakeholder high from" should be a whole number from 2 to 5. It was ignored.`);
+    else s.highFrom = n;
+  }
   const riskLimit = (label: string): number | null => {
     const c = get(label);
     if (txt(c) === '') return null;
@@ -294,6 +313,12 @@ export interface TemplateParts {
   risks: RiskParse;
   issues: IssueParse;
   changes: ChangeParse;
+  /** The optional Initiate sheets (Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go). */
+  scoring: ScoringParse;
+  businessCase: CaseParse;
+  stakeholders: StakeholderParse;
+  solicitations: SolicitationParse;
+  goRecord: GoParse;
   /** True when a Settings sheet was present at all. */
   hasSettings: boolean;
 }
@@ -318,6 +343,11 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
     risks: parseRisks(grid('risks')),
     issues: parseIssues(grid('issues')),
     changes: parseChanges(grid('changes')),
+    scoring: parseScoring(grid('scoring')),
+    businessCase: parseCaseSheet(grid('business case')),
+    stakeholders: parseStakeholders(grid('stakeholders')),
+    solicitations: parseSolicitations(grid('rfi-rfp')),
+    goRecord: parseGoRecord(grid('go-no-go')),
   };
 }
 
