@@ -30,7 +30,7 @@ export interface MspdiResult {
   mapping: Partial<ColumnMapping>;
 }
 
-const HEADERS = ['ID', 'WBS', 'Name', 'Estimate (h)', 'Actual (h)', '% Complete', 'Start', 'Finish', 'Actual finish', 'Assignee'];
+const HEADERS = ['ID', 'WBS', 'Name', 'Estimate (h)', 'Actual (h)', '% Complete', 'Start', 'Finish', 'Actual finish', 'Assignee', 'Depends on'];
 
 const isTrue = (v: unknown) => v === '1' || (typeof v === 'string' && v.toLowerCase() === 'true');
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '');
@@ -60,7 +60,7 @@ export function parseMspdi(xml: string): MspdiResult {
   const parser = new XMLParser({
     ignoreAttributes: true, parseTagValue: false, trimValues: true,
     processEntities: { enabled: true, maxEntityCount: 10, maxEntitySize: 100, maxTotalExpansions: 500_000, maxExpandedLength: 20_000_000 },
-    isArray: (name) => ['Task', 'Resource', 'Assignment', 'Baseline'].includes(name),
+    isArray: (name) => ['Task', 'Resource', 'Assignment', 'Baseline', 'PredecessorLink'].includes(name),
   });
   let doc: Node;
   try { doc = asNode(parser.parse(xml)); } catch { throw new Error('This file is not valid XML, so it could not be read.'); }
@@ -91,6 +91,14 @@ export function parseMspdi(xml: string): MspdiResult {
   const useBaseline = baselineNumbers.has('0') ? '0' : baselineNumbers.size === 1 ? [...baselineNumbers][0] ?? null : null;
   const hasWorkPct = tasks.some((t) => str(t.PercentWorkComplete) !== '');
 
+  // Row ID of every task that will be kept, so a link can point at it. Same rule as the loop below.
+  const keptId = new Map<string, string>();
+  for (const t of tasks) {
+    if (isTrue(t.Summary) || str(t.Name) === '') continue;
+    keptId.set(str(t.UID), str(t.ID) || str(t.UID));
+  }
+  let linksOther = 0, linksLagged = 0, linksMissing = 0, linksKept = 0;
+
   let summary = 0, unnamed = 0, badDuration = 0, badDate = 0, noBaseline = 0;
   const rows: string[][] = [];
   for (const t of tasks) {
@@ -114,9 +122,20 @@ export function parseMspdi(xml: string): MspdiResult {
     };
     const pct = str(hasWorkPct ? t.PercentWorkComplete : t.PercentComplete);
     const uid = str(t.UID);
+    // Only finish-to-start links with no lag are read (type 1 = FS in Microsoft's schema). Others are counted, never guessed.
+    const deps: string[] = [];
+    for (const l of arr(t.PredecessorLink as unknown).map(asNode)) {
+      const target = keptId.get(str(l.PredecessorUID));
+      if (str(l.Type) !== '1') { linksOther += 1; continue; }
+      const lag = str(l.LinkLag);
+      if (lag !== '' && Number(lag) !== 0) { linksLagged += 1; continue; }
+      if (target === undefined) { linksMissing += 1; continue; }
+      if (!deps.includes(target)) deps.push(target);
+      linksKept += 1;
+    }
     rows.push([
       str(t.ID) || uid, str(t.WBS), name, hours(src.Work), hours(t.ActualWork), pct, date(src.Start), date(src.Finish),
-      date(t.ActualFinish), (people.get(uid) ?? []).join('; '),
+      date(t.ActualFinish), (people.get(uid) ?? []).join('; '), deps.join(', '),
     ]);
   }
 
@@ -131,6 +150,10 @@ export function parseMspdi(xml: string): MspdiResult {
   if (badDate > 0) notes.push(`${badDate} date${badDate === 1 ? ' was' : 's were'} not readable and ${badDate === 1 ? 'was' : 'were'} left blank.`);
   if (unknownResource > 0) notes.push(`${unknownResource} assignment${unknownResource === 1 ? ' points' : 's point'} to a resource that is not in the file and ${unknownResource === 1 ? 'was' : 'were'} not used.`);
   if (people.size === 0) notes.push('No resource assignments were found, so the Assignee column is empty.');
+  if (linksKept > 0) notes.push(`${linksKept} finish-to-start link${linksKept === 1 ? '' : 's'} read into "Depends on" (used by the Planning tab).`);
+  if (linksOther > 0) notes.push(`${linksOther} link${linksOther === 1 ? ' is' : 's are'} not finish-to-start (start-to-start, finish-to-finish or start-to-finish) and ${linksOther === 1 ? 'was' : 'were'} not read.`);
+  if (linksLagged > 0) notes.push(`${linksLagged} finish-to-start link${linksLagged === 1 ? ' has' : 's have'} a lag or lead and ${linksLagged === 1 ? 'was' : 'were'} not read.`);
+  if (linksMissing > 0) notes.push(`${linksMissing} link${linksMissing === 1 ? ' points' : 's point'} to a summary or unnamed task that is not in the table and ${linksMissing === 1 ? 'was' : 'were'} not read.`);
   notes.push('A task assigned to several people lists them separated by "; "; the Resources and Cost tabs do not split hours between people.');
 
   return {

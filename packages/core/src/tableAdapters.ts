@@ -278,8 +278,8 @@ export const msProjectAdapter = makeAdapter({
 });
 
 export const templateAdapter = makeAdapter({
-  id: 'openpm-lens-template',
-  name: 'openpm-lens template',
+  id: 'spashta-template',
+  name: 'Spashta template',
   required: [['task'], ['status'], ['estimate (h)'], ['actual (h)'], ['% complete'], ['planned start'], ['actual start']],
   bonus: [['planned finish'], ['actual finish'], ['assignee'], ['found in'], ['programme']],
   columns: {
@@ -289,7 +289,7 @@ export const templateAdapter = makeAdapter({
   defaultUnit: 'hours',
   suggestedRule: 'tool_reported',
   notes: [
-    'This is the openpm-lens template, so the columns, hours and 0-100 percent are set up for you. Check the progress rule and status date in step 2.',
+    'This is the Spashta template, so the columns, hours and 0-100 percent are set up for you. Check the progress rule and status date in step 2.',
   ],
   cannotSupply: [],
   ownColumns: true,

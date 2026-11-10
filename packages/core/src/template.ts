@@ -6,7 +6,7 @@ import { suggestStatusCategory } from './importTasks';
 import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
 
 /**
- * The openpm-lens fill-in template. Its column names are fixed so the app can recognise a
+ * The Spashta fill-in template. Its column names are fixed so the app can recognise a
  * filled template and set itself up with no mapping questions. Nothing here is a standard:
  * it is just our agreed layout, explained on the "Start here" sheet of the workbook.
  */
@@ -14,6 +14,7 @@ export const TEMPLATE_COLUMNS = [
   'Project', 'Programme', 'Team', 'ID', 'Task', 'Type', 'Status', 'Assignee',
   'Planned start', 'Planned finish', 'Actual start', 'Actual finish',
   'Estimate (h)', 'Actual (h)', '% complete', 'Created', 'Severity', 'Found in',
+  'Optimistic (h)', 'Pessimistic (h)', 'Depends on',
 ] as const;
 export type TemplateColumn = (typeof TEMPLATE_COLUMNS)[number];
 
@@ -42,6 +43,8 @@ export const SETTING_LABELS = {
   originalBudget: 'Original budget (h)',
   riskMediumMin: 'Risk medium from',
   riskHighMin: 'Risk high from',
+  contingency: 'Contingency reserve (h)',
+  management: 'Management reserve (h)',
 } as const;
 
 export const RULE_CHOICES: { label: string; rule: PercentRule }[] = [
@@ -71,6 +74,10 @@ export interface TemplateSettings {
   /** Risk score (probability x impact) from which a risk is Medium / High. Starting values, not a standard. */
   riskMediumMin: number | null;
   riskHighMin: number | null;
+  /** Hours held inside the cost baseline for known risks (the PM controls it). Entered by the user, never defaulted; 0 is allowed. */
+  contingency: number | null;
+  /** Hours held above the cost baseline for unknown risks (the sponsor controls it). Entered by the user, never defaulted; 0 is allowed. */
+  management: number | null;
   /** Things in the Settings sheet that were not understood (shown to the user, never guessed). */
   problems: string[];
 }
@@ -95,7 +102,7 @@ const num = (c: GridCell): number | null => {
 export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
   const s: TemplateSettings = {
     statusDate: null, hoursPerDay: null, dayCount: null, capacity: null, currency: null,
-    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, problems: [],
+    defaultRate: null, greenMin: null, amberMin: null, rule: null, inProgressPercent: null, originalBudget: null, riskMediumMin: null, riskHighMin: null, contingency: null, management: null, problems: [],
   };
   const byLabel = new Map<string, GridCell>();
   for (const r of grid) {
@@ -160,6 +167,18 @@ export function parseTemplateSettings(grid: GridCell[][]): TemplateSettings {
     else s.inProgressPercent = n;
   }
   s.originalBudget = positive(SETTING_LABELS.originalBudget);
+  const nonNegative = (label: string): number | null => {
+    const c = get(label);
+    if (txt(c) === '') return null;
+    const n = num(c);
+    if (n === null || n < 0) {
+      s.problems.push(`Settings: "${label}" is "${txt(c)}", which is not a usable number (0 or more), so it was ignored.`);
+      return null;
+    }
+    return n;
+  };
+  s.contingency = nonNegative(SETTING_LABELS.contingency);
+  s.management = nonNegative(SETTING_LABELS.management);
   const riskLimit = (label: string): number | null => {
     const c = get(label);
     if (txt(c) === '') return null;

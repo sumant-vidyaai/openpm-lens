@@ -1,7 +1,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { metricFunctions } from '@openpm-lens/core';
+import { metricFunctions } from '@spashta/core';
 import { loadCards } from '../src/loader';
 import { validateCard } from '../src/card';
 
@@ -72,11 +72,11 @@ describe('validateCard', () => {
 });
 
 // Trust check: what the Learn tab teaches must say the same as the metric cards and the numbers the app uses.
-import { DEFAULT_THRESHOLDS } from '@openpm-lens/core';
+import { DEFAULT_THRESHOLDS } from '@spashta/core';
 import { TERMS } from '../../web/src/learnContent';
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
-import { EAC_METHODS } from '@openpm-lens/core';
+import { EAC_METHODS } from '@spashta/core';
 describe('Learn tab agrees with the metric cards', () => {
   it.each(EAC_METHODS.map((m) => [m.value, m.formula] as const))('the %s forecast method is taught with the formula the app uses', (_v, formula) => {
     expect(TERMS.map((t) => norm(t.formula ?? ''))).toContain(norm(formula));

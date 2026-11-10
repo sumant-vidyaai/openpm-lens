@@ -9,7 +9,7 @@ describe('template recognition', () => {
     const h = [...TEMPLATE_COLUMNS] as string[];
     expect(isTemplateTable(h)).toBe(true);
     const a = detectTableAdapter(h);
-    expect(a?.id).toBe('openpm-lens-template');
+    expect(a?.id).toBe('spashta-template');
     const s = a!.suggest(h);
     expect(s.mapping.planned).toBe('Estimate (h)');
     expect(s.mapping.actual).toBe('Actual (h)');
@@ -53,6 +53,18 @@ describe('settings', () => {
     expect(s.rule).toBe('fifty_fifty');
     expect(s.problems.length).toBe(1);
   });
+  it('reads reserves as 0-or-more numbers and never defaults them', () => {
+    const none = parseTemplateSettings([['Setting', 'Value']]);
+    expect(none.contingency).toBeNull();
+    expect(none.management).toBeNull();
+    const ok = parseTemplateSettings([['Contingency reserve (h)', 60], ['Management reserve (h)', 0]]);
+    expect(ok.contingency).toBe(60);
+    expect(ok.management).toBe(0);
+    const bad = parseTemplateSettings([['Contingency reserve (h)', -5], ['Management reserve (h)', 'lots']]);
+    expect(bad.contingency).toBeNull();
+    expect(bad.management).toBeNull();
+    expect(bad.problems.length).toBe(2);
+  });
   it('rejects amber >= green', () => {
     const s = parseTemplateSettings([['Green from', 0.8], ['Amber from', 0.9]]);
     expect(s.greenMin).toBeNull();
@@ -94,9 +106,9 @@ import { parseCsv } from '../src';
 describe('shipped template files', () => {
   it('the CSV headers equal TEMPLATE_COLUMNS, and the example is recognised', () => {
     const dir = new URL('../../web/public/templates/', import.meta.url);
-    const blank = parseCsv(readFileSync(new URL('openpm-lens-template.csv', dir), 'utf8'));
+    const blank = parseCsv(readFileSync(new URL('spashta-template.csv', dir), 'utf8'));
     expect(blank.headers).toEqual([...TEMPLATE_COLUMNS]);
-    const ex = parseCsv(readFileSync(new URL('openpm-lens-example.csv', dir), 'utf8'));
+    const ex = parseCsv(readFileSync(new URL('spashta-example.csv', dir), 'utf8'));
     expect(isTemplateTable(ex.headers)).toBe(true);
     expect(ex.rows.length).toBe(14);
   });

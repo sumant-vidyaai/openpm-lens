@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addSnapshot, compareSnapshots, cpiOf, daysSinceUpdate, seriesOf, snapshotId, snapshotLabels, spiOf, toggleBaseline, trendPoints,
+  addSnapshot, compareSnapshots, cpiOf, daysSinceUpdate, lockBaseline, rebaseline, seriesOf, snapshotId, snapshotLabels, spiOf, toggleBaseline, trendPoints,
   validateSnapshot, type Snapshot,
 } from '../src';
 
 const mk = (over: Partial<Snapshot> = {}): Snapshot => ({
-  format: 'openpm-lens-snapshot', version: 1, savedAt: '2026-03-17T10:00:00Z', label: 'Website', statusDate: '2026-03-17', source: 'a.xlsx', baseline: false,
+  format: 'spashta-snapshot', version: 1, savedAt: '2026-03-17T10:00:00Z', label: 'Website', statusDate: '2026-03-17', source: 'a.xlsx', baseline: false,
   ev: 200, ac: 250, bac: 600, pv: 300, evSchedule: 180, costTasks: 8, scheduleTasks: 8,
   counts: { total: 12, notStarted: 6, inProgress: 3, done: 3, cancelled: 0 }, openDefects: 2,
   raid: { risksHigh: 1, risksMedium: 2, risksLow: 1, risksUnscored: 0, openIssues: 3, approvedHours: 20, approvedDays: 2 }, ...over,
@@ -110,5 +110,62 @@ describe('reading a snapshot file (never trusted)', () => {
   });
   it('a missing risk block is allowed (null)', () => {
     expect(validateSnapshot({ ...A, raid: null }).snapshot!.raid).toBeNull();
+  });
+});
+
+describe('baseline lock', () => {
+  it('lockBaseline sets the first baseline only', () => {
+    const r = lockBaseline([A, B], snapshotId(A), '2026-04-01T09:00:00Z');
+    expect(r.problem).toBeNull();
+    expect(r.list.find((x) => x.statusDate === A.statusDate)).toMatchObject({ baseline: true, baselineSetAt: '2026-04-01T09:00:00Z' });
+    const again = lockBaseline(r.list, snapshotId(B), 'x');
+    expect(again.problem).toContain('already has a baseline');
+    expect(again.list).toBe(r.list);
+  });
+  it('rebaseline needs a real reason and records it with the old date', () => {
+    const l0 = lockBaseline([A, B], snapshotId(A), 't0').list;
+    expect(rebaseline(l0, snapshotId(B), 'short', 't1').problem).toContain('reason');
+    expect(rebaseline(l0, snapshotId(A), 'Approved change C-1 added scope', 't1').problem).toContain('already the baseline');
+    const r = rebaseline(l0, snapshotId(B), '  Approved change C-1 added scope  ', 't1');
+    expect(r.problem).toBeNull();
+    const nb = r.list.find((x) => x.baseline)!;
+    expect(nb.statusDate).toBe(B.statusDate);
+    expect(nb).toMatchObject({ baselineNote: 'Approved change C-1 added scope', baselineReplaces: A.statusDate, baselineSetAt: 't1' });
+    const oldOne = r.list.find((x) => x.statusDate === A.statusDate)!;
+    expect(oldOne.baseline).toBe(false);
+    expect(oldOne.baselineNote).toBeUndefined();
+    expect(r.list.filter((x) => x.baseline)).toHaveLength(1);
+  });
+  it('rebaseline without a baseline is refused', () => {
+    expect(rebaseline([A, B], snapshotId(B), 'long enough reason', 't').problem).toContain('no baseline');
+  });
+  it('saving over the baseline is blocked; an arriving baseline does not take over', () => {
+    const l0 = lockBaseline([A, B], snapshotId(A), 't0').list;
+    const blocked = addSnapshot(l0, mk({ ev: 999 }));
+    expect(blocked.blocked).toBe(true);
+    expect(blocked.list).toBe(l0);
+    const arriving = addSnapshot(l0, mk({ statusDate: '2026-04-07', baseline: true, baselineNote: 'x'.repeat(12) }));
+    expect(arriving.baselineKept).toBe(true);
+    expect(arriving.list.filter((x) => x.baseline).map((x) => x.statusDate)).toEqual([A.statusDate]);
+    expect(arriving.list.find((x) => x.statusDate === '2026-04-07')!.baselineNote).toBeUndefined();
+  });
+  it('optional baseline fields survive validation and stay version 1', () => {
+    const ok = validateSnapshot({ ...A, baseline: true, baselineSetAt: 't', baselineNote: 'why', baselineReplaces: '2026-03-01' });
+    expect(ok.snapshot).toMatchObject({ version: 1, baselineNote: 'why', baselineReplaces: '2026-03-01' });
+    const bad = validateSnapshot({ ...A, baseline: true, baselineReplaces: 'yesterday' });
+    expect(bad.snapshot?.baselineReplaces).toBeUndefined();
+    expect(validateSnapshot({ ...A, baseline: false, baselineNote: 'ignored' }).snapshot?.baselineNote).toBeUndefined();
+  });
+});
+
+describe('files saved before the rename', () => {
+  it('still reads the old format name and re-saves it under the new one', () => {
+    const r = validateSnapshot({ ...A, format: 'openpm-lens-snapshot' });
+    expect(r.problem).toBeNull();
+    expect(r.snapshot?.format).toBe('spashta-snapshot');
+    expect(r.snapshot?.ev).toBe(A.ev);
+  });
+  it('still refuses an unknown format', () => {
+    expect(validateSnapshot({ ...A, format: 'something-else' }).problem).toContain('not a Spashta snapshot');
   });
 });

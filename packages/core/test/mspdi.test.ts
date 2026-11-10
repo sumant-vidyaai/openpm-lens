@@ -62,7 +62,7 @@ describe('parseMspdi', () => {
 describe('parseMspdi without a baseline', () => {
   it('uses the current schedule and says why that is weaker', () => {
     const r = parseMspdi('<Project><Tasks><Task><UID>1</UID><Name>A</Name><Work>PT8H0M0S</Work><Start>2026-02-02T08:00:00</Start><Finish>2026-02-02T17:00:00</Finish><PercentComplete>50</PercentComplete></Task></Tasks></Project>');
-    expect(r.table.rows[0]).toEqual(['1', '', 'A', '8', '', '50', '2026-02-02', '2026-02-02', '', '']);
+    expect(r.table.rows[0]).toEqual(['1', '', 'A', '8', '', '50', '2026-02-02', '2026-02-02', '', '', '']);
     expect(r.notes.join(' ')).toContain('no saved baseline');
     expect(r.notes.join(' ')).toContain('"% complete" (the share of the duration)');
   });
@@ -88,5 +88,30 @@ describe('safety and errors', () => {
   });
   it('an empty project gives an empty table, not an error', () => {
     expect(parseMspdi('<Project><Tasks/></Project>').table.rows).toHaveLength(0);
+  });
+});
+
+describe('parseMspdi links', () => {
+  const link = (uid: string, type: string, lag = '0') => `<PredecessorLink><PredecessorUID>${uid}</PredecessorUID><Type>${type}</Type><LinkLag>${lag}</LinkLag></PredecessorLink>`;
+  const xml = `<Project><Tasks>
+    <Task><UID>10</UID><ID>1</ID><Name>Summary</Name><Summary>1</Summary></Task>
+    <Task><UID>11</UID><ID>2</ID><Name>A</Name></Task>
+    <Task><UID>12</UID><ID>3</ID><Name>B</Name>${link('11', '1')}</Task>
+    <Task><UID>13</UID><ID>4</ID><Name>C</Name>${link('11', '1')}${link('12', '1')}${link('11', '3')}${link('12', '1', '4800')}${link('10', '1')}</Task>
+    <Task><UID>14</UID><ID>5</ID><Name>D</Name>${link('13', '1')}${link('13', '1')}</Task>
+  </Tasks></Project>`;
+  const r = parseMspdi(xml);
+  const dep = (i: number) => r.table.rows[i]?.[r.table.headers.indexOf('Depends on')];
+  it('reads finish-to-start links with no lag, mapped to row IDs', () => {
+    expect(dep(0)).toBe('');
+    expect(dep(1)).toBe('2');
+    expect(dep(2)).toBe('2, 3');
+    expect(dep(3)).toBe('4');
+  });
+  it('counts other link types, lagged links and links to left-out tasks instead of guessing', () => {
+    const n = r.notes.join(' ');
+    expect(n).toContain('1 link is not finish-to-start');
+    expect(n).toContain('1 finish-to-start link has a lag');
+    expect(n).toContain('1 link points to a summary or unnamed task');
   });
 });
