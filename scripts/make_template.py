@@ -74,6 +74,14 @@ EXAMPLE_SETTINGS['Contingency reserve (h)'] = 60
 EXAMPLE_SETTINGS['Management reserve (h)'] = 40
 EXAMPLE_SETTINGS['Discount rate (%)'] = 8
 EXAMPLE_SETTINGS['Stakeholder high from'] = 4
+EXAMPLE_SETTINGS['Phase order'] = 'Idea, Plan, Build, Test, Launch'
+EXAMPLE_SETTINGS['Update due every (days)'] = 14
+PROJ_HEAD = ['Project', 'Phase', 'Project manager', 'Last updated', 'Next gate']
+EXAMPLE_PROJ = [
+    ['Website relaunch', 'Build', 'Asha', '2026-03-27', '2026-04-10'],
+    ['Mobile app', 'Build', 'Kiran', '2026-03-10', '2026-03-27'],
+    ['Data warehouse (made up)', 'Idea', 'Ravi', '', '2026-05-15'],
+]
 EXAMPLE_SCORING = [
     ['Option', 'Price', 'Fit to needs', 'Support', 'Security'],
     ['Weight', 40, 30, 20, 10],
@@ -159,7 +167,7 @@ def build(path, example):
     s.title = 'Start here'
     lines = [
         ('Spashta template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go, Checklist, Lessons and Benefits sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Fill in the Tasks sheet, optionally the Settings, Projects, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go, Checklist, Lessons and Benefits sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -275,6 +283,8 @@ def build(path, example):
         ('Management reserve (h)', '', 'Hours held ABOVE the cost baseline for unknown risks (the sponsor controls it). Enter your own figure; 0 is allowed. Optional, for the Planning tab.'),
         ('Discount rate (%)', '', 'Yearly rate used to bring future money back to today\'s value in the Initiate business case (write 8 for 8%). Your own figure; 0 is allowed. Optional.'),
         ('Stakeholder high from', '', 'Score (2 to 5) at or above which power or interest counts as "high" on the stakeholder grid. Your own figure. Optional.'),
+        ('Phase order', '', 'Your project phases in order, separated by commas (for example Idea, Plan, Build, Test, Launch). Used by the stage-gate view on the Portfolio tab. Your own list. Optional.'),
+        ('Update due every (days)', '', 'A project is "overdue for an update" when its Last updated date is MORE than this many days before the status date. Your own figure. Optional; without it nothing is called overdue.'),
     ]
     for i, (k, v, d) in enumerate(settings, start=2):
         if example and k in EXAMPLE_SETTINGS:
@@ -405,7 +415,7 @@ def build(path, example):
             for j in range(1, len(head) + 1):
                 c = ws.cell(row=i, column=j)
                 c.fill = INPUT_FILL
-                if head[j - 1] in ('Due', 'Received', 'Date', 'ID', 'Done on', 'Raised'):
+                if head[j - 1] in ('Due', 'Received', 'Date', 'ID', 'Done on', 'Raised', 'Last updated', 'Next gate'):
                     c.number_format = '@'
         if example:
             for i, row in enumerate(example_rows, start=2):
@@ -455,6 +465,9 @@ def build(path, example):
     ls.add_data_validation(dv); dv.add('A2:A61')
     plain_sheet('Benefits', BEN_HEAD, [8, 40, 16, 22, 12, 12, 14], 40,
                 'Optional. Planned and Realised are plain numbers in the same unit (the Measure column says which). Leave Realised blank until it can be measured: blank is not 0.', EXAMPLE_BEN)
+    plain_sheet('Projects', PROJ_HEAD, [28, 16, 20, 14, 14], 40,
+                'Optional. One row per project (the Project name must match the Tasks sheet). Phase is one of your phases; Last updated and Next gate are year-month-day. Set "Phase order" and "Update due every (days)" on the Settings sheet. Blank means not known.', EXAMPLE_PROJ)
+    wb._sheets.insert(wb._sheets.index(wb['Settings']) + 1, wb._sheets.pop(wb._sheets.index(wb['Projects'])))
     wb.active = 1
     wb.save(path)
 

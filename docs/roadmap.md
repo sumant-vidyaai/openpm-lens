@@ -50,7 +50,7 @@ Each release is built the same way: confirm formulas from independent sources, b
 |---|---|---|---|
 | A | none | **Real-data validation:** one real Microsoft Project XML file (names changed) and one real export from the user's own tool; fix whatever they show. Confirm Vidyaai owns the project; answer the App Store "vidyaai" question; the phone/Cloudflare issue if it still happens | User sends files; Claude fixes |
 | B | v1.3.2 (BUILT) | **Tidy-up:** first-run screen duplicate buttons and old wording; clearer messages on tabs when no file is loaded; Initiate and Close usable from a workbook that has no tasks yet | Claude |
-| C | v1.4.0 | **Portfolio part 1:** Phase column and stage-gate view; reporting discipline (who has not updated); portfolio data-quality view | Claude |
+| C | v1.4.0 | **BUILT.** **Portfolio part 1:** Phase column and stage-gate view; reporting discipline (who has not updated); portfolio data-quality view | Claude |
 | D | v1.4.1 | **Portfolio part 2:** prioritisation scoring set by the PMO (reuses weighted scoring); demand vs capacity across projects; risk heat map across projects | Claude |
 | E | v1.5.0 | **Finish earlier batches:** weights-sensitivity check for scoring; go / no-go checklist; load an archive back into the app; RFQ type | Claude |
 | F | v1.6.0 | **Tools and connections (old Batch 10):** readers for named tools built only from real header lines the user supplies; "paste your column names" helper; Trello reader if wanted; optional live connections with tokens held in memory only | User supplies real exports first |
