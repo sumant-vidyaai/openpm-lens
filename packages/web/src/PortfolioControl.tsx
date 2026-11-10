@@ -69,7 +69,7 @@ export function PortfolioControl({ projects, register, statusDate, thresholds, p
     <>
       <h3>5. Phases, update discipline and data quality</h3>
       <p className="note">
-        These views use the optional <strong>Projects</strong> sheet of the template (project, phase, project manager, last updated, next gate).
+        These views use a list of your projects (project, phase, project manager, last updated, next gate): the optional <strong>Projects</strong> sheet of the template, or a list loaded with "Load a project list" above.
         The phase names, their order and how many days make an update late are your own: nothing is filled in for you.
       </p>
       <div className="form">
