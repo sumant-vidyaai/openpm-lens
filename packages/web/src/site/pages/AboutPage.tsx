@@ -5,7 +5,7 @@ import { CtaBand, PageHero } from './shared';
 export function AboutPage() {
   useReveal();
   const promises = [
-    { icon: ICONS.lock, t: 'Nothing is uploaded', p: 'Your file is read in your browser tab. There is no server, no account and no copy kept anywhere else.' },
+    { icon: ICONS.lock, t: 'Nothing is uploaded', p: 'Your file is read in your browser tab. No server receives it, there is no account and no copy is kept anywhere else.' },
     { icon: ICONS.eye, t: 'Nothing is guessed', p: 'Missing values are left out and listed. A blank is never turned into zero.' },
     { icon: ICONS.scale, t: 'Judgement stays yours', p: 'Weights, scores, discount rates and the limits for green, amber and red are entered by you. They are never filled in for you.' },
     { icon: ICONS.code, t: 'The working is shown', p: 'Every number comes with its formula, so you can check it and defend it in the meeting.' },
@@ -35,9 +35,9 @@ export function AboutPage() {
           <h2 id="next-h" className="s-h2">What is planned next</h2>
           <p>These are plans, not promises, and the order may change:</p>
           <ul className="ticks">
-            <li>A portfolio view: project phase, a stage-gate view and who has not updated</li>
-            <li>Prioritising projects with the same weighted scoring</li>
-            <li>Ready-made connections for common tools</li>
+            <li>Ready-made connections for more project tools</li>
+            <li>Simple pricing: a free version and a paid version for the advanced tabs</li>
+            <li>More learning material and worked examples</li>
           </ul>
           <p className="about-mark"><Mark size={40} /><span>Spashta by Vidyaai. © 2026 Vidyaai. All rights reserved.</span></p>
         </div>

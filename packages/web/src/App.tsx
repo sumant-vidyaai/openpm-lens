@@ -196,7 +196,7 @@ export function App({ exampleSignal = 0, goto }: { exampleSignal?: number; goto?
         {panel('library', (
           <>
             <p className="lead">
-              Your data stays on this device. Nothing is uploaded and nothing is tracked. Here are the metrics
+              Your project data stays on this device and nothing you load is uploaded. Here are the metrics
               the app can calculate, each with a worked example you can follow step by step.
             </p>
             <h2>Metric library ({cards.length})</h2>

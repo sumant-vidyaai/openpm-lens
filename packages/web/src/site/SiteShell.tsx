@@ -8,6 +8,7 @@ const LINKS: { route: Route; label: string }[] = [
   { route: 'how', label: 'How it works' },
   { route: 'resources', label: 'Resources' },
   { route: 'about', label: 'About' },
+  { route: 'contact', label: 'Contact' },
 ];
 
 export function SiteShell({ route, children }: { route: Route; children: ReactNode }) {
@@ -49,7 +50,9 @@ export function SiteShell({ route, children }: { route: Route; children: ReactNo
           </nav>
           <nav aria-label="Project"><h2>Project</h2>
             <ul>
-              <li><a href={href('about')}>Privacy and promises</a></li>
+              <li><a href={href('about')}>Our promises</a></li>
+              <li><a href={href('privacy')}>Privacy</a></li>
+              <li><a href={href('contact')}>Contact</a></li>
             </ul>
           </nav>
         </div>

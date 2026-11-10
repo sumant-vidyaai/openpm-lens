@@ -6,9 +6,11 @@ import { ProductPage } from './pages/ProductPage';
 import { HowPage } from './pages/HowPage';
 import { ResourcesPage } from './pages/ResourcesPage';
 import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 
-export type Route = 'home' | 'product' | 'how' | 'resources' | 'about' | 'app';
-const PATHS: Record<Route, string> = { home: '#/', product: '#/product', how: '#/how-it-works', resources: '#/resources', about: '#/about', app: '#/app' };
+export type Route = 'home' | 'product' | 'how' | 'resources' | 'about' | 'contact' | 'privacy' | 'app';
+const PATHS: Record<Route, string> = { home: '#/', product: '#/product', how: '#/how-it-works', resources: '#/resources', about: '#/about', contact: '#/contact', privacy: '#/privacy', app: '#/app' };
 export const href = (r: Route) => PATHS[r];
 const TITLES: Record<Exclude<Route, 'app'>, string> = {
   home: 'Spashta: know where your project stands',
@@ -16,6 +18,8 @@ const TITLES: Record<Exclude<Route, 'app'>, string> = {
   how: 'How Spashta works',
   resources: 'Templates and learning',
   about: 'About Spashta',
+  contact: 'Contact Spashta',
+  privacy: 'Privacy',
 };
 
 function parse(hash: string): Route {
@@ -25,6 +29,8 @@ function parse(hash: string): Route {
   if (h === '#/how-it-works') return 'how';
   if (h === '#/resources') return 'resources';
   if (h === '#/about') return 'about';
+  if (h === '#/contact') return 'contact';
+  if (h === '#/privacy') return 'privacy';
   return 'home';
 }
 
@@ -33,7 +39,10 @@ export function Root() {
   const [route, setRoute] = useState<Route>(() => parse(window.location.hash));
   const [appOpened, setAppOpened] = useState(route === 'app');
   const [exampleSignal, setExampleSignal] = useState(0);
-  const [goto, setGoto] = useState({ tab: '', n: 0 });
+  const [goto, setGoto] = useState(() => {
+    const t = parse(window.location.hash) === 'app' ? (window.location.hash.split('?')[0] ?? '').split('/')[2] : undefined;
+    return { tab: t ?? '', n: t ? 1 : 0 };
+  });
   const first = useRef(true);
   useEffect(() => {
     const on = () => {
@@ -66,6 +75,8 @@ export function Root() {
           {route === 'how' && <HowPage />}
           {route === 'resources' && <ResourcesPage />}
           {route === 'about' && <AboutPage />}
+          {route === 'contact' && <ContactPage />}
+          {route === 'privacy' && <PrivacyPage />}
         </SiteShell>
       )}
       {appOpened && <div hidden={route !== 'app'} className="app-root"><App exampleSignal={exampleSignal} goto={goto} /></div>}

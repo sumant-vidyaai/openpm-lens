@@ -124,7 +124,7 @@ export function HomePage() {
         <div className="s-wrap s-split">
           <div>
             <h2 id="priv-h" className="s-h2">Your project never leaves your device</h2>
-            <p className="s-sub">Spashta runs entirely in your browser. There is no upload, no account and no server holding your plan, so it is safe to use with a confidential project.</p>
+            <p className="s-sub">Spashta runs entirely in your browser. There is no upload, no account and no server that receives your plan, so it is safe to use with a confidential project.</p>
             <ul className="ticks">
               <li>Works offline once loaded</li>
               <li>Every number comes with its formula</li>
