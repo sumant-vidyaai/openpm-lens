@@ -311,3 +311,28 @@ Adapters for Smartsheet, Trello, GitHub Projects, Clarity, ServiceNow and Planvi
 **Docs:** `docs/business-setup.md` holds what is done, what the user does, and drafts (pricing, delivery, cancellation and refunds, terms) with [brackets] where only the owner can decide. They are for lawyer review and are NOT on the website: price, trial length, refund rule and legal entity are not decided. The pages a payment provider asks for are listed there; the provider's current list should be checked at application time.
 **Checked:** 477 tests pass; Contact, Privacy, About and Home pass axe at 1100 px light, 1280 px dark and 390 px light; no sideways scroll.
 **Not done:** payments, Pro gating and licence keys (after the pricing decisions), domain and email address (user), v1.6.0 tools (needs real header lines).
+**v1.5.1 update (same day):** at the owner's request the Privacy page no longer has the "Visit counts", "Hosting" and "Changes" sections (it keeps project data, what the browser stores, and email). Cloudflare Web Analytics is still switched on in the dashboard, so the page no longer mentions it; the owner chose this. Whether a disclosure is required where visitors from some regions are counted is a question for the lawyer reviewing the legal drafts; Cloudflare says EU and UK traffic can be excluded in its dashboard. Section headings on the plain text pages were made smaller with more space above.
+
+## Decision (10 November 2026): everything stays free for now
+The owner decided not to charge yet. No Pro gating, licence keys or payment provider will be built until the owner reopens this. My earlier suggestion is kept for when that happens: Start, Plan and track, Control, basic Report and Learn free; Initiate, Close, Portfolio and Trends with the printable status report as Pro; a 14-day trial then free; a yearly price chosen by the owner after checking the payment provider's current fees. Limit to explain then: a tool that runs entirely in the browser can only offer a soft lock. The legal drafts in docs/business-setup.md stay drafts. The About page's "planned next" still mentions simple pricing and should be reworded in the next release.
+
+## Decision (10 November 2026): everything stays free for now
+The owner chose to keep every tab free for the time being. Payments, Pro gating and licence keys are not being built. The earlier suggestion (free: Start, Plan and track, Control, Report basics, Learn; Pro candidates: Initiate, Close, Portfolio, Trends with the printable status report; 14-day trial) is kept only as a starting idea for later. The business-setup drafts stay for lawyer review. Next focus: measuring reach and effort (visit counter, referrers, feedback by email) before any paid promotion.
+
+## v1.5.2 – Feedback line and optional contribution link
+**Feedback:** "Did this help? Tell us what is missing" now sits at the end of the Overview and in the app footer (Project column), linking to the Contact page. The empty Project column in the app footer also gained Privacy.
+**Optional contribution:** one setting, `SUPPORT_URL` in `packages/web/src/site/config.ts`. While empty (as shipped) no support link appears anywhere. When set to a hosted payment page, a quiet "Support Spashta" link appears in the website footer, the app footer and a short section on the Contact page. It is a plain outbound link that opens in a new tab (`noopener noreferrer`): no script, no payment code and no change to the security policy. A contribution is voluntary and unlocks nothing; every feature stays free. The statement on the Contact page says so.
+**Open for the owner:** which hosted page to use (check the provider's current rules on accepting voluntary contributions and any approval needed), and tax treatment of the income (ask an accountant).
+**Checked:** 477 tests pass; Contact, app and Home pages pass axe at 1100 px light and 390 px dark with the link switched on; no sideways scroll.
+
+## Decision (10 November 2026): free until the product has users
+Monetization (paid features) and the contribution link wait until Spashta has a meaningful number of users. `SUPPORT_URL` stays empty, so no support link shows. To revisit: use the visit counter (visits, returning referrers) and the messages received through the Contact page. The owner decides what "enough users" means; no number is set here.
+
+## v1.6.0 – Tool adapters from real evidence (10 November 2026)
+
+- Workfront: a real report used "Task", "Ref No.", "Start Date" and "Due Date", which the adapter did not know. It now maps them. With no % complete column it suggests the status-based rule, so tasks are no longer all left out. "Completion Date" is not used as the planned finish because it is blank while a task is open.
+- **Open fact, not guessed:** in that report "Hours Variance" equals Planned minus Actual divided by 60 on every row, which suggests Actual Hours holds minutes. The tool warns but does not convert. The user must compare one known task in Workfront.
+- Asana adapter added from Asana's documented export columns; it carries no effort or status, so it cannot give cost measures. Marked unverified against a real file.
+- People lists with email addresses now split on commas as well as ";". Without "@", only ";" splits, so "Smith, John" stays one name.
+- The shared Smartsheet file was a project register, not a task export. No Smartsheet adapter until a real task or Gantt sheet is supplied.
+- Real files shared by the user were not copied into the repo; tests use made-up rows.
