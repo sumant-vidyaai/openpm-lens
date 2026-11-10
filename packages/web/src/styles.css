@@ -231,3 +231,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bars li { margin: .6rem 0; }
 .bars progress { display: block; width: min(28rem, 100%); height: .7rem; margin-top: .25rem; accent-color: var(--accent); }
 .firstrun { padding-left: 1.2rem; } .firstrun li { margin: .6rem 0; } .firstrun button { margin-left: .5rem; }
+
+/* Practice questions */
+fieldset.practice-q { margin: 0 0 1rem; min-width: 0; }
+fieldset.practice-q legend { font-weight: 600; padding: 0 .25rem; max-width: 100%; }
+.practice-choice { display: block; padding: .35rem 0; cursor: pointer; }
+.practice-choice input { margin-right: .5rem; }

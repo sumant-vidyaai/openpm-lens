@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CAUTIONS, QUESTIONS, TERMS } from './learnContent';
+import { PracticeSection } from './Practice';
 
 export function LearnScreen() {
   const [q, setQ] = useState('');
@@ -20,6 +21,8 @@ export function LearnScreen() {
           <tbody>{QUESTIONS.map((x) => <tr key={x.question}><th scope="row">{x.question}</th><td>{x.answer}</td><td>{x.tab}</td><td>{x.needs}</td></tr>)}</tbody>
         </table>
       </div>
+
+      <PracticeSection />
 
       <h3>Reading the numbers safely</h3>
       <ul>{CAUTIONS.map((c) => <li key={c}>{c}</li>)}</ul>

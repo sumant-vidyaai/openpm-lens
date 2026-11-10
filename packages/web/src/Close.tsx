@@ -1,7 +1,23 @@
 import { useMemo } from 'react';
-import { goRecordGaps, roundHalfUp, summariseBenefits, summariseChecklist, type BenefitState } from '@spashta/core';
+import { makeArchive, goRecordGaps, roundHalfUp, summariseBenefits, summariseChecklist, type BenefitState } from '@spashta/core';
 import { NeedsImport } from './common';
 import type { SharedData } from './shared';
+import { archiveSections } from './archiveSections';
+import pkg from '../package.json';
+
+function readSnapshots(): string | null {
+  try { return localStorage.getItem('spashta-snapshots-v1') || localStorage.getItem('openpm-lens-snapshots-v1'); } catch { return null; }
+}
+
+function downloadArchive(s: SharedData) {
+  const when = new Date();
+  const bytes = makeArchive({ fileName: s.fileName, statusDate: s.statusDate || null, exportedAt: when, version: pkg.version, tasks: { headers: s.table.headers, rows: s.table.rows }, sections: archiveSections(s), snapshotsJson: readSnapshots() });
+  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/zip' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = `spashta-archive-${when.toISOString().slice(0, 10)}.zip`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 const STATE_TEXT: Record<BenefitState, string> = { not_measured: 'not measured yet', no_plan: 'no plan figure', behind: 'behind plan', on_plan: 'on plan', ahead: 'ahead of plan' };
 const f1 = (x: number) => String(roundHalfUp(x, 1));
@@ -118,6 +134,13 @@ export function CloseScreen({ shared, onGoImport, onGoTemplate }: { shared: Shar
           ))}
         </section>
       )}
+
+      <section aria-labelledby="cl-ar" className="noprint">
+        <h3 id="cl-ar">Archive everything</h3>
+        <p>Download one zip file holding the task table, every filled sheet (risks, issues, changes, scoring, business case, stakeholders, RFI and RFP, go / no-go, checklist, lessons, benefits), the snapshots saved in this browser, and a README that lists what is inside. Open the CSV files in Excel.</p>
+        <p><button type="button" onClick={() => downloadArchive(shared)}>Download archive (zip)</button></p>
+        <p className="note">The archive is a copy of what you loaded, as read; no figures are recalculated. It is made on this device and not uploaded anywhere. Keep it with your project records.</p>
+      </section>
 
       <section aria-labelledby="cl-so">
         <h3 id="cl-so">Sign-off</h3>
