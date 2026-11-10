@@ -39,3 +39,4 @@ export * from './network';
 export * from './threePoint';
 export * from './reserves';
 export * from './initiate';
+export * from './close';

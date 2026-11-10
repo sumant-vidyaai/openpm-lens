@@ -1,4 +1,4 @@
-import type { CaseParse, GoParse, ScoringParse, SolicitationParse, StakeholderParse, ChangeParse, IssueParse, RiskParse, EvmRow, ScheduleRow, TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@spashta/core';
+import type { BenefitParse, ChecklistParse, LessonParse, CaseParse, GoParse, ScoringParse, SolicitationParse, StakeholderParse, ChangeParse, IssueParse, RiskParse, EvmRow, ScheduleRow, TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@spashta/core';
 
 /**
  * What the Import tab has worked out, shared with the other tabs so a file is loaded and set up once.
@@ -21,6 +21,8 @@ export interface SharedData {
   raid: { risks: RiskParse; issues: IssueParse; changes: ChangeParse } | null;
   /** The template's Initiate sheets: Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go (null when the file is not a template workbook). */
   initiate: { scoring: ScoringParse; businessCase: CaseParse; stakeholders: StakeholderParse; solicitations: SolicitationParse; goRecord: GoParse } | null;
+  /** The template's Close sheets: Benefits, Checklist, Lessons (null when the file is not a template workbook). */
+  close: { benefits: BenefitParse; checklist: ChecklistParse; lessons: LessonParse } | null;
   /** Present when the file is the Spashta template: its Settings and Rates sheets (null for a CSV) and the readiness counts. */
   template: { settings: TemplateSettings | null; rates: Record<string, number>; readiness: TemplateReadiness } | null;
   /** Per-task working behind the cost and schedule numbers (same order as items). */

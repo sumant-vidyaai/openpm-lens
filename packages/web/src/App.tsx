@@ -16,6 +16,7 @@ import { RaidScreen } from './Raid';
 import { ForecastScreen } from './Forecast';
 import { PlanningScreen } from './Planning';
 import { InitiateScreen } from './Initiate';
+import { CloseScreen } from './Close';
 import { StatusReportScreen } from './StatusReport';
 import { StatusStrip } from './StatusStrip';
 import { TrendsScreen } from './Trends';
@@ -76,12 +77,13 @@ function MetricCardView({ id }: { id: string }) {
   );
 }
 
-type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'forecast' | 'planning' | 'initiate' | 'report' | 'trends' | 'learn' | 'coverage' | 'library';
+type TabId = 'overview' | 'import' | 'template' | 'portfolio' | 'flow' | 'schedule' | 'cost' | 'resources' | 'quality' | 'raid' | 'forecast' | 'planning' | 'initiate' | 'close' | 'report' | 'trends' | 'learn' | 'coverage' | 'library';
 const GROUPS: { title: string; tabs: { id: TabId; label: string }[] }[] = [
   { title: 'Start', tabs: [{ id: 'overview', label: 'Overview' }, { id: 'import', label: 'Import' }, { id: 'template', label: 'Template' }] },
   { title: 'Initiate', tabs: [{ id: 'initiate', label: 'Choose and justify' }] },
   { title: 'Plan and track', tabs: [{ id: 'planning', label: 'Planning' }, { id: 'schedule', label: 'Schedule' }, { id: 'cost', label: 'Cost in money' }, { id: 'resources', label: 'Resources' }, { id: 'flow', label: 'Flow metrics' }] },
   { title: 'Control', tabs: [{ id: 'quality', label: 'Quality' }, { id: 'raid', label: 'Risks, issues, changes' }, { id: 'forecast', label: 'Forecast' }] },
+  { title: 'Close', tabs: [{ id: 'close', label: 'Close and review' }] },
   { title: 'Report', tabs: [{ id: 'report', label: 'Status report' }, { id: 'trends', label: 'Snapshots and trends' }] },
   { title: 'Portfolio', tabs: [{ id: 'portfolio', label: 'Portfolio' }] },
   { title: 'Learn', tabs: [{ id: 'learn', label: 'Learn' }, { id: 'coverage', label: 'Tool coverage' }, { id: 'library', label: 'Metric library' }] },
@@ -168,6 +170,7 @@ export function App() {
         {panel('raid', <RaidScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
         {panel('initiate', <InitiateScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
         {panel('planning', <PlanningScreen shared={shared} onGoImport={goImport} />)}
+        {panel('close', <CloseScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
         {panel('forecast', <ForecastScreen shared={shared} onGoImport={goImport} />)}
         {panel('report', <StatusReportScreen shared={shared} onGoImport={goImport} />)}
         {panel('trends', <TrendsScreen shared={shared} onGoImport={goImport} />)}

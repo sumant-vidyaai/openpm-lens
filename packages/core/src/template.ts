@@ -3,6 +3,7 @@ import type { DayCount } from './dates';
 import type { PercentRule } from './percentComplete';
 import { parseDateText } from './dates';
 import { suggestStatusCategory } from './importTasks';
+import { parseBenefits, parseChecklist, parseLessons, type BenefitParse, type ChecklistParse, type LessonParse } from './close';
 import { parseCaseSheet, parseGoRecord, parseScoring, parseSolicitations, parseStakeholders, type CaseParse, type GoParse, type ScoringParse, type SolicitationParse, type StakeholderParse } from './initiate';
 import { parseChanges, parseIssues, parseRisks, type ChangeParse, type IssueParse, type RiskParse } from './raid';
 
@@ -319,6 +320,10 @@ export interface TemplateParts {
   stakeholders: StakeholderParse;
   solicitations: SolicitationParse;
   goRecord: GoParse;
+  /** The optional Close sheets (Benefits, Checklist, Lessons). */
+  benefits: BenefitParse;
+  checklist: ChecklistParse;
+  lessons: LessonParse;
   /** True when a Settings sheet was present at all. */
   hasSettings: boolean;
 }
@@ -348,6 +353,9 @@ export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]):
     stakeholders: parseStakeholders(grid('stakeholders')),
     solicitations: parseSolicitations(grid('rfi-rfp')),
     goRecord: parseGoRecord(grid('go-no-go')),
+    benefits: parseBenefits(grid('benefits')),
+    checklist: parseChecklist(grid('checklist')),
+    lessons: parseLessons(grid('lessons')),
   };
 }
 
