@@ -96,6 +96,29 @@ EXAMPLE_SOL = [
     ['S-3', 'RFP', 'Vendor C (made up)', '2026-04-10', '', 'Sent'],
 ]
 GO_HEAD = ['Decision', 'Decided by', 'Date', 'Reason']
+BEN_HEAD = ['ID', 'Benefit', 'Owner', 'Measure', 'Planned', 'Realised', 'Due']
+EXAMPLE_BEN = [
+    ['B-1', 'Fewer support calls (made up)', 'Support lead', 'calls a month', 400, 340, '2026-09-30'],
+    ['B-2', 'Faster order entry (made up)', 'Sales lead', 'hours saved a month', 120, 150, '2026-09-30'],
+    ['B-3', 'Lower hosting cost (made up)', 'IT lead', 'cost saved a month', 900, '', '2026-12-31'],
+]
+CHECK_HEAD = ['Group', 'Item', 'Owner', 'Status', 'Done on']
+EXAMPLE_CHECK = [
+    ['Go-live', 'Release plan approved', 'Asha', 'Done', '2026-03-27'],
+    ['Go-live', 'Support team briefed', 'Meena', 'Done', '2026-03-30'],
+    ['Acceptance', 'All requirements confirmed as met', 'Asha', 'Done', '2026-03-31'],
+    ['Acceptance', 'Deliverables handed over and signed off', 'Sponsor', 'Open', ''],
+    ['Contract closure', 'Outstanding invoices paid', 'Finance', 'Open', ''],
+    ['Contract closure', 'Vendor and contractor agreements closed', 'Ravi', 'Open', ''],
+    ['Handover', 'Records archived', 'Ravi', 'Open', ''],
+    ['Handover', 'Team released or reassigned', 'Asha', 'Not applicable', ''],
+]
+LESSON_HEAD = ['Category', 'Lesson', 'Recommendation', 'Owner', 'Raised']
+EXAMPLE_LESSON = [
+    ['Went well', 'Weekly demos caught misunderstandings early (made up)', 'Keep weekly demos on every project', 'Asha', '2026-03-20'],
+    ['Went badly', 'The payment vendor delivered late (made up)', 'Agree a fallback before signing', 'Ravi', '2026-03-25'],
+    ['Do differently', 'Estimates ignored testing effort (made up)', 'Add a testing line to every estimate', 'Meena', '2026-03-28'],
+]
 RISK_HEAD = ['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done']
 ISSUE_HEAD = ['ID', 'Issue', 'Priority', 'Owner', 'Status', 'Raised', 'Due', 'Resolved']
 CHANGE_HEAD = ['ID', 'Change', 'Requested by', 'Decision', 'Requested', 'Decided', 'Cost impact (h)', 'Schedule impact (days)']
@@ -136,7 +159,7 @@ def build(path, example):
     s.title = 'Start here'
     lines = [
         ('Spashta template', 'title'),
-        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Business case, Stakeholders, RFI-RFP and Go-no-go sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
+        ('Fill in the Tasks sheet, optionally the Settings, Rates, Holidays, Leave, Risks, Issues, Changes, Scoring, Business case, Stakeholders, RFI-RFP, Go-no-go, Checklist, Lessons and Benefits sheets, then upload this file to Spashta (Import or Portfolio tab). The app recognises it and sets itself up.', None),
         ('Your file stays on your computer: the app runs in your browser and sends nothing anywhere.', None),
         ('', None),
         ('Rules that matter', 'h'),
@@ -382,7 +405,7 @@ def build(path, example):
             for j in range(1, len(head) + 1):
                 c = ws.cell(row=i, column=j)
                 c.fill = INPUT_FILL
-                if head[j - 1] in ('Due', 'Received', 'Date', 'ID'):
+                if head[j - 1] in ('Due', 'Received', 'Date', 'ID', 'Done on', 'Raised'):
                     c.number_format = '@'
         if example:
             for i, row in enumerate(example_rows, start=2):
@@ -420,6 +443,18 @@ def build(path, example):
                      'Optional. Your decision record. A No go or Hold needs a reason. Leave blank until decided.', [])
     dv = DataValidation(type='list', formula1='"Go,No go,Hold"', allow_blank=True)
     go.add_data_validation(dv); dv.add('A2')
+
+    # --- Close sheets
+    ck = plain_sheet('Checklist', CHECK_HEAD, [18, 46, 14, 16, 14], 60,
+                     'Optional. Group the items however you like (for example Go-live, Acceptance, Contract closure, Handover). Status is Open, Done or Not applicable; a blank status counts as not done.', EXAMPLE_CHECK)
+    dv = DataValidation(type='list', formula1='"Open,Done,Not applicable"', allow_blank=True)
+    ck.add_data_validation(dv); dv.add('D2:D61')
+    ls = plain_sheet('Lessons', LESSON_HEAD, [16, 46, 40, 14, 14], 60,
+                     'Optional. Category is Went well, Went badly or Do differently (or your own). Write what happened and what to do next time.', EXAMPLE_LESSON)
+    dv = DataValidation(type='list', formula1='"Went well,Went badly,Do differently"', allow_blank=True)
+    ls.add_data_validation(dv); dv.add('A2:A61')
+    plain_sheet('Benefits', BEN_HEAD, [8, 40, 16, 22, 12, 12, 14], 40,
+                'Optional. Planned and Realised are plain numbers in the same unit (the Measure column says which). Leave Realised blank until it can be measured: blank is not 0.', EXAMPLE_BEN)
     wb.active = 1
     wb.save(path)
 
