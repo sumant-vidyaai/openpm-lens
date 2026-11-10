@@ -22,7 +22,8 @@ Spashta turns an export from your project tool into standard project numbers, wi
 | Portfolio | Which projects need attention? | One file per project (or one template file with a Project column); roll up by project, programme, team or all |
 | Flow metrics | Throughput, cycle time, WIP, work item age | Dates work started and finished |
 | Choose and justify | Weighted scoring of vendors or options, business case (ROI, payback, NPV, benefit-cost ratio, IRR), stakeholder power / interest grid, RFI and RFP tracker, go / no-go record | Scoring, Business case, Stakeholders, RFI-RFP and Go-no-go sheets; Discount rate (%) and Stakeholder high from on the Settings sheet |
-| Close and review | Closure checklist progress, benefits promised vs realised, lessons learned, and a one-page printable closure report | Checklist, Benefits and Lessons sheets (the report also uses your task file, risks, issues and go / no-go record) |
+| Close and review | Closure checklist progress, benefits promised vs realised, lessons learned, a one-page printable closure report, and a one-file archive (zip) of everything loaded | Checklist, Benefits and Lessons sheets (the report also uses your task file, risks, issues and go / no-go record) |
+| Learn: Practice | 13 quick questions and a four-step case study with explanations | Nothing; it needs no file |
 | Planning | Three-point (PERT) estimates with a range, the critical path and float from task dependencies, and whether contingency and management reserve cover the expected overrun | Optimistic (h), Pessimistic (h) and Depends on columns (template, or links in a Microsoft Project XML file); Contingency and Management reserve on the Settings sheet |
 | Schedule | On-time rate, finish variance, overdue tasks, milestones (done, late, overdue, due soon) | Planned finish and actual finish dates |
 | Cost in money | Cost in money and forecast, monthly cash flow (planned vs actual) | Hours plus hourly rates you type in |
@@ -73,6 +74,7 @@ CSV downloads open in Excel. Text that starts with `=`, `+`, `-` or `@` is saved
 ## 8. Known limits
 
 - Choose and justify: weights, scores, discount rate and the "high" cut-off are yours and never defaulted; an option with a missing score is not ranked; NPV discounts every period except period 0; payback assumes money arrives evenly within a period; no weights-sensitivity check yet.
+- Archive: a copy of what was loaded, as read, made on your device; it cannot be loaded back into the app.
 - Close and review: a benefit not yet measured is left out, never counted as 0; benefits are only added when their Measure text matches (otherwise each stands alone); an unmarked checklist item counts as not done; "planned minus spent" is only meaningful when all work is finished.
 - Planning: only finish-to-start links with no lag are used; dependencies are never guessed from dates; critical-path task length is the planned start-to-finish span in counted days (not effort); the total range of a three-point estimate assumes independent tasks.
 - Baseline lock protects against accidents in this browser; it is not a security control.
