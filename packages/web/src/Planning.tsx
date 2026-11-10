@@ -143,7 +143,7 @@ export function PlanningScreen({ shared, onGoImport }: { shared: SharedData | nu
     <>
       <h2>Planning</h2>
       <p className="lead">Three-point estimates, the critical path through task dependencies, and the reserves that sit behind the budget.</p>
-      {!shared && <NeedsImport onGo={onGoImport} />}
+      {!shared && <NeedsImport onGo={onGoImport} what="This tab works out three-point estimates, the critical path and reserves, so it needs a task file (ideally with Optimistic, Pessimistic and Depends on columns)." />}
       {shared && calc && (
         <>
           <div className="form">

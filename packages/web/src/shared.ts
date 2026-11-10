@@ -1,4 +1,4 @@
-import type { BenefitParse, ChecklistParse, LessonParse, CaseParse, GoParse, ScoringParse, SolicitationParse, StakeholderParse, ChangeParse, IssueParse, RiskParse, EvmRow, ScheduleRow, TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@spashta/core';
+import type { LifecycleSheets, BenefitParse, ChecklistParse, LessonParse, CaseParse, GoParse, ScoringParse, SolicitationParse, StakeholderParse, ChangeParse, IssueParse, RiskParse, EvmRow, ScheduleRow, TemplateReadiness, TemplateSettings, CsvResult, DateOrder, DayCount, HoursTask, ScheduleTask, WorkItem } from '@spashta/core';
 
 /**
  * What the Import tab has worked out, shared with the other tabs so a file is loaded and set up once.
@@ -31,3 +31,6 @@ export interface SharedData {
   /** Headline sums for the Overview tab (hours). Null where nothing could be used. */
   summary: { ev: number | null; ac: number | null; bac: number | null; pv: number | null; evSchedule: number | null; costTasks: number; scheduleTasks: number; tasksTotal: number };
 }
+
+/** The Initiate, Close, risk and settings sheets read from a workbook, with or without a Tasks sheet. Null for a CSV or XML file. */
+export type Lifecycle = LifecycleSheets & { fileName: string };

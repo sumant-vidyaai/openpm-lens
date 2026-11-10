@@ -1,11 +1,14 @@
 import type { ArchiveInput } from '@spashta/core';
+import type { LifecycleSheets } from '@spashta/core';
 import type { SharedData } from './shared';
+
+type Source = { raid: Pick<LifecycleSheets, 'risks' | 'issues' | 'changes'> | null; initiate: Pick<LifecycleSheets, 'scoring' | 'businessCase' | 'stakeholders' | 'solicitations' | 'goRecord'> | null; close: Pick<LifecycleSheets, 'benefits' | 'checklist' | 'lessons'> | null };
 
 const cap = (s: string | null) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 const v = <T,>(x: T | null | undefined): T | '' => (x === null || x === undefined ? '' : x);
 
 /** Turns every filled optional sheet of the loaded file back into rows, in the same column order as the template. Absent sheets are skipped. */
-export function archiveSections(s: SharedData): ArchiveInput['sections'] {
+export function archiveSections(s: Source | SharedData): ArchiveInput['sections'] {
   const out: ArchiveInput['sections'] = [];
   const r = s.raid, i = s.initiate, c = s.close;
   if (r?.risks.present) out.push({ file: 'risks.csv', title: 'Risks', rows: [['ID', 'Risk', 'Probability (1-5)', 'Impact (1-5)', 'Owner', 'Response', 'Status', 'Action', 'Action due', 'Action done'], ...r.risks.risks.map((x) => [x.id, x.title, v(x.probability), v(x.impact), x.owner, x.response, cap(x.status), x.action, v(x.actionDue), v(x.actionDone)])] });

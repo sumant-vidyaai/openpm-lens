@@ -64,7 +64,7 @@ export function ResourceScreen({ shared, onGoImport }: { shared: SharedData | nu
     <section aria-labelledby="res-h">
       <h2 id="res-h">Resources: workload per person</h2>
       <p className="lead">How much planned work each person has in each week, against the hours they can work. Capacity is entered by you.</p>
-      {!shared ? <NeedsImport onGo={onGoImport} /> : (
+      {!shared ? <NeedsImport onGo={onGoImport} what="This tab shows who is loaded and when, so it needs a task file with an assignee, planned hours and planned dates." /> : (
         <>
           <p><strong>{shared.fileName}</strong>: {shared.items.length} tasks. Planned hours and dates come from the Import tab.</p>
           <div className="form">

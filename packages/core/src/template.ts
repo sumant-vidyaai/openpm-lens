@@ -328,34 +328,54 @@ export interface TemplateParts {
   hasSettings: boolean;
 }
 
+/** The sheets that do not depend on the task table: settings, risks and issues, and the Initiate and Close sheets. */
+export interface LifecycleSheets {
+  settings: TemplateSettings;
+  hasSettings: boolean;
+  risks: RiskParse; issues: IssueParse; changes: ChangeParse;
+  scoring: ScoringParse; businessCase: CaseParse; stakeholders: StakeholderParse; solicitations: SolicitationParse; goRecord: GoParse;
+  benefits: BenefitParse; checklist: ChecklistParse; lessons: LessonParse;
+  /** True when at least one of the Initiate or Close sheets is in the file. */
+  hasInitiateOrClose: boolean;
+}
+
+/** Reads those sheets by name from any workbook, whether or not it has a Tasks sheet. */
+export function extractLifecycleSheets(sheets: { name: string; data: GridCell[][] }[]): LifecycleSheets {
+  const find = (n: string) => sheets.findIndex((s) => s.name.trim().toLowerCase() === n);
+  const grid = (n: string) => sheets[find(n)]?.data;
+  const settingsSheet = sheets[find('settings')];
+  const r: LifecycleSheets = {
+    hasSettings: settingsSheet !== undefined,
+    settings: settingsSheet ? parseTemplateSettings(settingsSheet.data) : parseTemplateSettings([]),
+    risks: parseRisks(grid('risks')), issues: parseIssues(grid('issues')), changes: parseChanges(grid('changes')),
+    scoring: parseScoring(grid('scoring')), businessCase: parseCaseSheet(grid('business case')), stakeholders: parseStakeholders(grid('stakeholders')),
+    solicitations: parseSolicitations(grid('rfi-rfp')), goRecord: parseGoRecord(grid('go-no-go')),
+    benefits: parseBenefits(grid('benefits')), checklist: parseChecklist(grid('checklist')), lessons: parseLessons(grid('lessons')),
+    hasInitiateOrClose: false,
+  };
+  r.hasInitiateOrClose = [r.scoring, r.businessCase, r.stakeholders, r.solicitations, r.goRecord, r.benefits, r.checklist, r.lessons].some((x) => x.present);
+  return r;
+}
+
 /** Finds the Tasks / Settings / Rates sheets of a workbook by name. Null if there is no "Tasks" sheet. */
 export function extractTemplate(sheets: { name: string; data: GridCell[][] }[]): TemplateParts | null {
   const find = (n: string) => sheets.findIndex((s) => s.name.trim().toLowerCase() === n);
   const t = find('tasks');
   if (t < 0) return null;
-  const settingsSheet = sheets[find('settings')];
   const ratesSheet = sheets[find('rates')];
   const holSheet = sheets[find('holidays')];
   const leaveSheet = sheets[find('leave')];
-  const grid = (n: string) => sheets[find(n)]?.data;
+  const life = extractLifecycleSheets(sheets);
   return {
     tasksIndex: t,
-    hasSettings: settingsSheet !== undefined,
-    settings: settingsSheet ? parseTemplateSettings(settingsSheet.data) : parseTemplateSettings([]),
+    hasSettings: life.hasSettings,
+    settings: life.settings,
     rates: ratesSheet ? parseTemplateRates(ratesSheet.data) : { rates: {}, problems: [] },
     holidays: holSheet ? parseTemplateHolidays(holSheet.data) : { dates: [], problems: [] },
     leave: leaveSheet ? parseTemplateLeave(leaveSheet.data) : { entries: [], problems: [] },
-    risks: parseRisks(grid('risks')),
-    issues: parseIssues(grid('issues')),
-    changes: parseChanges(grid('changes')),
-    scoring: parseScoring(grid('scoring')),
-    businessCase: parseCaseSheet(grid('business case')),
-    stakeholders: parseStakeholders(grid('stakeholders')),
-    solicitations: parseSolicitations(grid('rfi-rfp')),
-    goRecord: parseGoRecord(grid('go-no-go')),
-    benefits: parseBenefits(grid('benefits')),
-    checklist: parseChecklist(grid('checklist')),
-    lessons: parseLessons(grid('lessons')),
+    risks: life.risks, issues: life.issues, changes: life.changes,
+    scoring: life.scoring, businessCase: life.businessCase, stakeholders: life.stakeholders, solicitations: life.solicitations, goRecord: life.goRecord,
+    benefits: life.benefits, checklist: life.checklist, lessons: life.lessons,
   };
 }
 

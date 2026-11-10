@@ -79,7 +79,7 @@ export function CostScreen({ shared, onGoImport }: { shared: SharedData | null; 
     <section aria-labelledby="cost-h">
       <h2 id="cost-h">Cost in money</h2>
       <p className="lead">Turn the hours into money using hourly rates you enter. The app never looks up or assumes a rate.</p>
-      {!shared ? <NeedsImport onGo={onGoImport} /> : (
+      {!shared ? <NeedsImport onGo={onGoImport} what="This tab prices the hours in your task file using hourly rates, so it needs a task file with estimates and actual hours." /> : (
         <>
           <p><strong>{shared.fileName}</strong>: {shared.items.length} tasks.</p>
           <div className="form">

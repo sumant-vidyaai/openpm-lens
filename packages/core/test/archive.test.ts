@@ -42,6 +42,11 @@ describe('archive', () => {
     expect(z['README.txt']).toContain('benefits.csv - Benefits (1 rows)');
     expect(z['README.txt']).toContain('Status date: 2026-03-31');
   });
+  it('leaves tasks.csv out when no task table was loaded', () => {
+    const c = readZip(makeArchive({ fileName: 'w.xlsx', statusDate: null, exportedAt: new Date(), version: '1', tasks: { headers: [], rows: [] }, sections: [{ file: 'benefits.csv', title: 'Benefits', rows: [['Benefit'], ['x']] }], snapshotsJson: null }));
+    expect(Object.keys(c)).toEqual(['benefits.csv', 'README.txt']);
+    expect(c['README.txt']).toContain('no task file was loaded');
+  });
   it('leaves snapshots.json out when there are none', () => {
     const b = readZip(makeArchive({ fileName: '', statusDate: null, exportedAt: new Date(), version: '1', tasks: { headers: ['ID'], rows: [] }, sections: [], snapshotsJson: null }));
     expect(Object.keys(b)).toEqual(['tasks.csv', 'README.txt']);

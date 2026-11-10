@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { parseDateText, suggestFlowColumns, type DateOrder } from '@spashta/core';
 import { toCsv, type CsvCell } from '@spashta/core';
 
-export function NeedsImport({ onGo }: { onGo: () => void }) {
+/** Things any screen may ask the app to do, so a screen can offer the made-up example without knowing how the Import tab works. */
+export const AppActions = createContext<{ tryExample: () => void } | null>(null);
+
+export function NeedsImport({ onGo, what }: { onGo: () => void; what?: string }) {
+  const actions = useContext(AppActions);
   return (
     <div className="card" role="note">
       <p>
-        This tab uses the file you set up on the Import tab: load the file there, check the column choices and units, then come back.
-        Nothing is uploaded.
+        {what ?? 'This tab needs a file.'} Load your file on the Import tab (CSV, Excel or Microsoft Project XML), check the column choices and units, then come back.
+        Nothing is uploaded. Or see it working first with the made-up example.
       </p>
-      <button type="button" onClick={onGo}>Go to the Import tab</button>
+      <p className="row">
+        {actions && <button type="button" className="primary" onClick={actions.tryExample}>Try the example</button>}
+        <button type="button" onClick={onGo}>Go to the Import tab</button>
+      </p>
     </div>
   );
 }

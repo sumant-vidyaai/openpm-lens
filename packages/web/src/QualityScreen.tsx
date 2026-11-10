@@ -102,7 +102,7 @@ export function QualityScreen({ shared, onGoImport }: { shared: SharedData | nul
     <section aria-labelledby="q-h">
       <h2 id="q-h">Quality: defects</h2>
       <p className="lead">How many defects there are, how long open ones have been open, how fast defects get resolved, and how they split by severity. You choose which item types count as defects.</p>
-      {!shared ? <NeedsImport onGo={onGoImport} /> : (
+      {!shared ? <NeedsImport onGo={onGoImport} what="This tab counts defects, so it needs a task file with an item type and created dates." /> : (
         <>
           <p><strong>{shared.fileName}</strong>: {shared.items.length} items.</p>
           <h3>1. Which column is which?</h3>

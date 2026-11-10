@@ -20,7 +20,8 @@ import { CloseScreen } from './Close';
 import { StatusReportScreen } from './StatusReport';
 import { StatusStrip } from './StatusStrip';
 import { TrendsScreen } from './Trends';
-import type { SharedData } from './shared';
+import type { Lifecycle, SharedData } from './shared';
+import { AppActions } from './common';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -99,6 +100,7 @@ function applyAccent(a: Accent) {
 export function App() {
   const [tab, setTab] = useState<TabId>('overview');
   const [shared, setShared] = useState<SharedData | null>(null);
+  const [life, setLife] = useState<Lifecycle | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     const t = document.documentElement.dataset.theme;
     return t === 'light' || t === 'dark' ? t : 'system';
@@ -109,10 +111,11 @@ export function App() {
   });
   const [exampleTick, setExampleTick] = useState(0);
   const goImport = () => setTab('import');
+  const actions = { tryExample: () => { setExampleTick((n) => n + 1); setTab('import'); } };
   // Every tab stays mounted (just hidden) so what you loaded and typed is kept when you switch.
   const panel = (id: TabId, node: React.ReactNode) => <div hidden={tab !== id}>{node}</div>;
   return (
-    <>
+    <AppActions.Provider value={actions}>
       <a className="skip" href="#main">
         Skip to content
       </a>
@@ -159,7 +162,7 @@ export function App() {
       <main id="main">
         <h1 className="printonly">Spashta</h1>
         {panel('overview', <OverviewScreen shared={shared} onGo={(id) => setTab(id as TabId)} onTryExample={() => setExampleTick((n) => n + 1)} />)}
-        {panel('import', <ImportScreen onShare={setShared} exampleTick={exampleTick} />)}
+        {panel('import', <ImportScreen onShare={setShared} onLifecycle={setLife} exampleTick={exampleTick} />)}
         {panel('template', <TemplateScreen onGoImport={goImport} />)}
         {panel('portfolio', <PortfolioScreen />)}
         {panel('flow', <FlowScreen />)}
@@ -168,9 +171,9 @@ export function App() {
         {panel('resources', <ResourceScreen shared={shared} onGoImport={goImport} />)}
         {panel('quality', <QualityScreen shared={shared} onGoImport={goImport} />)}
         {panel('raid', <RaidScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
-        {panel('initiate', <InitiateScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
+        {panel('initiate', <InitiateScreen shared={shared} life={life} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
         {panel('planning', <PlanningScreen shared={shared} onGoImport={goImport} />)}
-        {panel('close', <CloseScreen shared={shared} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
+        {panel('close', <CloseScreen shared={shared} life={life} onGoImport={goImport} onGoTemplate={() => setTab('template')} />)}
         {panel('forecast', <ForecastScreen shared={shared} onGoImport={goImport} />)}
         {panel('report', <StatusReportScreen shared={shared} onGoImport={goImport} />)}
         {panel('trends', <TrendsScreen shared={shared} onGoImport={goImport} />)}
@@ -196,6 +199,6 @@ export function App() {
       </footer>
         </div>
       </div>
-    </>
+    </AppActions.Provider>
   );
 }

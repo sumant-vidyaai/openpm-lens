@@ -120,3 +120,27 @@ describe('reading the Initiate sheets', () => {
     expect(parseTemplateSettings([['Discount rate (%)', 'abc'], ['Stakeholder high from', 9]]).problems.length).toBe(2);
   });
 });
+
+import { extractLifecycleSheets } from '../src';
+describe('workbooks without a Tasks sheet', () => {
+  it('still gives the Initiate and Close sheets, settings and a flag saying some are present', () => {
+    const none = extractLifecycleSheets([{ name: 'Start here', data: [['x']] }]);
+    expect(none.hasInitiateOrClose).toBe(false);
+    const r = extractLifecycleSheets([
+      { name: 'Settings', data: [['Setting', 'Value'], ['Discount rate (%)', 8], ['Currency', 'INR']] },
+      { name: 'Business case', data: [['Period', 'Cost', 'Benefit'], [0, 100, ''], [1, '', 120]] },
+      { name: 'Benefits', data: [['Benefit', 'Planned'], ['x', 5]] },
+    ]);
+    expect(r.hasInitiateOrClose).toBe(true);
+    expect(r.settings.discountRate).toBe(8);
+    expect(r.businessCase.years.length).toBe(2);
+    expect(r.benefits.benefits.length).toBe(1);
+    expect(r.scoring.present).toBe(false);
+  });
+  it('extractTemplate still returns null without Tasks and gives the same parses with it', () => {
+    const sheets = [{ name: 'Benefits', data: [['Benefit'], ['x']] }];
+    expect(extractTemplate(sheets)).toBeNull();
+    const t = extractTemplate([{ name: 'Tasks', data: [['Task']] }, ...sheets])!;
+    expect(t.benefits.benefits.length).toBe(1);
+  });
+});

@@ -69,7 +69,7 @@ export function StatusReportScreen({ shared, onGoImport }: { shared: SharedData 
     <section aria-labelledby="sr-h">
       <h2 id="sr-h">Status report</h2>
       <p className="lead noprint">A one-page report you can print or save as PDF. The sentences are written from your numbers and say what they show, not why. Add the reasons and decisions in the boxes below.</p>
-      {!shared && <NeedsImport onGo={onGoImport} />}
+      {!shared && <NeedsImport onGo={onGoImport} what="The status report is written from the numbers in your task file, so it needs one loaded." />}
       {shared && !shared.statusDate && <p className="warn">Set the status date on the Import tab first.</p>}
       {shared && c && (
         <>

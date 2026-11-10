@@ -18,8 +18,12 @@ const csv = (rows: CsvCell[][]) => '﻿' + toCsv(rows);
 
 /** Builds the archive: tasks.csv, one csv per filled sheet, snapshots.json if any, and a README.txt that lists what is inside. Nothing is invented or recalculated. */
 export function makeArchive(a: ArchiveInput): Uint8Array {
-  const files: { name: string; data: string }[] = [{ name: 'tasks.csv', data: csv([a.tasks.headers, ...a.tasks.rows]) }];
-  const lines = [`tasks.csv - the task table as loaded (${a.tasks.rows.length} rows)`];
+  const files: { name: string; data: string }[] = [];
+  const lines: string[] = [];
+  if (a.tasks.headers.length > 0) {
+    files.push({ name: 'tasks.csv', data: csv([a.tasks.headers, ...a.tasks.rows]) });
+    lines.push(`tasks.csv - the task table as loaded (${a.tasks.rows.length} rows)`);
+  } else lines.push('(no task file was loaded, so there is no tasks.csv)');
   for (const s of a.sections) { files.push({ name: s.file, data: csv(s.rows) }); lines.push(`${s.file} - ${s.title} (${Math.max(0, s.rows.length - 1)} rows)`); }
   if (a.snapshotsJson) { files.push({ name: 'snapshots.json', data: a.snapshotsJson }); lines.push('snapshots.json - snapshots saved in this browser (plain JSON)'); }
   const readme = [

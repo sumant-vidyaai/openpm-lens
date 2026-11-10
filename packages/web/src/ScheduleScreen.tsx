@@ -59,7 +59,7 @@ export function ScheduleScreen({ shared, onGoImport }: { shared: SharedData | nu
     <section aria-labelledby="sch-h">
       <h2 id="sch-h">Schedule: planned vs actual finish</h2>
       <p className="lead">Which tasks finished on time, how late the late ones were, and which open tasks are already past their planned finish. This adds to SPI and earned schedule on the Import tab.</p>
-      {!shared ? <NeedsImport onGo={onGoImport} /> : (
+      {!shared ? <NeedsImport onGo={onGoImport} what="This tab compares planned and actual dates, so it needs a task file with planned and actual dates." /> : (
         <>
           <p><strong>{shared.fileName}</strong>: {shared.items.length} tasks. Planned finish comes from the Finish column chosen on the Import tab.</p>
           <div className="form">

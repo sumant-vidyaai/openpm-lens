@@ -4,13 +4,13 @@ import {
   distinctStatuses, parseCsv, roundHalfUp, mergeMapping, suggestStatusCategory, toHoursTasks,
   aggregateSchedule, plannedValueCurve, assessQuality, earnedSchedule, forecast, EAC_METHODS, type EacMethod, summaryRows, taskRows, toCsv, evmSteps, explainEvmRows, explainScheduleRows, scheduleSteps, detectTableAdapter, toScheduleTasks, type DateOrder, type DayCount, issueLabel, tableFromGrid, type ColumnMapping, type CsvResult, type ImportField, type MissingPlannedPolicy, type PercentRule,
   type StatusCategory, type StatusMap, type Unit, type DecimalStyle,
-  extractTemplate, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
+  extractLifecycleSheets, extractTemplate, isTemplateTable, templateReadiness, parseHolidayText, actualSpendItems, spreadDaily, cumulativeAt, type TemplateParts,
 } from '@spashta/core';
 import { MAX_XML_BYTES, readWorkbook } from './readFile';
 import { EarnedValueChart } from './charts';
 import { SAMPLE_CSV } from './sample';
 import { ExplainPanel, StepsPanel } from './Explain';
-import type { SharedData } from './shared';
+import type { Lifecycle, SharedData } from './shared';
 import { ReplaceButton, actualDatesOf } from './common';
 import { Readiness } from './Template';
 
@@ -32,7 +32,7 @@ const RULES: { value: PercentRule; label: string }[] = [
   { value: 'status_based', label: 'Status-based: I choose the % for in progress' },
 ];
 
-export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: SharedData | null) => void; exampleTick?: number }) {
+export function ImportScreen({ onShare, onLifecycle, exampleTick = 0 }: { onShare: (d: SharedData | null) => void; onLifecycle: (d: Lifecycle | null) => void; exampleTick?: number }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [raw, setRaw] = useState<Raw | null>(null);
   const [sheetIdx, setSheetIdx] = useState(0);
@@ -136,6 +136,9 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
         : null,
     );
   }, [calc, csv, fileName, statusDate, dateOrder, dayCount, holidays, hoursPerDay, tpl, readiness, onShare]);
+  // The Initiate, Close and risk sheets are read from any workbook, even one with no Tasks sheet.
+  const life = useMemo(() => (raw && raw.kind === 'xlsx' ? { ...extractLifecycleSheets(raw.sheets), fileName: fileName ?? '' } : null), [raw, fileName]);
+  useEffect(() => { onLifecycle(life); }, [life, onLifecycle]);
   // Actual cost over time: each task's actual hours spread evenly from its actual start (an assumption, stated on screen).
   const acLine = useMemo(() => {
     if (!calc || !csv || !statusDate) return null;
@@ -270,6 +273,9 @@ export function ImportScreen({ onShare, exampleTick = 0 }: { onShare: (d: Shared
       </div>
 
       {loadError && <p className="warn" role="alert">{loadError}</p>}
+      {life && life.hasInitiateOrClose && !tpl && (
+        <p role="note" className="noprint">This workbook has no Tasks sheet, so the task tabs have nothing to show. Its Initiate and Close sheets are ready: open <strong>Choose and justify</strong> or <strong>Close and review</strong>.</p>
+      )}
       {csv && mapping && (
         <>
           {raw?.kind === 'xlsx' && raw.sheets.length > 1 && (

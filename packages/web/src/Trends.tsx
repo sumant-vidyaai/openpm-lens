@@ -174,7 +174,7 @@ export function TrendsScreen({ shared, onGoImport }: { shared: SharedData | null
 
       <div className="panel noprint">
         <h3>Save a snapshot</h3>
-        {!shared && <NeedsImport onGo={onGoImport} />}
+        {!shared && <NeedsImport onGo={onGoImport} what="Saving a snapshot needs a loaded file. Snapshots you saved earlier on this device, and snapshot files you add, can still be viewed and compared below." />}
         {shared && (
           <>
             <p>Loaded: <strong>{shared.fileName}</strong>{shared.statusDate ? `, status date ${shared.statusDate}` : ' (no status date chosen yet)'}.</p>

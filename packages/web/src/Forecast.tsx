@@ -75,7 +75,7 @@ export function ForecastScreen({ shared, onGoImport }: { shared: SharedData | nu
     <>
       <h2>Finish-date forecast</h2>
       <p className="lead">When will the open work be finished? The answer is a range, not a date: it comes from how many items were finished each week in the past.</p>
-      {!shared && <NeedsImport onGo={onGoImport} />}
+      {!shared && <NeedsImport onGo={onGoImport} what="This tab forecasts finish dates from the work your team has already finished, so it needs a task file with start and finish dates." />}
       {shared && !shared.statusDate && <p className="warn">Set the status date on the Import tab first. Weeks are counted back from it.</p>}
       {shared && r && (
         <>

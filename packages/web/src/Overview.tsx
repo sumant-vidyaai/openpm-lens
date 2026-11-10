@@ -30,16 +30,14 @@ export function OverviewScreen({ shared, onGo, onTryExample }: { shared: SharedD
           <li><strong>Share it.</strong> Open Status report for a one-page summary you can save as PDF. <button type="button" onClick={() => onGo('learn')}>How the numbers work</button></li>
         </ol>
         <p className="row">
-          <button type="button" onClick={() => onGo('import')}>Load a file</button>
           <button type="button" onClick={() => onGo('template')}>Get the fill-in template</button>
-          <button type="button" onClick={() => onGo('learn')}>Read how the numbers work</button>
         </p>
         <ul className="plain">
           <li><strong>Health at a glance.</strong> One status from cost and schedule, with the reason in words.</li>
           <li><strong>Nothing is guessed.</strong> Missing values are left out and listed, never turned into zero.</li>
           <li><strong>Private.</strong> Your file is read in this browser tab and never uploaded. It works offline.</li>
         </ul>
-        <p className="note">Works with CSV, Excel and Microsoft Project XML exports. Use "Try the made-up example" on the Import tab to see it with sample data first.</p>
+        <p className="note">Works with CSV, Excel and Microsoft Project XML exports. Click "Try the example" above to see it with sample data first.</p>
       </section>
     );
   }

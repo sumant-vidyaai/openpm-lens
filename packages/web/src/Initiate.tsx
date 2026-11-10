@@ -4,7 +4,7 @@ import {
   type GridQuadrant,
 } from '@spashta/core';
 import { NeedsImport } from './common';
-import type { SharedData } from './shared';
+import type { Lifecycle, SharedData } from './shared';
 
 const readNum = (t: string | undefined): number | null => {
   const s = (t ?? '').trim();
@@ -14,12 +14,13 @@ const money = (x: number | null, cur: string) => (x === null ? 'not available' :
 const yrs = (x: number | null) => (x === null ? 'not within the years listed' : `${roundHalfUp(x, 2)} years`);
 const DECISION_LABEL = { go: 'Go', no_go: 'No go', hold: 'Hold' } as const;
 
-export function InitiateScreen({ shared, onGoImport, onGoTemplate }: { shared: SharedData | null; onGoImport: () => void; onGoTemplate: () => void }) {
-  const init = shared?.initiate ?? null;
-  const settings = shared?.template?.settings ?? null;
+export function InitiateScreen({ shared, life, onGoImport, onGoTemplate }: { shared: SharedData | null; life: Lifecycle | null; onGoImport: () => void; onGoTemplate: () => void }) {
+  const init = life ?? shared?.initiate ?? null;
+  const settings = life?.settings ?? shared?.template?.settings ?? null;
+  const statusDate = shared?.statusDate || life?.settings.statusDate || '';
   const [rate, setRate] = useState<string | undefined>(undefined);
   const [high, setHigh] = useState<string | undefined>(undefined);
-  useEffect(() => { setRate(undefined); setHigh(undefined); }, [shared?.fileName, shared?.table]);
+  useEffect(() => { setRate(undefined); setHigh(undefined); }, [shared?.fileName, shared?.table, life]);
   const cur = settings?.currency ?? '';
   const rateText = rate ?? (settings?.discountRate === null || settings?.discountRate === undefined ? '' : String(settings.discountRate));
   const rateNum = readNum(rateText);
@@ -30,9 +31,9 @@ export function InitiateScreen({ shared, onGoImport, onGoTemplate }: { shared: S
 
   const scoring = useMemo(() => (init?.scoring.present ? scoreOptions(init.scoring.criteria, init.scoring.options) : null), [init]);
   const bc = useMemo(() => (init?.businessCase.present ? businessCase(init.businessCase.years, rateFraction) : null), [init, rateFraction]);
-  const sol = useMemo(() => (init?.solicitations.present ? summariseSolicitations(init.solicitations.rows, shared?.statusDate || null) : null), [init, shared?.statusDate]);
+  const sol = useMemo(() => (init?.solicitations.present ? summariseSolicitations(init.solicitations.rows, statusDate || null) : null), [init, statusDate]);
 
-  if (!shared) return (<><h2>Choose and justify</h2><NeedsImport onGo={onGoImport} /></>);
+  if (!shared && !(life && life.hasInitiateOrClose)) return (<><h2>Choose and justify</h2><NeedsImport onGo={onGoImport} what="This tab reads the Scoring, Business case, Stakeholders, RFI-RFP and Go-no-go sheets of the Spashta template workbook." /></>);
   const none = !init || (!init.scoring.present && !init.businessCase.present && !init.stakeholders.present && !init.solicitations.present && !init.goRecord.present);
   const go = init?.goRecord.record ?? null;
   const gaps = go ? goRecordGaps(go) : null;
@@ -138,7 +139,7 @@ export function InitiateScreen({ shared, onGoImport, onGoTemplate }: { shared: S
       {sol && init && (
         <section aria-labelledby="in-so">
           <h3 id="in-so">RFI and RFP tracker</h3>
-          <p>{sol.total} sent, {sol.received} answered, {sol.open} waiting{shared.statusDate ? `, ${sol.overdue} overdue at ${shared.statusDate}` : ' (set a status date to see overdue)'}{sol.noDue > 0 ? `; ${sol.noDue} waiting with no due date` : ''}.</p>
+          <p>{sol.total} sent, {sol.received} answered, {sol.open} waiting{statusDate ? `, ${sol.overdue} overdue at ${statusDate}` : ' (set a status date to see overdue)'}{sol.noDue > 0 ? `; ${sol.noDue} waiting with no due date` : ''}.</p>
           {init.solicitations.rows.length > 0 && (
             <div className="scroll" tabIndex={0}>
               <table>
@@ -148,7 +149,7 @@ export function InitiateScreen({ shared, onGoImport, onGoTemplate }: { shared: S
                   {init.solicitations.rows.map((r) => (
                     <tr key={r.id}>
                       <td>{r.id}</td><td>{r.kind}</td><th scope="row">{r.vendor}</th><td>{r.due ?? ''}</td><td>{r.received ?? ''}</td>
-                      <td>{r.status ?? ''}{!r.received && r.due && shared.statusDate && r.due < shared.statusDate ? ' (overdue)' : ''}</td>
+                      <td>{r.status ?? ''}{!r.received && r.due && statusDate && r.due < statusDate ? ' (overdue)' : ''}</td>
                     </tr>
                   ))}
                 </tbody>

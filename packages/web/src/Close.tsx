@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { makeArchive, goRecordGaps, roundHalfUp, summariseBenefits, summariseChecklist, type BenefitState } from '@spashta/core';
 import { NeedsImport } from './common';
-import type { SharedData } from './shared';
+import type { Lifecycle, SharedData } from './shared';
 import { archiveSections } from './archiveSections';
 import pkg from '../package.json';
 
@@ -9,9 +9,14 @@ function readSnapshots(): string | null {
   try { return localStorage.getItem('spashta-snapshots-v1') || localStorage.getItem('openpm-lens-snapshots-v1'); } catch { return null; }
 }
 
-function downloadArchive(s: SharedData) {
+function downloadArchive(s: SharedData | null, life: Lifecycle | null) {
   const when = new Date();
-  const bytes = makeArchive({ fileName: s.fileName, statusDate: s.statusDate || null, exportedAt: when, version: pkg.version, tasks: { headers: s.table.headers, rows: s.table.rows }, sections: archiveSections(s), snapshotsJson: readSnapshots() });
+  const parts = life ?? s?.initiate ?? null;
+  const bytes = makeArchive({
+    fileName: s?.fileName ?? life?.fileName ?? '', statusDate: s?.statusDate || life?.settings.statusDate || null, exportedAt: when, version: pkg.version,
+    tasks: s ? { headers: s.table.headers, rows: s.table.rows } : { headers: [], rows: [] },
+    sections: archiveSections({ raid: life ?? s?.raid ?? null, initiate: parts, close: life ?? s?.close ?? null }), snapshotsJson: readSnapshots(),
+  });
   const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/zip' }));
   const a = document.createElement('a');
   a.href = url; a.download = `spashta-archive-${when.toISOString().slice(0, 10)}.zip`;
@@ -23,19 +28,21 @@ const STATE_TEXT: Record<BenefitState, string> = { not_measured: 'not measured y
 const f1 = (x: number) => String(roundHalfUp(x, 1));
 const num = (x: number | null) => (x === null ? '' : String(roundHalfUp(x, 2)));
 
-export function CloseScreen({ shared, onGoImport, onGoTemplate }: { shared: SharedData | null; onGoImport: () => void; onGoTemplate: () => void }) {
-  const c = shared?.close ?? null;
+export function CloseScreen({ shared, life, onGoImport, onGoTemplate }: { shared: SharedData | null; life: Lifecycle | null; onGoImport: () => void; onGoTemplate: () => void }) {
+  const c = life ?? shared?.close ?? null;
   const ben = useMemo(() => (c?.benefits.present ? summariseBenefits(c.benefits.benefits) : null), [c]);
   const chk = useMemo(() => (c?.checklist.present ? summariseChecklist(c.checklist.items) : null), [c]);
-  if (!shared) return (<><h2>Close and review</h2><NeedsImport onGo={onGoImport} /></>);
+  if (!shared && !(life && life.hasInitiateOrClose)) return (<><h2>Close and review</h2><NeedsImport onGo={onGoImport} what="This tab reads the Checklist, Benefits and Lessons sheets of the Spashta template workbook, and adds a summary of your tasks if you have loaded them." /></>);
   const none = !c || (!c.benefits.present && !c.checklist.present && !c.lessons.present);
-  const items = shared.items.filter((i) => i.statusCategory !== 'cancelled');
+  const items = (shared?.items ?? []).filter((i) => i.statusCategory !== 'cancelled');
+  const statusDate = shared?.statusDate || life?.settings.statusDate || '';
   const doneCount = items.filter((i) => i.statusCategory === 'done').length;
-  const sum = shared.summary;
+  const sum = shared?.summary ?? null;
   const lessons = c?.lessons.present ? c.lessons.lessons : [];
-  const go = shared.initiate?.goRecord.record ?? null;
-  const risks = shared.raid?.risks.present ? shared.raid.risks.risks.filter((r) => r.status === 'open').length : null;
-  const issues = shared.raid?.issues.present ? shared.raid.issues.issues.filter((i) => (i.status ?? 'open') === 'open').length : null;
+  const go = (life ?? shared?.initiate)?.goRecord.record ?? null;
+  const raid = life ?? shared?.raid ?? null;
+  const risks = raid?.risks.present ? raid.risks.risks.filter((r) => r.status === 'open').length : null;
+  const issues = raid?.issues.present ? raid.issues.issues.filter((i) => (i.status ?? 'open') === 'open').length : null;
   const byCat = new Map<string, typeof lessons>();
   for (const l of lessons) byCat.set(l.category, [...(byCat.get(l.category) ?? []), l]);
 
@@ -52,21 +59,27 @@ export function CloseScreen({ shared, onGoImport, onGoTemplate }: { shared: Shar
       <p className="noprint"><button type="button" onClick={() => window.print()}>Print this page as the closure report</button></p>
 
       <section aria-labelledby="cl-sum">
-        <h3 id="cl-sum">Closure report{shared.fileName ? `: ${shared.fileName}` : ''}</h3>
-        <p>Status date {shared.statusDate || 'not set'}. {doneCount} of {items.length} items finished{items.length > 0 ? ` (${roundHalfUp((doneCount / items.length) * 100, 0)}%)` : ''}{shared.items.length - items.length > 0 ? `; ${shared.items.length - items.length} cancelled and left out` : ''}.</p>
-        <div className="scroll" tabIndex={0}>
-          <table>
-            <caption>Effort summary (hours)</caption>
-            <thead><tr><th scope="col">Measure</th><th scope="col">Hours</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">Planned (budget at completion)</th><td>{sum.bac === null ? 'not available' : f1(sum.bac)}</td></tr>
-              <tr><th scope="row">Earned (work done, valued at plan)</th><td>{sum.ev === null ? 'not available' : f1(sum.ev)}</td></tr>
-              <tr><th scope="row">Actually spent</th><td>{sum.ac === null ? 'not available' : f1(sum.ac)}</td></tr>
-              <tr><th scope="row">Planned minus spent</th><td>{sum.bac === null || sum.ac === null ? 'not available' : f1(sum.bac - sum.ac)}</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="note">"Planned minus spent" only says how the project finished when all the work is done; before that, use the cost performance index on the Import and Overview tabs. Hours cover the {sum.costTasks} of {sum.tasksTotal} items that had the numbers needed.</p>
+        <h3 id="cl-sum">Closure report{(shared?.fileName ?? life?.fileName) ? `: ${shared?.fileName ?? life?.fileName}` : ''}</h3>
+        {shared && sum ? (
+          <>
+            <p>Status date {statusDate || 'not set'}. {doneCount} of {items.length} items finished{items.length > 0 ? ` (${roundHalfUp((doneCount / items.length) * 100, 0)}%)` : ''}{shared.items.length - items.length > 0 ? `; ${shared.items.length - items.length} cancelled and left out` : ''}.</p>
+            <div className="scroll" tabIndex={0}>
+              <table>
+                <caption>Effort summary (hours)</caption>
+                <thead><tr><th scope="col">Measure</th><th scope="col">Hours</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Planned (budget at completion)</th><td>{sum.bac === null ? 'not available' : f1(sum.bac)}</td></tr>
+                  <tr><th scope="row">Earned (work done, valued at plan)</th><td>{sum.ev === null ? 'not available' : f1(sum.ev)}</td></tr>
+                  <tr><th scope="row">Actually spent</th><td>{sum.ac === null ? 'not available' : f1(sum.ac)}</td></tr>
+                  <tr><th scope="row">Planned minus spent</th><td>{sum.bac === null || sum.ac === null ? 'not available' : f1(sum.bac - sum.ac)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="note">"Planned minus spent" only says how the project finished when all the work is done; before that, use the cost performance index on the Import and Overview tabs. Hours cover the {sum.costTasks} of {sum.tasksTotal} items that had the numbers needed.</p>
+          </>
+        ) : (
+          <p className="note">No task file is loaded, so the effort summary is left out. The checklist, benefits and lessons below come from the workbook's own sheets.</p>
+        )}
         <ul>
           {risks !== null && <li>{risks} risks still open.</li>}
           {issues !== null && <li>{issues} issues still open.</li>}
@@ -138,7 +151,7 @@ export function CloseScreen({ shared, onGoImport, onGoTemplate }: { shared: Shar
       <section aria-labelledby="cl-ar" className="noprint">
         <h3 id="cl-ar">Archive everything</h3>
         <p>Download one zip file holding the task table, every filled sheet (risks, issues, changes, scoring, business case, stakeholders, RFI and RFP, go / no-go, checklist, lessons, benefits), the snapshots saved in this browser, and a README that lists what is inside. Open the CSV files in Excel.</p>
-        <p><button type="button" onClick={() => downloadArchive(shared)}>Download archive (zip)</button></p>
+        <p><button type="button" onClick={() => downloadArchive(shared, life)}>Download archive (zip)</button></p>
         <p className="note">The archive is a copy of what you loaded, as read; no figures are recalculated. It is made on this device and not uploaded anywhere. Keep it with your project records.</p>
       </section>
 

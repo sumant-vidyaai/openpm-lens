@@ -197,7 +197,7 @@ export function RaidScreen({ shared, onGoImport, onGoTemplate }: { shared: Share
     <section aria-labelledby="raid-h">
       <h2 id="raid-h">Risks, issues and changes</h2>
       <p className="lead">What could go wrong, what has gone wrong, and what has been added to the plan. Filled in on the Risks, Issues and Changes sheets of the template.</p>
-      {!shared && <NeedsImport onGo={onGoImport} />}
+      {!shared && <NeedsImport onGo={onGoImport} what="This tab reads the Risks, Issues and Changes sheets of the Spashta template workbook." />}
       {shared && !raid && (
         <div className="card" role="note">
           <p>This tab reads the Risks, Issues and Changes sheets of the Spashta Excel template. The file loaded ({shared.fileName}) is not a template workbook, so there is nothing to show. A CSV file has no extra sheets.</p>
