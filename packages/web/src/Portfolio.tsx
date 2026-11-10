@@ -5,6 +5,7 @@ import {
   type Health, type PercentRule, type PortfolioProject, type RegisterRow, type RiskInput, type OptionScores, type Criterion, type RollupBy, type Unit,
 } from '@spashta/core';
 import { readTable } from './readFile';
+import { ProjectListImport } from './ProjectListImport';
 import { SAMPLE_CAPACITY, SAMPLE_PHASE_ORDER, SAMPLE_PORTFOLIO, SAMPLE_PRIORITY, SAMPLE_REGISTER, SAMPLE_RISKS, SAMPLE_UPDATE_DUE } from './sample';
 import { PortfolioControl } from './PortfolioControl';
 import { PortfolioPmo, type PrioState } from './PortfolioPmo';
@@ -203,6 +204,7 @@ export function PortfolioScreen() {
         <button type="button" onClick={addSamples}>Try three made-up projects</button>
         {entries.length > 0 && <button type="button" onClick={() => { setEntries([]); setRegister([]); setPhaseOrderText(''); setDueText(''); setPrio({ criteria: [], scores: {} }); setCapText(''); setRisks([]); setRiskBands(null); }}>Clear all</button>}
       </div>
+      <ProjectListImport onRegister={setRegister} loaded={register.length} />
       {error && <p className="warn" role="alert">{error}</p>}
 
       {entries.length === 0 ? (

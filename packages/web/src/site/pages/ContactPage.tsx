@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL } from '../config';
+import { CONTACT_EMAIL, SUPPORT_URL } from '../config';
 import { PageHero } from './shared';
 
 const mail = (subject: string, body: string) => `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -20,6 +20,13 @@ export function ContactPage() {
                 <a className="s-btn" href={mail('Spashta: customization request', 'The tool or report I use today:\n\nWhat I need Spashta to do:\n\nWho would use it:\n\n')}>Request a customization</a>
               </p>
               <p>Or write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. We read every message; replies can take a few working days.</p>
+            </>
+          )}
+          {SUPPORT_URL !== '' && (
+            <>
+              <h2 className="s-h2">Support Spashta</h2>
+              <p>Spashta is free. If it helps you, you can contribute any amount to cover its running costs. A contribution is voluntary and does not unlock anything: everyone gets the same features.</p>
+              <p className="s-actions"><a className="s-btn" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">Contribute (opens in a new tab)</a></p>
             </>
           )}
           <h2 className="s-h2">Customization requests</h2>
