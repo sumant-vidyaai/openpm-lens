@@ -74,6 +74,7 @@ CSV downloads open in Excel. Text that starts with `=`, `+`, `-` or `@` is saved
 ## 8. Known limits
 
 - Choose and justify: weights, scores, discount rate and the "high" cut-off are yours and never defaulted; an option with a missing score is not ranked; NPV discounts every period except period 0; payback assumes money arrives evenly within a period; no weights-sensitivity check yet.
+- Workbooks without a Tasks sheet: the Initiate and Close tabs (and the archive) work from the workbook's own sheets; every tab that needs tasks stays empty and says what it needs.
 - Archive: a copy of what was loaded, as read, made on your device; it cannot be loaded back into the app.
 - Close and review: a benefit not yet measured is left out, never counted as 0; benefits are only added when their Measure text matches (otherwise each stands alone); an unmarked checklist item counts as not done; "planned minus spent" is only meaningful when all work is finished.
 - Planning: only finish-to-start links with no lag are used; dependencies are never guessed from dates; critical-path task length is the planned start-to-finish span in counted days (not effort); the total range of a three-point estimate assumes independent tasks.

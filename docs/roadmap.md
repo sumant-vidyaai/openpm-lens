@@ -42,3 +42,18 @@ CI check on GitHub, trademark search for the name, confirm that Vidyaai owns the
 - Anything needing judgement (weights, discount rate, thresholds, reserve) is entered by the user, never defaulted; thresholds stay "starting values, not a standard".
 - New modules are optional; a blank sheet is simply not shown as a result.
 - Tool-specific adapters only from real header lines or documentation that states the column names.
+
+## Proposed sequence from v1.3.1 to the end of the roadmap (agreed direction, 2026-11-10)
+Each release is built the same way: confirm formulas from independent sources, build core code with tests, template sheets only appended, check in a browser (desktop and phone, light and dark), upload zips split by destination folder, then the user's live check.
+
+| Step | Version | What | Who |
+|---|---|---|---|
+| A | none | **Real-data validation:** one real Microsoft Project XML file (names changed) and one real export from the user's own tool; fix whatever they show. Confirm Vidyaai owns the project; answer the App Store "vidyaai" question; the phone/Cloudflare issue if it still happens | User sends files; Claude fixes |
+| B | v1.3.2 (BUILT) | **Tidy-up:** first-run screen duplicate buttons and old wording; clearer messages on tabs when no file is loaded; Initiate and Close usable from a workbook that has no tasks yet | Claude |
+| C | v1.4.0 | **Portfolio part 1:** Phase column and stage-gate view; reporting discipline (who has not updated); portfolio data-quality view | Claude |
+| D | v1.4.1 | **Portfolio part 2:** prioritisation scoring set by the PMO (reuses weighted scoring); demand vs capacity across projects; risk heat map across projects | Claude |
+| E | v1.5.0 | **Finish earlier batches:** weights-sensitivity check for scoring; go / no-go checklist; load an archive back into the app; RFQ type | Claude |
+| F | v1.6.0 | **Tools and connections (old Batch 10):** readers for named tools built only from real header lines the user supplies; "paste your column names" helper; Trello reader if wanted; optional live connections with tokens held in memory only | User supplies real exports first |
+| G | v1.0 label | **Declare general availability** once A and B pass. Version numbers stay as they are; the label means "tested on real data, stable". Decision pending from the user | User decides |
+
+**Ongoing, optional, user-owned:** custom domain (after the name is settled); trademark registration in classes 9 and 42 with an attorney when commercialising; scrolling the "Spasht" WIPO list; Indian trademark portal check.
